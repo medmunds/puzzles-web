@@ -1,0 +1,267 @@
+import { ResizeController } from "@lit-labs/observers/resize-controller.js";
+import { registerIconLibrary } from "@shoelace-style/shoelace/dist/utilities/icon-library.js";
+import { LitElement, css, html } from "lit";
+import { customElement, state } from "lit/decorators.js";
+import { query } from "lit/decorators/query.js";
+import { puzzles } from "./assets/catalog.json";
+import type { PuzzleData, PuzzleDataMap } from "./catalog.ts";
+import type { HelpViewer } from "./help-viewer.ts";
+
+// Components
+import "@shoelace-style/shoelace/dist/components/button/button.js";
+import "@shoelace-style/shoelace/dist/components/divider/divider.js";
+import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
+import "./help-viewer.ts";
+import "./puzzle/puzzle-context.ts";
+import "./puzzle/puzzle-display-name.ts";
+import "./puzzle/puzzle-game-menu.ts";
+import "./puzzle/puzzle-keys.ts";
+import "./puzzle/puzzle-preset-menu.ts";
+import "./puzzle/puzzle-view-interactive.ts";
+import "./puzzle/puzzle-end-notification.ts";
+
+// TODO: bundle necessary icons (this is just for easier development)
+registerIconLibrary("default", {
+  resolver: (name) =>
+    `https://cdn.jsdelivr.net/npm/lucide-static@0.511.0/icons/${name}.svg`,
+});
+
+const puzzleData: Readonly<PuzzleDataMap> = puzzles;
+
+@customElement("puzzle-screen")
+export class PuzzleScreen extends LitElement {
+  @state()
+  private puzzleId = "";
+
+  @state()
+  private puzzleData: PuzzleData | undefined;
+
+  @query("help-viewer")
+  private helpPanel?: HelpViewer;
+
+  constructor() {
+    super();
+    // puzzle-view observes its own size, but we also want it to grow
+    // when we're getting larger (without enabling flex-grow).
+    new ResizeController(this, {
+      callback: () => {
+        const puzzleView = this.shadowRoot?.querySelector("puzzle-view-interactive");
+        if (puzzleView?.maximize) {
+          puzzleView.resize(false);
+        }
+      },
+    });
+  }
+
+  override async connectedCallback() {
+    super.connectedCallback();
+
+    // Extract puzzle id from URL path
+    const path = window.location.pathname;
+    const pathSegments = path.split("/").filter((segment) => segment.length > 0);
+    const puzzleId = pathSegments[pathSegments.length - 1];
+
+    if (puzzleId) {
+      this.puzzleId = puzzleId;
+      this.puzzleData = puzzleData[puzzleId];
+    }
+
+    if (this.puzzleData) {
+      // Update the page title and icon
+      document.title = `${this.puzzleData.name} - ${this.puzzleData.description}`;
+      // TODO: set up multi-resolution favicon stack here
+      const iconLink = document.querySelector('link[rel="icon"]');
+      if (iconLink) {
+        iconLink.setAttribute("href", `./src/assets/icons/${this.puzzleId}-128d24.png`);
+      }
+    } else {
+      // Redirect to index if puzzle not found
+      window.location.href = "/";
+    }
+  }
+
+  override render() {
+    if (!this.puzzleData) {
+      return html`<div>Loading...</div>`;
+    }
+
+    return html`
+      <puzzle-context type="${this.puzzleId}">
+        <div class="app">
+          <header>
+            <h1>
+              <puzzle-display-name></puzzle-display-name>
+              <span class="subtitle">from Simon Tatham's portable puzzles collection</span>
+            </h1>
+          </header>
+
+          <div class="toolbar">
+            <puzzle-game-menu @sl-select=${this.handleGameMenuCommand}>
+              <sl-menu-item value="checkpoint" disabled>Checkpoint</sl-menu-item>
+              <sl-divider></sl-divider>
+              <sl-menu-item value="share" disabled>Share…</sl-menu-item>
+              <sl-menu-item value="save" disabled>Save…</sl-menu-item>
+              <sl-menu-item value="load" disabled>Load…</sl-menu-item>
+              <sl-divider></sl-divider>
+              <sl-menu-item value="catalog">Other puzzles</sl-menu-item>
+            </puzzle-game-menu>
+            <puzzle-preset-menu></puzzle-preset-menu>
+            <sl-button @click=${this.showHelp}>Help</sl-button>
+          </div>
+
+          <puzzle-view-interactive 
+              tabIndex="0"
+              role="figure"
+              aria-label="interactive puzzle displayed as an image"
+              maximize
+          ></puzzle-view-interactive>
+
+          <puzzle-keys></puzzle-keys>
+
+          <div class="puzzle-end-notification-holder">
+            <puzzle-end-notification>
+              <sl-button slot="extra-actions-solved" @click=${this.handleChangeType}>Change type</sl-button>
+              <sl-button slot="extra-actions-solved" href="/">Other puzzles</sl-button>
+            </puzzle-end-notification>
+          </div>
+        </div>
+      </puzzle-context>
+
+      <!-- TODO: URLs need to be relative to current page, not absolute -->
+      <help-viewer
+          src=${`/help/${this.puzzleId}-snippet.html`}
+          label=${`${this.puzzleData.name} Help`}
+      ></help-viewer>
+    `;
+  }
+
+  private handleGameMenuCommand(event: CustomEvent<{ item: { value: string } }>) {
+    const value = event.detail.item.value;
+    switch (value) {
+      case "catalog":
+        // TODO: URLs need to be relative to current page, not absolute
+        window.location.href = "/";
+        break;
+      default:
+        // Other commands are handled by puzzle-game-menu
+        break;
+    }
+  }
+
+  private showHelp() {
+    this.helpPanel?.show();
+  }
+
+  private async handleChangeType() {
+    // Show the Type menu, from the button in the puzzle-end-notification
+    await this.shadowRoot?.querySelector("puzzle-end-notification")?.hide();
+    this.shadowRoot?.querySelector("puzzle-preset-menu")?.show();
+  }
+
+  //
+  // Styles
+  //
+
+  static styles = css`
+    :host {
+      display: block;
+      width: 100%;
+      height: 100%;
+      container-type: size;
+    }
+
+    .app {
+      height: 100%;
+      box-sizing: border-box;
+      position: relative;
+
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+
+      gap: var(--sl-spacing-x-large);
+      padding: var(--sl-spacing-x-large);
+
+      @container (max-width: 40rem) {
+        gap: var(--sl-spacing-medium);
+        padding: var(--sl-spacing-large);
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        transition:
+            gap var(--sl-transition-fast) ease-in-out,
+            padding var(--sl-transition-fast) ease-in-out;
+      }
+
+      background-color: var(--sl-color-neutral-200);
+      color: var(--sl-color-neutral-900);
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--sl-color-neutral-800);
+      font-weight: var(--sl-font-weight-bold);
+      font-size: var(--sl-font-size-x-large);
+      line-height: var(--sl-line-height-dense);
+    }
+
+    .subtitle {
+      display: block;
+      font-size: var(--sl-font-size-small);
+      font-weight: var(--sl-font-weight-normal);
+      color: var(--sl-color-neutral-600);
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: flex-start;
+      align-items: baseline;
+      gap: var(--sl-spacing-large);
+      max-width: 100%;
+    }
+    .toolbar-group {
+      display: flex;
+      justify-content: flex-start;
+      align-items: baseline;
+      gap: var(--sl-spacing-x-small);
+    }
+    .toolbar puzzle-preset-menu {
+      flex: 1 0;
+      min-width: 10rem;
+      max-width: 20rem;
+    }
+
+    puzzle-view-interactive {
+      /* Shrink to fit, but don't grow beyond natural height to keep
+       * bottom toolbar snug against puzzle. (Our ResizeController lets
+       * the puzzle grow when we have more space available.) */
+      flex: 0 1 auto;
+      min-height: 5rem; /* allows flexing */
+      overflow: auto; /* scrollbars if it still can't fit */
+      background-color: var(--sl-color-neutral-50);
+      border-radius: var(--sl-border-radius-medium);
+    }
+    
+    .puzzle-end-notification-holder {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      
+      puzzle-end-notification {
+        pointer-events: auto;
+      }
+    }
+  `;
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "puzzle-screen": PuzzleScreen;
+  }
+}

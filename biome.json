@@ -1,0 +1,25 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.5.3/schema.json",
+  "linter": {
+    "rules": {
+      "recommended": true,
+      "style": {
+        "noParameterAssign": "off"
+      }
+    }
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 88
+  },
+  "files": {
+    "ignore": [
+      "puzzles/**",
+      "dist/**",
+      "node_modules/**",
+      "build/**",
+      "src/assets/js/**"
+    ]
+  }
+}

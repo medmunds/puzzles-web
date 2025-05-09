@@ -2,15 +2,37 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="./src/assets/icons/net-web.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + Lit + TS</title>
-    <link rel="stylesheet" href="./src/index.css" />
-    <script type="module" src="/src/my-element.ts"></script>
+    <title>Puzzles</title>
+    <link rel="stylesheet" href="/src/index.css" />
+    <script type="module" src="/src/catalog-screen.ts"></script>
   </head>
   <body>
-    <my-element>
-      <h1>Vite + Lit</h1>
-    </my-element>
+    <catalog-screen class="container">
+      <header slot="header">
+        <h1>Puzzles</h1>
+        <div class="subtitle">from Simon Tatham’s portable puzzle collection</div>
+      </header>
+
+      <noscript>
+        <p>These puzzles are interactive games implemented in JavaScript.
+          To play them, you will need to enable JavaScript in your browser.</p>
+      </noscript>
+
+      <footer slot="footer">
+        <h2>About this collection</h2>
+        <p>This is Mike Edmunds’ adaptation of Simon Tatham’s
+          <a href="https://www.chiark.greenend.org.uk/~sgtatham/puzzles/">portable puzzles
+            collection</a>. The original collection includes
+          <a href="https://www.chiark.greenend.org.uk/~sgtatham/puzzles/doc/">full rules</a>
+          and documentation for playing the puzzles.</p>
+        <p>The <a href="https://github.com/medmunds/puzzles">source code</a>
+          for this project is on GitHub. You can report any problems in the
+          <a href="https://github.com/medmunds/puzzles/issues">issue tracker</a>.</p>
+        <p>Both the original puzzles and this adaptation are released under
+          the MIT License. See the LICENSE file in the source for more details.</p>
+      </footer>
+    </catalog-screen>
   </body>
 </html>
