@@ -1,0 +1,449 @@
+import { type Signal, signal } from "@lit-labs/signals";
+import * as Sentry from "@sentry/browser";
+import type { ConfigValues } from "../puzzle/types.ts";
+import { equalSet } from "../utils/equal.ts";
+import {
+  type CommonSettings,
+  db,
+  type PuzzleId,
+  type PuzzleSettings,
+  type SettingsRecord,
+} from "./db.ts";
+
+const SETTINGS_BACKUP_SCHEMA =
+  "https://twistymaze.com/puzzles/schemas/puzzle-settings-backup-v1.json";
+export interface SerializedSettings {
+  $schema: string;
+  data: SettingsRecord[];
+}
+
+export const isSerializedSettings = (obj: unknown): obj is SerializedSettings =>
+  typeof obj === "object" &&
+  obj !== null &&
+  "$schema" in obj &&
+  "data" in obj &&
+  Array.isArray(obj.data);
+
+const defaultSettings = {
+  allowOfflineUse: null,
+  autoUpdate: null,
+  favoritePuzzles: new Set<PuzzleId>(),
+  showIntro: true,
+  showUnfinishedPuzzles: false,
+  showMouseButtonToggle: false,
+  rightButtonLongPress: true,
+  rightButtonTwoFingerTap: true,
+  rightButtonAudioVolume: 40,
+  rightButtonHoldTime: 350,
+  rightButtonDragThreshold: 8,
+  showEndNotification: true,
+  showPuzzleKeyboard: true,
+  statusbarPlacement: "start",
+  maxScale: Number.POSITIVE_INFINITY,
+} as const;
+
+const COMMON_SETTINGS_ID = "puzzle-common";
+
+class Settings {
+  // Reactive signals for individual settings
+  private _allowOfflineUse = signal<boolean | null>(defaultSettings.allowOfflineUse);
+  private _autoUpdate = signal<boolean | null>(defaultSettings.autoUpdate);
+  private _favoritePuzzles = signal<ReadonlySet<PuzzleId>>(
+    defaultSettings.favoritePuzzles,
+  );
+  private _showIntro = signal<boolean>(defaultSettings.showIntro);
+  private _showUnfinishedPuzzles = signal<boolean>(
+    defaultSettings.showUnfinishedPuzzles,
+  );
+
+  private _showMouseButtonToggle = signal<boolean>(
+    defaultSettings.showMouseButtonToggle,
+  );
+  private _rightButtonLongPress = signal<boolean>(defaultSettings.rightButtonLongPress);
+  private _rightButtonTwoFingerTap = signal<boolean>(
+    defaultSettings.rightButtonTwoFingerTap,
+  );
+  private _rightButtonAudioVolume = signal<number>(
+    defaultSettings.rightButtonAudioVolume,
+  );
+  private _rightButtonHoldTime = signal<number>(defaultSettings.rightButtonHoldTime);
+  private _rightButtonDragThreshold = signal<number>(
+    defaultSettings.rightButtonDragThreshold,
+  );
+  private _showEndNotification = signal<boolean>(defaultSettings.showEndNotification);
+  private _showPuzzleKeyboard = signal<boolean>(defaultSettings.showPuzzleKeyboard);
+  private _statusbarPlacement = signal<CommonSettings["statusbarPlacement"]>(
+    defaultSettings.statusbarPlacement,
+  );
+  private _maxScale = signal<number>(defaultSettings.maxScale);
+
+  private constructor() {
+    window.addEventListener("pageshow", this.handlePageShow);
+  }
+
+  static async create(): Promise<Settings> {
+    const settings = new Settings();
+    await settings.loadSettings();
+    return settings;
+  }
+
+  private handlePageShow = async (event: PageTransitionEvent) => {
+    if (event.persisted) {
+      await this.loadSettings();
+    }
+  };
+
+  private async loadSettings(): Promise<void> {
+    function update<T>(signal: Signal.State<T>, newValue: T | undefined) {
+      if (newValue !== undefined && signal.get() !== newValue) {
+        signal.set(newValue);
+      }
+    }
+
+    const commonSettings = await this.getCommonSettings();
+    if (commonSettings) {
+      update(this._allowOfflineUse, commonSettings.allowOfflineUse);
+      update(this._autoUpdate, commonSettings.autoUpdate);
+      const favoritePuzzles = new Set(commonSettings.favoritePuzzles);
+      if (!equalSet(favoritePuzzles, this._favoritePuzzles.get())) {
+        this._favoritePuzzles.set(favoritePuzzles);
+      }
+      update(this._showIntro, commonSettings.showIntro);
+      update(this._showUnfinishedPuzzles, commonSettings.showUnfinishedPuzzles);
+      update(this._showMouseButtonToggle, commonSettings.showMouseButtonToggle);
+      update(this._rightButtonLongPress, commonSettings.rightButtonLongPress);
+      update(this._rightButtonTwoFingerTap, commonSettings.rightButtonTwoFingerTap);
+      update(this._rightButtonAudioVolume, commonSettings.rightButtonAudioVolume);
+      update(this._rightButtonHoldTime, commonSettings.rightButtonHoldTime);
+      update(this._rightButtonDragThreshold, commonSettings.rightButtonDragThreshold);
+      update(this._showEndNotification, commonSettings.showEndNotification);
+      update(this._showPuzzleKeyboard, commonSettings.showPuzzleKeyboard);
+      update(this._statusbarPlacement, commonSettings.statusbarPlacement);
+      update(this._maxScale, commonSettings.maxScale ?? Number.POSITIVE_INFINITY);
+    }
+  }
+
+  // For PWAManager use only (use pwaManager.allowOfflineUse instead)
+  get allowOfflineUse(): boolean | null {
+    return this._allowOfflineUse.get();
+  }
+  set allowOfflineUse(value: boolean) {
+    this._allowOfflineUse.set(value);
+    this.saveCommonSettingOrLogError("allowOfflineUse", value);
+  }
+
+  // For PWAManager use only (use pwaManager.autoUpdate instead)
+  get autoUpdate(): boolean | null {
+    return this._autoUpdate.get();
+  }
+  set autoUpdate(value: boolean) {
+    this._autoUpdate.set(value);
+    this.saveCommonSettingOrLogError("autoUpdate", value);
+  }
+
+  // Accessors for reactive signals
+  get favoritePuzzles(): ReadonlySet<PuzzleId> {
+    return this._favoritePuzzles.get();
+  }
+  set favoritePuzzles(value: ReadonlySet<PuzzleId>) {
+    this._favoritePuzzles.set(value);
+    this.saveCommonSettingOrLogError("favoritePuzzles", [...value]);
+  }
+
+  isFavoritePuzzle(puzzleId: PuzzleId): boolean {
+    return this.favoritePuzzles.has(puzzleId);
+  }
+  async setFavoritePuzzle(puzzleId: PuzzleId, isFavorite: boolean): Promise<void> {
+    const wasFavorite = this.isFavoritePuzzle(puzzleId);
+    if (isFavorite !== wasFavorite) {
+      const favorites = new Set(this.favoritePuzzles);
+      if (isFavorite) {
+        favorites.add(puzzleId);
+      } else {
+        favorites.delete(puzzleId);
+      }
+      this.favoritePuzzles = favorites;
+    }
+  }
+
+  get showIntro(): boolean {
+    return this._showIntro.get();
+  }
+  set showIntro(value: boolean) {
+    this._showIntro.set(value);
+    this.saveCommonSettingOrLogError("showIntro", value);
+  }
+
+  get showUnfinishedPuzzles(): boolean {
+    return this._showUnfinishedPuzzles.get();
+  }
+  set showUnfinishedPuzzles(value: boolean) {
+    this._showUnfinishedPuzzles.set(value);
+    this.saveCommonSettingOrLogError("showUnfinishedPuzzles", value);
+  }
+
+  get showMouseButtonToggle(): boolean {
+    return this._showMouseButtonToggle.get();
+  }
+  set showMouseButtonToggle(value: boolean) {
+    this._showMouseButtonToggle.set(value);
+    this.saveCommonSettingOrLogError("showMouseButtonToggle", value);
+  }
+
+  get rightButtonLongPress(): boolean {
+    return this._rightButtonLongPress.get();
+  }
+  set rightButtonLongPress(value: boolean) {
+    this._rightButtonLongPress.set(value);
+    this.saveCommonSettingOrLogError("rightButtonLongPress", value);
+  }
+
+  get rightButtonTwoFingerTap(): boolean {
+    return this._rightButtonTwoFingerTap.get();
+  }
+  set rightButtonTwoFingerTap(value: boolean) {
+    this._rightButtonTwoFingerTap.set(value);
+    this.saveCommonSettingOrLogError("rightButtonTwoFingerTap", value);
+  }
+
+  get rightButtonAudioVolume(): number {
+    return this._rightButtonAudioVolume.get();
+  }
+  set rightButtonAudioVolume(value: number) {
+    this._rightButtonAudioVolume.set(value);
+    this.saveCommonSettingOrLogError("rightButtonAudioVolume", value);
+  }
+
+  get rightButtonHoldTime(): number {
+    return this._rightButtonHoldTime.get();
+  }
+  set rightButtonHoldTime(value: number) {
+    this._rightButtonHoldTime.set(value);
+    this.saveCommonSettingOrLogError("rightButtonHoldTime", value);
+  }
+
+  get rightButtonDragThreshold(): number {
+    return this._rightButtonDragThreshold.get();
+  }
+  set rightButtonDragThreshold(value: number) {
+    this._rightButtonDragThreshold.set(value);
+    this.saveCommonSettingOrLogError("rightButtonDragThreshold", value);
+  }
+
+  get showEndNotification(): boolean {
+    return this._showEndNotification.get();
+  }
+  set showEndNotification(value: boolean) {
+    this._showEndNotification.set(value);
+    this.saveCommonSettingOrLogError("showEndNotification", value);
+  }
+
+  get showPuzzleKeyboard(): boolean {
+    return this._showPuzzleKeyboard.get();
+  }
+  set showPuzzleKeyboard(value: boolean) {
+    this._showPuzzleKeyboard.set(value);
+    this.saveCommonSettingOrLogError("showPuzzleKeyboard", value);
+  }
+
+  get statusbarPlacement(): CommonSettings["statusbarPlacement"] {
+    return this._statusbarPlacement.get();
+  }
+  set statusbarPlacement(value: CommonSettings["statusbarPlacement"]) {
+    this._statusbarPlacement.set(value);
+    this.saveCommonSettingOrLogError("statusbarPlacement", value);
+  }
+
+  get maxScale(): number {
+    const value = this._maxScale.get();
+    return value === null ? Number.POSITIVE_INFINITY : value;
+  }
+  set maxScale(value: number) {
+    this._maxScale.set(value);
+    // Store Infinity as null (for json serialization)
+    this.saveCommonSettingOrLogError(
+      "maxScale",
+      value === Number.POSITIVE_INFINITY ? null : value,
+    );
+  }
+
+  // Settings methods
+  private async getCommonSettings(): Promise<CommonSettings> {
+    const record = await db.settings.get(COMMON_SETTINGS_ID);
+    return record?.type === "puzzle-common" ? record.data : { puzzlePreferences: {} };
+  }
+
+  private async saveCommonSetting<K extends keyof CommonSettings>(
+    name: K,
+    value: CommonSettings[K],
+  ) {
+    const current = await this.getCommonSettings();
+    if (current[name] !== value) {
+      const updated: CommonSettings = {
+        ...current,
+        [name]: value,
+      };
+      if (value === undefined) {
+        delete updated[name];
+      }
+      await db.settings.put({
+        id: COMMON_SETTINGS_ID,
+        type: "puzzle-common",
+        data: updated,
+      });
+    }
+  }
+
+  // Ugh. Non-async version of above, for use in property setters.
+  private saveCommonSettingOrLogError<K extends keyof CommonSettings>(
+    name: K,
+    value: CommonSettings[K],
+  ) {
+    this.saveCommonSetting(name, value).catch((error: Error) => {
+      console.error(error);
+      Sentry.captureException(error);
+    });
+  }
+
+  private async getPuzzleSettings(
+    puzzleId: PuzzleId,
+  ): Promise<PuzzleSettings | undefined> {
+    const record = await db.settings.get(puzzleId);
+    return record?.type === "puzzle" ? record.data : undefined;
+  }
+
+  /**
+   * Return all persisted puzzle preferences for puzzleId, including common
+   * settings and app defaults.
+   */
+  async getPuzzlePreferences(puzzleId: PuzzleId): Promise<ConfigValues> {
+    // TODO: move defaults to src/puzzle/augment; make puzzleId-specific
+    const defaults = {
+      "pencil-keep-highlight": true, // keen, solo, towers, undead
+    };
+    const commonRecord = await this.getCommonSettings();
+    const puzzleRecord = await this.getPuzzleSettings(puzzleId);
+    return {
+      ...defaults,
+      ...commonRecord?.puzzlePreferences,
+      ...puzzleRecord?.puzzlePreferences,
+    };
+  }
+
+  /**
+   * Merge prefs into persisted puzzle preferences for puzzleId or persisted
+   * common preferences as appropriate.
+   */
+  async setPuzzlePreferences(puzzleId: PuzzleId, prefs: ConfigValues): Promise<void> {
+    const { commonPreferences, puzzlePreferences } = this.splitPuzzlePreferences(prefs);
+    if (commonPreferences !== undefined) {
+      const current = await this.getCommonSettings();
+      const updated: CommonSettings = {
+        ...current,
+        puzzlePreferences: {
+          ...current?.puzzlePreferences,
+          ...commonPreferences,
+        },
+      };
+
+      await db.settings.put({
+        id: COMMON_SETTINGS_ID,
+        type: "puzzle-common",
+        data: updated,
+      });
+    }
+
+    if (puzzlePreferences !== undefined) {
+      const current = await this.getPuzzleSettings(puzzleId);
+      const updated: PuzzleSettings = {
+        ...current,
+        puzzlePreferences: {
+          ...current?.puzzlePreferences,
+          ...puzzlePreferences,
+        },
+      };
+
+      await db.settings.put({
+        id: puzzleId,
+        type: "puzzle",
+        data: updated,
+      });
+    }
+  }
+
+  private splitPuzzlePreferences(prefs: ConfigValues): {
+    commonPreferences?: ConfigValues;
+    puzzlePreferences?: ConfigValues;
+  } {
+    // Right now, the only common puzzle preference is one-key-shortcuts.
+    // TODO: move this function to src/puzzle/augment
+    const { "one-key-shortcuts": oneKeyShortcuts, ...rest } = prefs;
+    const commonPreferences =
+      oneKeyShortcuts !== undefined
+        ? { "one-key-shortcuts": oneKeyShortcuts }
+        : undefined;
+    const puzzlePreferences = Object.keys(rest).length > 0 ? rest : undefined;
+    return { commonPreferences, puzzlePreferences };
+  }
+
+  async getParams(puzzleId: PuzzleId): Promise<string | undefined> {
+    const puzzleRecord = await this.getPuzzleSettings(puzzleId);
+    return puzzleRecord?.params;
+  }
+
+  async setParams(puzzleId: PuzzleId, params?: string): Promise<void> {
+    const { params: _, ...current } = (await this.getPuzzleSettings(puzzleId)) ?? {};
+    const updated: PuzzleSettings =
+      params === undefined
+        ? current
+        : {
+            ...current,
+            params,
+          };
+    await db.settings.put({
+      id: puzzleId,
+      type: "puzzle",
+      data: updated,
+    });
+  }
+
+  async clearCommonSettings() {
+    await db.settings.delete(COMMON_SETTINGS_ID);
+    await this.loadSettings();
+  }
+
+  async clearPuzzleSettings(puzzleId: PuzzleId) {
+    await db.settings.delete(puzzleId);
+    // TODO: this needs to somehow trigger Puzzle(puzzleId) reload default settings
+    await this.loadSettings();
+  }
+
+  async clearAllSettings() {
+    await db.settings.clear();
+    // TODO: this may need to trigger current Puzzle reload default settings
+    await this.loadSettings();
+  }
+
+  /*
+   * Serialization (for backup/restore)
+   */
+
+  async serialize(): Promise<SerializedSettings> {
+    const data = await db.settings.toArray();
+    return { $schema: SETTINGS_BACKUP_SCHEMA, data };
+  }
+
+  async deserialize(backup: unknown): Promise<void> {
+    if (!isSerializedSettings(backup)) {
+      throw new Error("Invalid settings backup format");
+    }
+    if (backup.$schema !== SETTINGS_BACKUP_SCHEMA) {
+      throw new Error("Incompatible settings backup schema");
+    }
+    await db.settings.bulkPut(backup.data);
+    await this.loadSettings();
+  }
+}
+
+// Singleton settings store instance
+export const settings = await Settings.create();

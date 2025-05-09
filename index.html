@@ -1,16 +1,75 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + Lit + TS</title>
-    <link rel="stylesheet" href="./src/index.css" />
-    <script type="module" src="/src/my-element.ts"></script>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puzzles&thinsp;&ndash;&thinsp;from Simon Tatham’s portable puzzle collection</title>
+    <meta name="application-name" content="Puzzles">
+    <link rel="stylesheet" href="/src/css/home.css">
+    <script nomodule>
+      window.location.href = "/unsupported.html?f=script%20type%3D%22module%22";
+    </script>
+    <script type="module" crossorigin src="%VITE_PREFLIGHT_CHECK%"></script>
+    <script type="module" src="/src/home-page.ts"></script>
   </head>
   <body>
-    <my-element>
-      <h1>Vite + Lit</h1>
-    </my-element>
+    <home-screen>
+      <header slot="header">
+        <img class="logo" src="/favicon.svg" alt="" role="presentation">
+        <div class="title">
+          <h1>Puzzles</h1>
+        </div>
+        <div class="subtitle">from Simon&nbsp;Tatham’s
+          portable&nbsp;puzzle&nbsp;collection</div>
+        <div class="controls">
+          <a class="help-button" href="help/">
+            <img src="/node_modules/lucide-static/icons/circle-question-mark.svg" alt="">Help</a>
+        </div>
+      </header>
+
+      <section slot="intro">
+        <p>This is a collection of some forty logic puzzles and games
+          you can play right in your web browser.
+          Each puzzle has multiple difficulty levels and variations,
+          with unlimited, randomly generated games.
+          And it’s all completely free: no upsells, no ads, no trackers.</p>
+
+        <p>This web app should run in any recent browser.
+          You can use a touch screen, mouse or keyboard.
+          It even works <a href="help/install">offline</a>.</p>
+
+        <p>Enjoy!</p>
+
+        <p>P.S., Looking for free Sudoku? It’s called <a href="solo">Solo</a> here,
+          also available in <a href="solo?type=3x3xda">diagonal</a>&nbsp;(X-style),
+          <a href="solo?type=9jda">jigsaw</a>, <a href="solo?type=3x3ka">killer</a>,
+          and <a href="solo?type=4x4db">mega</a>&nbsp;(Hexadoku) variants.
+          Mathdoku is called <a href="keen">Keen</a>. And if you like that type of puzzle,
+          also check out <a href="towers">Towers</a> and <a href="unequal">Unequal</a>.</p>
+
+        <p class="warning">⚠️ This app is still <strong>actively being developed.</strong>
+          While it should be (mostly) usable, there are 🚧&nbsp;incomplete parts,
+          🥽&nbsp;experiments in progress, and 🪲🐛🪰&nbsp;plenty of bugs.
+          Things might change or break without warning.</p>
+      </section>
+
+      <noscript>
+        <section class="warning">
+          ⚠️ The puzzles are implemented in JavaScript.
+          To play them, you will need to enable JavaScript in your browser.
+        </section>
+      </noscript>
+
+      <footer slot="footer">
+        <div>Credits, privacy info, copyright notices and licenses are in the
+          <a href="https://github.com/medmunds/puzzles">source code</a>
+        </div>
+        <div><small>In some countries, names of similar/related puzzles may be
+          trademarks belonging to others. Use here does not imply affiliation
+          or endorsement by their owners.</small></div>
+      </footer>
+    </home-screen>
+    %VITE_ANALYTICS_BLOCK%
   </body>
 </html>

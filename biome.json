@@ -1,0 +1,28 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.5/schema.json",
+  "linter": {
+    "rules": {
+      "recommended": true,
+      "nursery": {
+        "noFloatingPromises": "error",
+        "noMisusedPromises": "error"
+      },
+      "style": {
+        "noParameterAssign": "off"
+      }
+    }
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 88
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["**", "!**/puzzles", "!functions/worker-configuration.d.ts"]
+  }
+}

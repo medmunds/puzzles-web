@@ -1,0 +1,14 @@
+@import url("common.css");
+
+html,
+body,
+#app {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+noscript section {
+  max-width: 55ch;
+  margin: var(--app-padding);
+}

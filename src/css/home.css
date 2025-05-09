@@ -1,0 +1,12 @@
+@import url("common.css");
+@import url("home-screen.css");
+
+:root {
+  --app-padding: var(--wa-space-xl);
+  --app-spacing: var(--wa-space-l);
+
+  @media (max-width: 40rem) {
+    --app-padding: var(--wa-space-l);
+    --app-spacing: var(--wa-space-m);
+  }
+}

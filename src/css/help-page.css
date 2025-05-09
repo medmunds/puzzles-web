@@ -1,0 +1,12 @@
+@import url("common.css");
+@import url("native.css");
+@import url("help.css");
+
+html,
+body {
+  background-color: var(--wa-color-surface-default);
+}
+
+body {
+  padding: var(--wa-space-l);
+}

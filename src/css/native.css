@@ -1,0 +1,90 @@
+a {
+  color: var(--wa-color-text-link);
+  text-decoration: var(--wa-link-decoration-default);
+  -webkit-text-decoration: var(--wa-link-decoration-default); /* Safari */
+  text-decoration-thickness: 0.09375em;
+  text-underline-offset: 0.125em;
+}
+@media (hover: hover) {
+  a:hover {
+    color: color-mix(in oklab, var(--wa-color-text-link), var(--wa-color-mix-hover));
+    text-decoration: var(--wa-link-decoration-hover);
+    -webkit-text-decoration: var(--wa-link-decoration-hover); /* Safari */
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+ol,
+ul,
+dl {
+  margin: 0;
+  /* Safari gives precedence to its user-agent stylesheet margin-inline
+   * and margin-block values (over margin shorthand) during CSS animations. */
+  margin-inline: 0;
+  margin-block: 0;
+
+  &:not(:first-child) {
+    margin-block-start: 1em;
+  }
+}
+
+dt,
+li,
+p + ul {
+  &:not(:first-child) {
+    margin-block-start: 0.5em;
+  }
+}
+
+/* "expanded list" */
+li:has(p),
+li:has(p):not(:first-child) {
+  margin-block-start: 1em;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--wa-font-family-heading) sans-serif;
+  color: var(--wa-color-text-normal);
+  line-height: var(--wa-line-height-condensed);
+}
+
+h1 {
+  font-weight: var(--wa-font-weight-bold);
+  font-size: var(--wa-font-size-xl);
+}
+h2 {
+  font-weight: var(--wa-font-weight-semibold);
+  font-size: var(--wa-font-size-l);
+}
+h3 {
+  font-weight: var(--wa-font-weight-semibold);
+  font-size: var(--wa-font-size-m);
+}
+p {
+  font-size: var(--wa-font-size-m);
+  font-weight: var(--wa-font-weight-normal);
+}
+
+hr {
+  border: none;
+  height: var(--wa-border-width-s);
+  margin-block: var(--wa-space-m);
+  border-top: var(--wa-border-width-s) var(--wa-border-style)
+    var(--wa-color-neutral-border-normal);
+}
+
+small {
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+}

@@ -1,0 +1,230 @@
+header,
+section,
+noscript,
+footer {
+  box-sizing: border-box;
+  padding: var(--app-padding);
+  @media (prefers-reduced-motion: no-preference) {
+    transition: padding var(--wa-transition-fast) var(--wa-transition-easing);
+  }
+}
+
+section,
+noscript,
+footer {
+  margin: 0 auto;
+
+  *:first-child {
+    margin-block-start: 0;
+  }
+}
+section {
+  padding-block-end: 0;
+}
+section[slot="intro"],
+footer {
+  max-width: 61ch;
+}
+
+noscript section {
+  max-width: calc(61ch - 2 * var(--app-padding));
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: var(--app-theme-color);
+
+  display: grid;
+  grid-template-areas:
+    "logo title    controls"
+    "logo subtitle controls";
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+
+  .logo {
+    grid-area: logo;
+    height: 3.5em;
+    width: auto;
+    object-fit: contain;
+    margin-inline-end: var(--wa-space-l);
+    z-index: 2;
+  }
+
+  .title {
+    grid-area: title;
+
+    h1 {
+      font-size: var(--app-title-font-size);
+      line-height: var(--wa-line-height-condensed);
+    }
+  }
+  .subtitle {
+    grid-area: subtitle;
+
+    /* crop, bottom-aligned, during shrinking header animation */
+    max-height: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: end;
+
+    font-size: var(--wa-font-size-m);
+    font-weight: var(--wa-font-weight-normal);
+    color: var(--wa-color-text-quiet);
+  }
+
+  .controls {
+    grid-area: controls;
+    align-self: start;
+    display: flex;
+    gap: 0; /* toolbar buttons all have lots of padding built in */
+    /* Counteract wa-button padding and border */
+    margin-block: calc((1lh - var(--wa-form-control-height)) / 2);
+    margin-inline-end: calc(
+      -1 *
+      (var(--wa-form-control-padding-inline) + var(--wa-border-width-s))
+    );
+
+    /* <a> styled as button before enhancement */
+    > a {
+      display: inline-flex;
+      align-items: center;
+
+      font-weight: var(--wa-font-weight-action);
+      margin-block: calc((var(--wa-form-control-height) - 1lh) / 2);
+      margin-inline: calc(
+        var(--wa-form-control-padding-inline) +
+        var(--wa-border-width-s)
+      );
+      &:not(:hover) {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      img {
+        /* wa-button slot=start icon */
+        width: 1em;
+        height: 1em;
+        margin-inline-end: 0.75em;
+      }
+    }
+  }
+
+  wa-button[appearance="plain"]::part(base) {
+    color: var(--wa-color-text-normal);
+  }
+}
+
+footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-spacing);
+  @media (prefers-reduced-motion: no-preference) {
+    transition: gap var(--wa-transition-fast) var(--wa-transition-easing);
+  }
+}
+
+/*
+ * Shrink header on scroll.
+ * Where animation-timeline not supported, apply a paused 1000ms animation
+ * that will be manually advanced in JS.
+ */
+
+@property --scroll-range-end {
+  /* Have getComputedStyle return px for this property */
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --scroll-animation-duration {
+  /* Fallback "duration" for manual animations */
+  /* Have getComputedStyle return seconds for this property */
+  syntax: "<time>";
+  inherits: true;
+  initial-value: 1000ms;
+}
+
+header {
+  --scroll-range-end: calc(3.5em + var(--app-padding));
+  --scroll-animation-options: var(--scroll-animation-duration) linear forwards paused;
+}
+
+@supports (animation-timeline: scroll()) {
+  header {
+    --scroll-animation-options: linear forwards;
+  }
+}
+
+header {
+  animation: scroll-header var(--scroll-animation-options);
+  animation-timeline: scroll();
+  animation-range: 0 var(--scroll-range-end);
+
+  .logo {
+    animation: scroll-logo var(--scroll-animation-options);
+    animation-timeline: scroll();
+    animation-range: 0 var(--scroll-range-end);
+  }
+
+  h1 {
+    animation: scroll-h1 var(--scroll-animation-options);
+    animation-timeline: scroll();
+    animation-range: 0 var(--scroll-range-end);
+  }
+
+  .subtitle {
+    animation: scroll-subtitle var(--scroll-animation-options);
+    animation-timeline: scroll();
+    animation-range: 0 var(--scroll-range-end);
+  }
+}
+
+@keyframes scroll-header {
+  from {
+    padding-block: var(--app-padding);
+    box-shadow: none;
+    grid-template-rows: auto 1fr;
+  }
+  to {
+    padding-block: var(--app-spacing);
+    box-shadow: var(--wa-shadow-l);
+    grid-template-rows: auto 0fr;
+  }
+}
+
+@keyframes scroll-logo {
+  from {
+    height: 3.5em;
+    margin-inline-end: var(--wa-space-l);
+    align-self: start;
+  }
+  98% {
+    align-self: start;
+  }
+  to {
+    height: 1.25em;
+    margin-inline-end: var(--wa-space-m);
+    align-self: center;
+  }
+}
+
+@keyframes scroll-h1 {
+  from {
+    font-size: var(--wa-font-size-xl);
+  }
+  to {
+    font-size: var(--app-title-font-size);
+  }
+}
+
+@keyframes scroll-subtitle {
+  from {
+    opacity: 1;
+    visibility: visible;
+  }
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}

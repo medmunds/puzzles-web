@@ -1,0 +1,84 @@
+/*@import url("/node_modules/@awesome.me/webawesome/dist/styles/webawesome.css");*/
+@layer wa-native,
+  wa-utilities,
+  wa-color-palette,
+  wa-color-variant,
+  wa-theme,
+  wa-theme-dimension,
+  wa-theme-overrides;
+@import url("/node_modules/@awesome.me/webawesome/dist/styles/utilities/scroll-lock.css");
+@import url("/node_modules/@awesome.me/webawesome/dist/styles/themes/default.css");
+@import url("native.css");
+
+:root {
+  font-family: var(--wa-font-family-body), sans-serif;
+  line-height: var(--wa-line-height-normal);
+  font-weight: var(--wa-font-weight-normal);
+
+  /* TODO: color-scheme: light dark;*/
+  color: var(--wa-color-text-normal);
+  background-color: var(--wa-color-brand-fill-quiet);
+
+  /* Lighten default accent buttons slightly (usually neutral-20) */
+  /* TODO: --wa-color-neutral-70 for dark mode */
+  --wa-color-neutral-fill-loud: var(--wa-color-neutral-30);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (any-pointer: coarse) and (min-width: 480px) and (min-height: 480px) {
+  /* Larger targets on touch devices (when there's room) */
+  :root {
+    font-size: 120%;
+  }
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+.warning {
+  box-sizing: border-box;
+  padding: var(--app-spacing);
+  background-color: var(--wa-color-surface-default);
+  color: var(--wa-color-text-normal);
+  border: var(--wa-border-width-l) var(--wa-border-style)
+    var(--wa-color-warning-border-loud);
+  border-radius: var(--wa-panel-border-radius);
+}
+
+/* Responsive layout tokens */
+:root {
+  --app-size: large;
+  --app-orientation: vertical;
+  --app-padding: var(--wa-space-xl);
+  --app-gap: var(--wa-space-xl);
+  --app-spacing: var(--wa-space-l);
+  --app-title-font-size: var(--wa-font-size-l);
+  --app-theme-color: var(--wa-color-brand-fill-normal);
+}
+@media (max-width: 40rem) {
+  :root {
+    --app-size: medium;
+    --wa-space-scale: 0.8;
+    --app-title-font-size: var(--wa-font-size-m);
+  }
+}
+@media (max-width: 30rem) or (max-height: 40rem) {
+  :root {
+    --app-size: small;
+    --wa-space-scale: 0.5;
+  }
+}
+@media (orientation: landscape) and (max-height: 40rem) {
+  :root {
+    --app-orientation: horizontal;
+    --app-title-font-size: var(--wa-font-size-m);
+  }
+}

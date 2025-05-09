@@ -1,0 +1,204 @@
+name: Build and deploy
+
+on:
+  push:
+    branches:
+      - next
+  workflow_dispatch:
+
+jobs:
+  build-icons:
+    name: Build icons
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write  # cache, artifacts
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Docker/build-icons.Dockerfile
+          load: true
+          tags: build-icons:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run icons build
+        run: |
+          mkdir -p ./build/assets
+          docker run --rm \
+            -v '${{ github.workspace }}/puzzles:/app/puzzles:ro' \
+            -v '${{ github.workspace }}/build/assets:/app/assets' \
+            build-icons:latest
+
+      - name: Upload icons artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: icons
+          path: build/assets/icons
+
+  build-emcc:
+    name: Build emcc
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write   # cache, artifacts
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # need history for vcsid UPSTREAM_SHA
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Docker/build-emcc.Dockerfile
+          load: true
+          platforms: linux/amd64  # ubuntu-latest is always amd64
+          tags: build-emcc:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Compute VCSID
+        id: vcsid
+        # Get the last merged (upstream) sha of the puzzles subtree
+        run: |
+          UPSTREAM_SHA=$( \
+            git log --all --grep="^git-subtree-split:" --pretty=format:"%H %b" \
+            | grep git-subtree-split \
+            | head -n 1 \
+            | sed -E 's/^.*git-subtree-split: ([0-9a-f]+).*/\1/' \
+          )
+          VCSID=$(git rev-parse --short "${UPSTREAM_SHA}" || echo "unknown")
+          echo "vcsid=${VCSID}" >> "${GITHUB_OUTPUT}"
+          echo "vcsid=${VCSID}"
+
+      - name: Run emcc build
+        run: |
+          mkdir -p ./build/assets
+          mkdir -p ./build/public
+          docker run --rm \
+            -v '${{ github.workspace }}/puzzles:/app/puzzles:ro' \
+            -v '${{ github.workspace }}/build/assets:/app/assets' \
+            -v '${{ github.workspace }}/build/public:/app/public' \
+            -e BUILD_UNFINISHED='group;slide;sokoban' \
+            -e VCSID='${{ steps.vcsid.outputs.vcsid }}' \
+            build-emcc:latest
+
+      - name: Upload puzzles artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: puzzles
+          path: build/assets/puzzles
+
+  build-app:
+    name: Build app
+    needs: [build-icons, build-emcc]
+    runs-on: ubuntu-latest
+    environment: production-build-app
+    permissions:
+      contents: read
+      actions: write   # cache, artifacts
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Apply site overlay
+        # Pull in site-specific files that aren't part of the public repo
+        if: ${{ vars.OVERLAY_REPO != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.OVERLAY_REPO_TOKEN }}
+        run: |
+          gh api repos/${{ vars.OVERLAY_REPO }}/tarball > overlay.tar.gz
+          tar -xzf overlay.tar.gz \
+            --exclude="*/.gitignore" \
+            --exclude="*/README.md" \
+            --strip-components=1
+          rm overlay.tar.gz
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download icons artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: icons
+          path: src/assets/icons
+
+      - name: Download puzzles artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: puzzles
+          path: src/assets/puzzles
+
+      - name: Build app
+        env:
+          VITE_ANALYTICS_BLOCK: ${{ vars.VITE_ANALYTICS_BLOCK }}
+          VITE_APP_NAME: ${{ vars.APP_NAME }}
+          VITE_GIT_SHA: ${{ github.sha }}
+          VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+        run: npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: [build-app]
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      actions: read  # artifacts
+      deployments: write
+    steps:
+      # Source and generated puzzles assets (catalog.json) are required
+      # for wrangler to bundle the routing worker function.
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Download puzzles artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: puzzles
+          path: src/assets/puzzles
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: dist
+          path: dist
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PROJECT_NAME }} --commit-dirty=true

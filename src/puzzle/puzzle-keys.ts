@@ -1,0 +1,165 @@
+import { consume } from "@lit/context";
+import { SignalWatcher } from "@lit-labs/signals";
+import { css, html, LitElement, nothing } from "lit";
+import { customElement, eventOptions, property, state } from "lit/decorators.js";
+import { classMap } from "lit/directives/class-map.js";
+import { cssWATweaks } from "../utils/css.ts";
+import { puzzleContext } from "./contexts.ts";
+import type { Puzzle } from "./puzzle.ts";
+import type { KeyLabel } from "./types.ts";
+
+// Components
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
+
+interface LabelIcons {
+  [label: string]: string;
+}
+
+/**
+ * A virtual keyboard for the puzzle
+ */
+@customElement("puzzle-keys")
+export class PuzzleKeys extends SignalWatcher(LitElement) {
+  @consume({ context: puzzleContext, subscribe: true })
+  @state()
+  private puzzle?: Puzzle;
+
+  // Maps KeyLabel.label to wa-icon name
+  static defaultLabelIcons: LabelIcons = {
+    Clear: "key-clear",
+    Marks: "key-marks",
+    Hints: "key-hints",
+  };
+
+  @property({ type: Object })
+  labelIcons: LabelIcons = PuzzleKeys.defaultLabelIcons;
+
+  @state()
+  private keyLabels?: KeyLabel[];
+
+  private renderedParams?: string;
+
+  protected override async willUpdate() {
+    // The available keys can vary with changes to puzzle params.
+    // (This should really be an effect on this.puzzle?.currentParams,
+    // but @lit-labs/signals doesn't have effects yet.)
+    const currentParams = this.puzzle?.currentParams;
+    if (currentParams !== this.renderedParams) {
+      this.renderedParams = currentParams;
+      await this.loadKeyLabels();
+    }
+  }
+
+  private async loadKeyLabels() {
+    this.keyLabels = (await this.puzzle?.requestKeys()) ?? [];
+  }
+
+  protected override render() {
+    if (!this.keyLabels || this.keyLabels.length === 0) {
+      return nothing;
+    }
+
+    // If >5 keys, divide into two equal groups for better wrapping
+    const split =
+      this.keyLabels.length > 5
+        ? Math.floor(this.keyLabels.length / 2)
+        : this.keyLabels.length;
+    const keyGroups = [this.keyLabels.slice(0, split), this.keyLabels.slice(split)];
+    const groups = keyGroups.map(
+      (keys) => html`
+          <div part="group">${keys.map(this.renderVirtualKey)}</div>`,
+    );
+
+    // Activate virtual keys on touchstart for better responsiveness in rapid "typing".
+    // But also handle click for keyboard activation (if a virtual key somehow gets focus).
+    return html`
+      <div
+          part="base"
+          @click=${this.handleButtonPress}
+          @touchstart=${this.handleButtonPress}
+        >${groups}</div>
+    `;
+  }
+
+  private renderVirtualKey = (key: KeyLabel) => {
+    const label = key.label;
+    const icon = this.labelIcons[label];
+    const classes = classMap({ single: icon || label.length === 1 });
+    const content = icon
+      ? html`<wa-icon name=${icon} label=${label}></wa-icon>`
+      : label;
+    // Exclude virtual keys from keyboard navigation
+    // (they're not helpful for a keyboard user).
+    return html`
+      <wa-button 
+          class=${classes} 
+          data-button=${key.button} 
+          tabindex="-1"
+        >${content}</wa-button>
+    `;
+  };
+
+  @eventOptions({ passive: false })
+  private async handleButtonPress(event: PointerEvent | TouchEvent) {
+    // Delegated listener for both touchstart and click events.
+    // (On touch devices, preventDefault on touchstart will avoid a later click event.
+    // This must be installed on touchstart rather than pointerdown, because it's
+    // impossible on iOS Safari to prevent a pointerdown from generating a click.)
+    if (!(event.target instanceof HTMLElement)) {
+      return;
+    }
+    const target = event.target.closest("[data-button]");
+    const dataButton = target?.getAttribute("data-button") ?? null;
+    if (dataButton !== null) {
+      event.preventDefault();
+      const button = Number.parseInt(dataButton, 10);
+      if (!Number.isNaN(button)) {
+        await this.puzzle?.processKey(button);
+      } else if (!import.meta.env.PROD) {
+        throw new Error(`Invalid data-button="${dataButton}"`);
+      }
+    }
+  }
+
+  static styles = [
+    cssWATweaks,
+    css`
+      :host {
+        display: contents;
+      }
+      
+      [part~="base"] {
+        --gap: var(--wa-space-s);
+
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--gap);
+      }
+  
+      [part~="group"] {
+        display: flex;
+        gap: var(--gap);
+      }
+  
+      .single {
+        /* Make all single-char buttons the same width, for uniform layout.
+         * (This cheats the horizontal padding just a bit.) */
+        width: var(--wa-form-control-height);
+      }
+      
+      wa-button {
+        /* Disable double-tap to zoom on keys that might be tapped quickly.
+         * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.)
+         */
+        touch-action: pinch-zoom;
+      }
+    `,
+  ];
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "puzzle-keys": PuzzleKeys;
+  }
+}

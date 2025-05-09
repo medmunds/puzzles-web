@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "types": [],
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -18,7 +19,6 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },

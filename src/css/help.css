@@ -1,0 +1,115 @@
+/* Common styles for help-viewer and standalone help-page */
+
+a {
+  /* try to avoid horizontal scrolling on small screens */
+  overflow-wrap: break-word;
+}
+
+a > code {
+  /* urls are all formatted as code; we'd prefer to skip the monoface font */
+  font-family: inherit;
+}
+
+/* Restore some margin removed by native.css */
+h1:not(:first-child) {
+  margin-block-start: var(--wa-space-xl);
+}
+h2 {
+  margin-block-start: var(--wa-space-l);
+}
+h3,
+h4,
+h5,
+h6 {
+  margin-block-start: var(--wa-space-m);
+}
+
+/* Loosely adapted from web-awesome native.css */
+kbd {
+  display: inline-block;
+  box-sizing: border-box;
+  padding: 0.125em 0.25em;
+  min-width: calc(1lh + 2 * (0.125em + var(--wa-border-width-s)));
+  text-align: center;
+
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: var(--wa-font-size-smaller);
+
+  border: solid var(--wa-border-width-s)
+    color-mix(in oklab, currentColor, transparent 50%);
+  border-radius: var(--wa-border-radius-s);
+  box-shadow: 0 0.125em 0 0 color-mix(in oklab, currentColor, transparent 50%);
+}
+kbd wa-icon {
+  vertical-align: -2px;
+}
+
+pre {
+  /* try to avoid horizontal scrolling on small screens */
+  white-space: pre-wrap;
+}
+
+/* Render an svg icon from --icon url (in generated style attr) */
+span.icon {
+  display: inline-block;
+  box-sizing: content-box;
+  width: 1em;
+  height: 1em;
+  vertical-align: -2px;
+
+  /* Fallback: svg is black, use white background */
+  background-color: #fff;
+  background-image: var(--icon);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+@supports (mask-image: var(--icon)) {
+  /* Baseline 2023: render in currentColor using masking */
+  span.icon {
+    background-color: currentColor;
+    background-image: none;
+    mask-image: var(--icon);
+    mask-repeat: no-repeat;
+    mask-size: 100% 100%;
+  }
+}
+
+table {
+  margin-block: 1em;
+
+  border: none;
+  border-collapse: collapse;
+}
+
+tr {
+  border-block-end: var(--wa-border-width-s) var(--wa-border-style)
+    var(--wa-color-neutral-border-quiet);
+  transition: background-color var(--wa-transition-normal) var(--wa-transition-easing);
+}
+td,
+th {
+  padding-block: 0.5em;
+
+  text-align: start;
+  vertical-align: top;
+}
+td + td,
+th + th {
+  padding-inline-start: 1em;
+}
+
+th {
+  font-weight: var(--wa-font-weight-semibold);
+}
+tr:first-child th {
+  position: sticky;
+  inset-block-start: 0;
+  background-color: var(--wa-color-surface-default);
+}
+
+@media (hover: hover) {
+  tr:hover {
+    background-color: var(--wa-color-neutral-fill-quiet);
+  }
+}
