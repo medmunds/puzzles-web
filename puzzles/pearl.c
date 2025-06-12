@@ -1966,9 +1966,13 @@ static const char *current_key_label(const game_ui *ui,
 #define HALFSZ (ds->halfsz)
 #define TILE_SIZE (ds->halfsz*2 + 1)
 
-#define BORDER ((ui->gui_style == GUI_LOOPY) ? (TILE_SIZE/8) : (TILE_SIZE/2))
-
 #define BORDER_WIDTH (max(TILE_SIZE / 32, 1))
+
+#ifdef NARROW_BORDERS
+#define BORDER (BORDER_WIDTH + 1)
+#else
+#define BORDER ((ui->gui_style == GUI_LOOPY) ? (TILE_SIZE/8) : (TILE_SIZE/2))
+#endif
 
 #define COORD(x) ( (x) * TILE_SIZE + BORDER )
 #define CENTERED_COORD(x) ( COORD(x) + TILE_SIZE/2 )

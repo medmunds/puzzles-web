@@ -1338,7 +1338,11 @@ struct game_drawstate {
 };
 
 #define TILESIZE (ds->tilesize)
+#ifdef NARROW_BORDERS
+#define BORDER 1
+#else
 #define BORDER (TILESIZE / 2)
+#endif
 #define COORD(x) ((x) * TILESIZE + BORDER)
 #define FROMCOORD(x) (((x) - BORDER) / TILESIZE)
 
@@ -1667,8 +1671,12 @@ enum {
 static void game_compute_size(const game_params *params, int tilesize,
                               const game_ui *ui, int *x, int *y)
 {
-    *x = (1 + params->w) * tilesize;
-    *y = (1 + params->h) * tilesize;
+    /* Ick: fake up `ds->tilesize' for macro expansion purposes */
+    struct { int tilesize; } ads, *ds = &ads;
+    ads.tilesize = tilesize;
+
+    *x = params->w * tilesize + 2*BORDER;
+    *y = params->h * tilesize + 2*BORDER;
 }
 
 static void game_set_size(drawing *dr, game_drawstate *ds,

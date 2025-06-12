@@ -1786,7 +1786,11 @@ static int clue_index(const game_state *state, int x, int y)
 }
 
 #define TILESIZE (ds->tilesize)
+#ifdef NARROW_BORDERS
+#define BORDER 0
+#else
 #define BORDER (TILESIZE/4)
+#endif
 
 static char *interpret_move(const game_state *state, game_ui *ui,
                             const game_drawstate *ds,

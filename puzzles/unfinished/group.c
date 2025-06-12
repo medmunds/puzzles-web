@@ -1397,7 +1397,11 @@ static const char *current_key_label(const game_ui *ui,
 
 #define PREFERRED_TILESIZE 48
 #define TILESIZE (ds->tilesize)
+#ifdef NARROW_BORDERS
+#define BORDER 0
+#else
 #define BORDER (TILESIZE / 2)
+#endif
 #define LEGEND (TILESIZE)
 #define GRIDEXTRA max((TILESIZE / 32),1)
 #define COORD(x) ((x)*TILESIZE + BORDER + LEGEND)
@@ -1868,7 +1872,7 @@ static game_state *execute_move(const game_state *from, const char *move)
  * Drawing routines.
  */
 
-#define SIZE(w) ((w) * TILESIZE + 2*BORDER + LEGEND)
+#define SIZE(w) ((w) * TILESIZE + 2*BORDER + LEGEND + GRIDEXTRA + 1)
 
 static void game_compute_size(const game_params *params, int tilesize,
                               const game_ui *ui, int *x, int *y)

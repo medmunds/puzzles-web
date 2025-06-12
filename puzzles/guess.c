@@ -1024,7 +1024,11 @@ static game_state *execute_move(const game_state *from, const char *move)
 #define PEG_GAP   0.10
 #define PEG_HINT  0.35
 
+#ifdef NARROW_BORDERS
+#define BORDER    0.1
+#else
 #define BORDER    0.5
+#endif
 
 static void game_compute_size(const game_params *params, int tilesize,
                               const game_ui *ui, int *x, int *y)

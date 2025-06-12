@@ -905,9 +905,14 @@ done:
 }
 
 #define TILE_SIZE (ds->tilesize)
+#ifdef NARROW_BORDERS
+#define BORDER 1
+#else
+#define BORDER (TILE_SIZE / 2)
+#endif
 
-#define TODRAW(x) ((TILE_SIZE * (x)) + (TILE_SIZE / 2))
-#define FROMDRAW(x) (((x) + (TILE_SIZE / 2)) / TILE_SIZE - 1)
+#define TODRAW(x) ((TILE_SIZE * (x)) + BORDER)
+#define FROMDRAW(x) (((x) - BORDER) / TILE_SIZE)
 
 #define CAN_REVEAL(state) ((state)->nguesses >= (state)->minballs && \
 			   (state)->nguesses <= (state)->maxballs && \
@@ -1153,11 +1158,15 @@ static void game_get_cursor_location(const game_ui *ui,
 static void game_compute_size(const game_params *params, int tilesize,
                               const game_ui *ui, int *x, int *y)
 {
-    /* Border is ts/2, to make things easier.
-     * Thus we have (width) + 2 (firing range*2) + 1 (border*2) tiles
-     * across, and similarly height + 2 + 1 tiles down. */
-    *x = (params->w + 3) * tilesize;
-    *y = (params->h + 3) * tilesize;
+    /* Ick: fake up `ds->tilesize' for macro expansion purposes */
+    struct { int tilesize; } ads, *ds = &ads;
+    ads.tilesize = tilesize;
+
+    /* We have (width) + 2 (firing range*2) tiles across,
+     * and similarly height + 2 tiles down,
+     * plus a border on all four sides. */
+    *x = (params->w + 2) * tilesize + 2*BORDER;
+    *y = (params->h + 2) * tilesize + 2*BORDER;
 }
 
 static void game_set_size(drawing *dr, game_drawstate *ds,
@@ -1427,7 +1436,8 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
         /* phew... */
 
         draw_update(dr, 0, 0,
-                    TILE_SIZE * (state->w+3), TILE_SIZE * (state->h+3));
+                    TILE_SIZE * (state->w+2) + 2*BORDER,
+                    TILE_SIZE * (state->h+2) + 2*BORDER);
         force = true;
         ds->started = true;
     }
