@@ -19,8 +19,6 @@ interface FontInfo {
 interface Blitter {
   w: number;
   h: number;
-  x?: number;
-  y?: number;
   imageData?: ImageData;
   $type: "blitter";
 }
@@ -209,8 +207,6 @@ export class Drawing implements DrawingImpl<Blitter> {
   }
 
   blitterSave(blitter: Blitter, { x, y }: Point): void {
-    blitter.x = x;
-    blitter.y = y;
     // getImageData ignores the transformation matrix, so must apply dpr scaling.
     blitter.imageData = this.context.getImageData(
       x * this.dpr,
@@ -220,12 +216,10 @@ export class Drawing implements DrawingImpl<Blitter> {
     );
   }
 
-  blitterLoad(blitter: Blitter, origin?: Point): void {
+  blitterLoad(blitter: Blitter, { x, y }: Point): void {
     if (!blitter.imageData) {
       throw new Error("Blitter loaded before saved");
     }
-    // If origin not provided, restore to the position from which it was saved.
-    const { x, y } = origin ?? { x: blitter.x ?? 0, y: blitter.y ?? 0 };
     this.context.putImageData(blitter.imageData, x * this.dpr, y * this.dpr);
   }
 

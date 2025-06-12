@@ -141,7 +141,6 @@ struct Point {
     explicit Point(const IntPoint &_p) : Point(_p.x, _p.y) {}
 };
 
-typedef std::optional<Point> OptionalPoint;
 EMSCRIPTEN_DECLARE_VAL_TYPE(PointList);
 
 struct Rect {
@@ -184,7 +183,6 @@ EMSCRIPTEN_BINDINGS(utilities) {
     register_type<KeyLabelList>("KeyLabel[]");
 
     value_object<Point>("Point").field("x", &Point::x).field("y", &Point::y);
-    register_optional<Point>();
     register_type<PointList>("Point[]");
 
     value_object<Rect>("Rect")
@@ -266,7 +264,7 @@ public:
     virtual Blitter blitterNew(const Size &size) = 0;
     virtual void blitterFree(const Blitter &bl) = 0;
     virtual void blitterSave(const Blitter &bl, const Point &origin) = 0;
-    virtual void blitterLoad(const Blitter &bl, const OptionalPoint &origin) = 0;
+    virtual void blitterLoad(const Blitter &bl, const Point &origin) = 0;
 };
 
 class DrawingWrapper : public wrapper<Drawing> {
@@ -327,7 +325,7 @@ public:
         return call<void>("blitterSave", bl, origin);
     }
 
-    void blitterLoad(const Blitter &bl, const OptionalPoint &origin) override {
+    void blitterLoad(const Blitter &bl, const Point &origin) override {
         return call<void>("blitterLoad", bl, origin);
     }
 
@@ -445,10 +443,7 @@ void js_blitter_save(drawing *dr, blitter *bl, int x, int y) {
 }
 
 void js_blitter_load(drawing *dr, blitter *bl, int x, int y) {
-    const auto origin = (x == BLITTER_FROMSAVED && y == BLITTER_FROMSAVED)
-                            ? OptionalPoint() // undefined means use saved origin
-                            : Point(x, y);
-    DRAWING(dr)->blitterLoad(bl->js_value, origin);
+    DRAWING(dr)->blitterLoad(bl->js_value, Point(x, y));
 }
 
 void js_draw_thick_line(
