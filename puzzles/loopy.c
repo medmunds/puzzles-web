@@ -327,7 +327,12 @@ static grid *loopy_generate_grid(const game_params *params,
 
 /* General constants */
 #define PREFERRED_TILE_SIZE 32
+#define DOT_RADIUS(tilesize) ((tilesize)*2.5/32.0)
+#ifdef NARROW_BORDERS
+#define BORDER(tilesize) (DOT_RADIUS(tilesize))
+#else
 #define BORDER(tilesize) ((tilesize) / 2)
+#endif
 #define FLASH_TIME 0.5F
 
 #define BIT_SET(field, bit) ((field) & (1<<(bit)))
@@ -3392,7 +3397,7 @@ static void game_redraw_dot(drawing *dr, game_drawstate *ds,
     int x, y;
 
     grid_to_screen(ds, g, d->x, d->y, &x, &y);
-    draw_circle(dr, x, y, ds->tilesize*2.5/32.0, COL_FOREGROUND, COL_FOREGROUND);
+    draw_circle(dr, x, y, DOT_RADIUS(ds->tilesize), COL_FOREGROUND, COL_FOREGROUND);
 }
 
 static bool boxes_intersect(int x0, int y0, int w0, int h0,

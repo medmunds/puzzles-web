@@ -42,7 +42,11 @@
 #define GAP_SIZE  (TILE_SIZE/2)
 #define SQUARE_SIZE (TILE_SIZE + GAP_SIZE)
 
+#ifdef NARROW_BORDERS
+#define BORDER    0
+#else
 #define BORDER    (TILE_SIZE / 2)
+#endif
 
 #define COORD(x)  ( (x) * SQUARE_SIZE + BORDER )
 #define FROMCOORD(x)  ( ((x) - BORDER + SQUARE_SIZE) / SQUARE_SIZE - 1 )

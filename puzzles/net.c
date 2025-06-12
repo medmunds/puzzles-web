@@ -64,10 +64,14 @@
 #define PREFERRED_TILE_SIZE 32
 #define TILE_SIZE (ds->tilesize)
 #define LINE_THICK ((TILE_SIZE+47)/48)
+#ifdef NARROW_BORDERS
+#define WINDOW_OFFSET 0
+#else
 #ifdef SMALL_SCREEN
 #define WINDOW_OFFSET 4
 #else
 #define WINDOW_OFFSET 16
+#endif
 #endif
 
 #define ROTATE_TIME 0.13F

@@ -945,7 +945,11 @@ struct game_drawstate {
 };
 
 #define TILESIZE (ds->tilesize)
+#ifdef NARROW_BORDERS
+#define MARGIN 0
+#else
 #define MARGIN (ds->tilesize / 2)
+#endif
 #define WIDTH (3*TILESIZE/32 > 1 ? 3*TILESIZE/32 : 1)
 #define CENTER ((ds->tilesize / 2) + WIDTH/2)
 

@@ -35,6 +35,12 @@
 #define FLASH_TIME 0.5F
 /* To enable debug prints define DEBUG_PRINTS */
 
+#ifdef NARROW_BORDERS
+#define MARGIN(ts) 1
+#else
+#define MARGIN(ts) ((ts) / 2)
+#endif
+
 /* Getting the coordinates and returning NULL when out of scope
  * The parentheses are needed to avoid order of operations issues
  */
@@ -43,7 +49,7 @@
       ? array + ((y)*params->width) + x                                      \
       : NULL
 
-#define COORD_FROM_CELL(d) ((d * ds->tilesize) + ds->tilesize / 2) - 1
+#define COORD_FROM_CELL(d) ((d * ds->tilesize) + MARGIN(ds->tilesize) - 1)
 
 enum {
     COL_BACKGROUND = 0,
@@ -1059,8 +1065,8 @@ static char *interpret_move(const game_state *state, game_ui *ui,
     if (state->not_completed_clues == 0 && !IS_CURSOR_MOVE(button)) {
         return NULL;
     }
-    offsetX = x - (ds->tilesize / 2);
-    offsetY = y - (ds->tilesize / 2);
+    offsetX = x - MARGIN(ds->tilesize);
+    offsetY = y - MARGIN(ds->tilesize);
     gameX = offsetX / ds->tilesize;
     gameY = offsetY / ds->tilesize;
     if ((IS_MOUSE_DOWN(button) || IS_MOUSE_DRAG(button) || IS_MOUSE_RELEASE(button))
@@ -1393,8 +1399,8 @@ static game_state *execute_move(const game_state *state, const char *move)
 static void game_compute_size(const game_params *params, int tilesize,
                               const game_ui *ui, int *x, int *y)
 {
-    *x = (params->width + 1) * tilesize;
-    *y = (params->height + 1) * tilesize;
+    *x = params->width * tilesize + 2 * MARGIN(tilesize);
+    *y = params->height * tilesize + 2 * MARGIN(tilesize);
 }
 
 static void game_set_size(drawing *dr, game_drawstate *ds,
@@ -1454,7 +1460,7 @@ static void game_free_drawstate(drawing *dr, game_drawstate *ds)
 static void draw_cell(drawing *dr, int cell, int ts, signed char clue_val,
                       int x, int y)
 {
-    int startX = ((x * ts) + ts / 2) - 1, startY = ((y * ts) + ts / 2) - 1;
+    int startX = (x * ts) + MARGIN(ts), startY = (y * ts) + MARGIN(ts);
     int color, text_color = COL_TEXT_DARK;
 
     clip(dr, startX - 1, startY - 1, ts, ts);
@@ -1490,7 +1496,7 @@ static void draw_cell(drawing *dr, int cell, int ts, signed char clue_val,
         if (clue_val >= 0) {
             char clue[80];
             sprintf(clue, "%d", clue_val);
-            draw_text(dr, startX + ts / 2, startY + ts / 2, FONT_VARIABLE, ts * 3 / 5,
+            draw_text(dr, startX + ts / 2 - 1, startY + ts / 2 - 1, FONT_VARIABLE, ts * 3 / 5,
                       ALIGN_VCENTRE | ALIGN_HCENTRE, text_color, clue);
         }
     }

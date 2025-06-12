@@ -33,13 +33,18 @@ enum {
 
 #define PREFERRED_TILE_SIZE 20
 #define TILE_SIZE (ds->tilesize)
+#ifdef NARROW_BORDERS
+#define BORDER (max(TILE_SIZE * 3 / 20, 1))
+#define OUTER_HIGHLIGHT_WIDTH (max(BORDER - 1, 1))
+#else
 #ifdef SMALL_SCREEN
 #define BORDER 8
 #else
 #define BORDER (TILE_SIZE * 3 / 2)
 #endif
-#define HIGHLIGHT_WIDTH (TILE_SIZE / 10 ? TILE_SIZE / 10 : 1)
 #define OUTER_HIGHLIGHT_WIDTH (BORDER / 10 ? BORDER / 10 : 1)
+#endif
+#define HIGHLIGHT_WIDTH (TILE_SIZE / 10 ? TILE_SIZE / 10 : 1)
 #define COORD(x)  ( (x) * TILE_SIZE + BORDER )
 #define FROMCOORD(x)  ( ((x) - BORDER + TILE_SIZE) / TILE_SIZE - 1 )
 

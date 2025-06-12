@@ -1284,7 +1284,11 @@ static const char *current_key_label(const game_ui *ui,
 
 #define PREFERRED_TILESIZE 48
 #define TILESIZE (ds->tilesize)
+#ifdef NARROW_BORDERS
+#define BORDER (TILESIZE * 7 / 8)
+#else
 #define BORDER (TILESIZE * 9 / 8)
+#endif
 #define COORD(x) ((x)*TILESIZE + BORDER)
 #define FROMCOORD(x) (((x)+(TILESIZE-BORDER)) / TILESIZE - 1)
 

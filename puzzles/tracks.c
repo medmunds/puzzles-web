@@ -2043,7 +2043,11 @@ static void game_changed_state(game_ui *ui, const game_state *oldstate,
 #define THIRDSZ (ds->sz6*2)
 #define TILE_SIZE (ds->sz6*6)
 
+#ifdef NARROW_BORDERS
+#define MAX_BORDER 0
+#else
 #define MAX_BORDER (TILE_SIZE/8)
+#endif
 #define LINE_THICK (TILE_SIZE/16)
 #define BORDER (ds->border)
 #define GRID_LINE_TL (ds->grid_line_tl)

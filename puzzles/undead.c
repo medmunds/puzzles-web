@@ -1820,7 +1820,11 @@ static int clue_index(const game_state *state, int x, int y)
 }
 
 #define TILESIZE (ds->tilesize)
+#ifdef NARROW_BORDERS
+#define BORDER 0
+#else
 #define BORDER (TILESIZE/4)
+#endif
 
 /* Coordinates of monster counts at top */
 #define COUNT_MSIZE (2*TILESIZE/3) /* size of monster label */
