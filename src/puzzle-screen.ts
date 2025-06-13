@@ -1,16 +1,17 @@
 import { ResizeController } from "@lit-labs/observers/resize-controller.js";
-import { registerIconLibrary } from "@shoelace-style/shoelace/dist/utilities/icon-library.js";
 import { LitElement, css, html } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
+import type { AppRoot } from "./app-root.ts";
 import { puzzles } from "./assets/catalog.json";
 import type { PuzzleData, PuzzleDataMap } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
 
-// Components
+// Register components
 import "@shoelace-style/shoelace/dist/components/button/button.js";
 import "@shoelace-style/shoelace/dist/components/divider/divider.js";
 import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
+import "./head-matter.ts";
 import "./help-viewer.ts";
 import "./puzzle/puzzle-context.ts";
 import "./puzzle/puzzle-display-name.ts";
@@ -20,21 +21,22 @@ import "./puzzle/puzzle-preset-menu.ts";
 import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
 
-// TODO: bundle necessary icons (this is just for easier development)
-registerIconLibrary("default", {
-  resolver: (name) =>
-    `https://cdn.jsdelivr.net/npm/lucide-static@0.511.0/icons/${name}.svg`,
-});
-
 const puzzleData: Readonly<PuzzleDataMap> = puzzles;
 
 @customElement("puzzle-screen")
 export class PuzzleScreen extends LitElement {
-  @state()
-  private puzzleId = "";
+  @property({ type: Object })
+  router?: AppRoot;
+
+  /** The puzzle type, e.g. "blackbox" */
+  @property({ type: String, attribute: "puzzle-type" })
+  puzzleType = "";
+
+  @property({ type: String, attribute: "puzzle-params" })
+  puzzleParams = "";
 
   @state()
-  private puzzleData: PuzzleData | undefined;
+  private puzzleData?: PuzzleData;
 
   @query("help-viewer")
   private helpPanel?: HelpViewer;
@@ -44,49 +46,50 @@ export class PuzzleScreen extends LitElement {
     // puzzle-view observes its own size, but we also want it to grow
     // when we're getting larger (without enabling flex-grow).
     new ResizeController(this, {
-      callback: () => {
+      callback: async () => {
         const puzzleView = this.shadowRoot?.querySelector("puzzle-view-interactive");
         if (puzzleView?.maximize) {
-          puzzleView.resize(false);
+          await puzzleView.resize(false);
         }
       },
     });
   }
 
-  override async connectedCallback() {
-    super.connectedCallback();
-
-    // Extract puzzle id from URL path
-    const path = window.location.pathname;
-    const pathSegments = path.split("/").filter((segment) => segment.length > 0);
-    const puzzleId = pathSegments[pathSegments.length - 1];
-
-    if (puzzleId) {
-      this.puzzleId = puzzleId;
-      this.puzzleData = puzzleData[puzzleId];
-    }
-
-    if (this.puzzleData) {
-      // Update the page title and icon
-      document.title = `${this.puzzleData.name} - ${this.puzzleData.description}`;
-      // TODO: set up multi-resolution favicon stack here
-      const iconLink = document.querySelector('link[rel="icon"]');
-      if (iconLink) {
-        iconLink.setAttribute("href", `./src/assets/icons/${this.puzzleId}-128d24.png`);
+  willUpdate(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has("puzzleType") && this.puzzleType) {
+      const data = puzzleData[this.puzzleType];
+      if (!data) {
+        throw new Error(`Unknown puzzle type ${this.puzzleType}`);
       }
-    } else {
-      // Redirect to index if puzzle not found
-      window.location.href = "/";
+      this.puzzleData = data;
     }
   }
 
   override render() {
     if (!this.puzzleData) {
-      return html`<div>Loading...</div>`;
+      console.warn("PuzzleScreen.render without puzzleData");
+      return;
     }
 
+    const helpUrl = new URL(
+      `help/${this.puzzleType}-snippet.html`,
+      this.router?.baseUrl,
+    ).href;
+    const otherPuzzlesUrl = this.router?.reverse(this.router.defaultRoute)?.href;
+
     return html`
-      <puzzle-context type="${this.puzzleId}">
+      <puzzle-context type=${this.puzzleType} params=${this.puzzleParams}>
+        <head-matter>
+          <title>
+            ${this.puzzleData.name}&thinsp;&ndash;&thinsp;${this.puzzleData.description}&thinsp;&ndash;&thinsp;from 
+            Simon Tatham’s portable puzzle collection
+          </title>
+          <meta name="application-name" content="${this.puzzleData.name}">
+          <meta name="application-title" content="${this.puzzleData.name}">
+          <meta name="description" content="${this.puzzleData.description}">
+          <link rel="icon" href=${`./src/assets/icons/${this.puzzleType}-128d24.png`}>
+        </head-matter>
+        
         <div class="app">
           <header>
             <h1>
@@ -106,7 +109,7 @@ export class PuzzleScreen extends LitElement {
               <sl-menu-item value="catalog">Other puzzles</sl-menu-item>
             </puzzle-game-menu>
             <puzzle-preset-menu></puzzle-preset-menu>
-            <sl-button @click=${this.showHelp}>Help</sl-button>
+            <sl-button href=${helpUrl} @click=${this.showHelp}>Help</sl-button>
           </div>
 
           <puzzle-view-interactive 
@@ -120,18 +123,20 @@ export class PuzzleScreen extends LitElement {
 
           <div class="puzzle-end-notification-holder">
             <puzzle-end-notification>
-              <sl-button slot="extra-actions-solved" @click=${this.handleChangeType}>Change type</sl-button>
-              <sl-button slot="extra-actions-solved" href="/">Other puzzles</sl-button>
+              <sl-button 
+                  slot="extra-actions-solved" 
+                  @click=${this.handleChangeType}
+                >Change type</sl-button>
+              <sl-button 
+                  slot="extra-actions-solved" 
+                  href=${otherPuzzlesUrl}
+                >Other puzzles</sl-button>
             </puzzle-end-notification>
           </div>
         </div>
       </puzzle-context>
 
-      <!-- TODO: URLs need to be relative to current page, not absolute -->
-      <help-viewer
-          src=${`/help/${this.puzzleId}-snippet.html`}
-          label=${`${this.puzzleData.name} Help`}
-      ></help-viewer>
+      <help-viewer src=${helpUrl} label=${`${this.puzzleData.name} Help`}></help-viewer>
     `;
   }
 
@@ -139,8 +144,7 @@ export class PuzzleScreen extends LitElement {
     const value = event.detail.item.value;
     switch (value) {
       case "catalog":
-        // TODO: URLs need to be relative to current page, not absolute
-        window.location.href = "/";
+        this.router?.navigate(this.router.defaultRoute);
         break;
       default:
         // Other commands are handled by puzzle-game-menu
@@ -148,7 +152,8 @@ export class PuzzleScreen extends LitElement {
     }
   }
 
-  private showHelp() {
+  private showHelp(event: MouseEvent) {
+    event.preventDefault();
     this.helpPanel?.show();
   }
 
@@ -241,7 +246,7 @@ export class PuzzleScreen extends LitElement {
       background-color: var(--sl-color-neutral-50);
       border-radius: var(--sl-border-radius-medium);
     }
-    
+
     .puzzle-end-notification-holder {
       position: absolute;
       left: 0;
@@ -252,7 +257,7 @@ export class PuzzleScreen extends LitElement {
       align-items: center;
       justify-content: center;
       pointer-events: none;
-      
+
       puzzle-end-notification {
         pointer-events: auto;
       }
