@@ -1,6 +1,6 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import type { AppRoot } from "./app-root.ts";
+import type { AppRouter } from "./app-router.ts";
 import { puzzles } from "./assets/catalog.json";
 import type { PuzzleDataMap } from "./catalog.ts";
 
@@ -10,7 +10,7 @@ import "./catalog-card.ts";
 @customElement("catalog-screen")
 export class CatalogScreen extends LitElement {
   @property({ type: Object })
-  router?: AppRoot;
+  router?: AppRouter;
 
   @property({ type: Boolean, attribute: "show-unfinished" })
   showUnfinished = false;

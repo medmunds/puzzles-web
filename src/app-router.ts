@@ -31,8 +31,8 @@ const isNavigationState = (obj: unknown): obj is NavigationState =>
   "route" in obj &&
   typeof obj.route === "object";
 
-@customElement("app-root")
-export class AppRoot extends LitElement {
+@customElement("app-router")
+export class AppRouter extends LitElement {
   public defaultRoute: Route = { name: "catalog", params: {} };
 
   public baseUrl = new URL(import.meta.env.BASE_URL, window.location.href);
@@ -261,6 +261,6 @@ export class AppRoot extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "app-root": AppRoot;
+    "app-router": AppRouter;
   }
 }

@@ -2,7 +2,7 @@ import { ResizeController } from "@lit-labs/observers/resize-controller.js";
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
-import type { AppRoot } from "./app-root.ts";
+import type { AppRouter } from "./app-router.ts";
 import { puzzles } from "./assets/catalog.json";
 import type { PuzzleData, PuzzleDataMap } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
@@ -26,7 +26,7 @@ const puzzleData: Readonly<PuzzleDataMap> = puzzles;
 @customElement("puzzle-screen")
 export class PuzzleScreen extends LitElement {
   @property({ type: Object })
-  router?: AppRoot;
+  router?: AppRouter;
 
   /** The puzzle type, e.g. "blackbox" */
   @property({ type: String, attribute: "puzzle-type" })
