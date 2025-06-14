@@ -1,14 +1,25 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import type { AppRouter } from "./app-router.ts";
+import type { AppRouter, HistoryStateProvider } from "./app-router.ts";
 import { puzzles } from "./assets/catalog.json";
 import type { PuzzleDataMap } from "./catalog.ts";
+import { waitForStableSize } from "./utils/resize.ts";
 
 // Register components
 import "./catalog-card.ts";
 
+interface CatalogScreenState {
+  scrollY: number; // scrollTop / scrollHeight
+}
+
+const isCatalogScreenState = (state: unknown): state is CatalogScreenState =>
+  typeof state === "object" &&
+  state !== null &&
+  "scrollY" in state &&
+  typeof state.scrollY === "number";
+
 @customElement("catalog-screen")
-export class CatalogScreen extends LitElement {
+export class CatalogScreen extends LitElement implements HistoryStateProvider {
   @property({ type: Object })
   router?: AppRouter;
 
@@ -17,6 +28,31 @@ export class CatalogScreen extends LitElement {
 
   @state()
   private readonly puzzles: Readonly<PuzzleDataMap> = puzzles;
+
+  private stateKey = this.localName;
+
+  saveHistoryState = (): CatalogScreenState => ({
+    scrollY: this.scrollTop / this.scrollHeight,
+  });
+
+  restoreHistoryState = async (state: unknown) => {
+    if (!isCatalogScreenState(state)) {
+      console.warn("Invalid catalog-screen state in restoreHistoryState", state);
+      return;
+    }
+    await waitForStableSize(this);
+    this.scrollTop = state.scrollY * this.scrollHeight;
+  };
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.router?.registerStateProvider(this.stateKey, this);
+  }
+
+  override disconnectedCallback() {
+    super.connectedCallback();
+    this.router?.unregisterStateProvider(this.stateKey);
+  }
 
   render() {
     return html`
