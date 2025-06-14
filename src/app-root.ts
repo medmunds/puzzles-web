@@ -20,6 +20,17 @@ export interface Route {
   params: Record<string, string | boolean | null | undefined>;
 }
 
+interface NavigationState {
+  route: Route;
+  previousRoute?: Route;
+}
+
+const isNavigationState = (obj: unknown): obj is NavigationState =>
+  typeof obj === "object" &&
+  obj !== null &&
+  "route" in obj &&
+  typeof obj.route === "object";
+
 @customElement("app-root")
 export class AppRoot extends LitElement {
   public defaultRoute: Route = { name: "catalog", params: {} };
@@ -29,16 +40,24 @@ export class AppRoot extends LitElement {
   @state()
   private route?: Route;
 
+  constructor() {
+    super();
+    this.route = this.matchRoute(window.location.href); // initial route
+    if (this.route?.name === "puzzle") {
+      // Get a head start on the lazy-loaded puzzle-screen component.
+      import("./puzzle-screen.ts");
+    }
+  }
+
   override connectedCallback() {
     super.connectedCallback();
-    this.handleRouteChange(); // Initial route
-    window.addEventListener("popstate", this.handleRouteChange);
+    window.addEventListener("popstate", this.handlePopState);
     this.addEventListener("click", this.interceptHrefClick);
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
-    window.removeEventListener("popstate", this.handleRouteChange);
+    window.removeEventListener("popstate", this.handlePopState);
     this.removeEventListener("click", this.interceptHrefClick);
   }
 
@@ -132,21 +151,55 @@ export class AppRoot extends LitElement {
 
   /**
    * Navigates to the given url or route.
-   * url can be relative to the router's baseUrl, or absolute
-   * (but must be within the same origin as baseUrl).
+   * url can be relative to the router's baseUrl, or absolute.
+   * An url that doesn't match any route will navigate out of the app.
    */
   public navigate(urlOrRoute: string | URL | Route, replaceState = false) {
-    // TODO: if navigating to index, and index is top of history, use window.history.back() instead of pushState
-    const method = replaceState ? "replaceState" : "pushState";
     const resolvedUrl =
       typeof urlOrRoute === "string" || urlOrRoute instanceof URL
         ? new URL(urlOrRoute, this.baseUrl)
         : this.reverse(urlOrRoute);
-    window.history[method]({}, "", resolvedUrl);
-    this.handleRouteChange();
+    const targetRoute =
+      typeof urlOrRoute === "string" || urlOrRoute instanceof URL
+        ? this.matchRoute(resolvedUrl.href)
+        : urlOrRoute;
+
+    if (!targetRoute) {
+      // Not one of our routes, let the browser handle it
+      window.location.href = resolvedUrl.href;
+      return;
+    }
+
+    // Special case: treat navigating to catalog as "back" if possible
+    if (
+      !replaceState &&
+      targetRoute.name === this.defaultRoute.name &&
+      this.currentNavigationState?.previousRoute?.name === targetRoute.name
+    ) {
+      window.history.back(); // (causes popstate; we'll update this.route then)
+      return;
+    }
+
+    // Regular navigation using pushState/replaceState
+    const newState: NavigationState = {
+      route: { ...targetRoute },
+      previousRoute: this.route ? { ...this.route } : undefined,
+    };
+    if (replaceState) {
+      window.history.replaceState(newState, "", resolvedUrl);
+    } else {
+      window.history.pushState(newState, "", resolvedUrl);
+    }
+    this.route = targetRoute;
   }
 
-  private handleRouteChange = () => {
+  private get currentNavigationState(): NavigationState | undefined {
+    return isNavigationState(window.history.state) ? window.history.state : undefined;
+  }
+
+  private handlePopState = (_event: PopStateEvent) => {
+    // When user uses browser back/forward, update our route
+    // TODO: restore other information from state (e.g., scroll position?)
     this.route = this.matchRoute(window.location.href);
   };
 

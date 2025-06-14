@@ -106,7 +106,10 @@ export class PuzzleScreen extends LitElement {
               <sl-menu-item value="save" disabled>Save…</sl-menu-item>
               <sl-menu-item value="load" disabled>Load…</sl-menu-item>
               <sl-divider></sl-divider>
-              <sl-menu-item value="catalog">Other puzzles</sl-menu-item>
+              <sl-menu-item value="catalog">
+                <sl-icon slot="prefix" name="arrow-left"></sl-icon>
+                Other puzzles
+              </sl-menu-item>
             </puzzle-game-menu>
             <puzzle-preset-menu></puzzle-preset-menu>
             <sl-button href=${helpUrl} @click=${this.showHelp}>Help</sl-button>
