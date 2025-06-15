@@ -78,11 +78,11 @@ mkdir -p "${DIST_DIR}/help"
 cp "${BUILD_DIR}"/help/en/*.html "${DIST_DIR}/help/" || echo "[WARN] No HTML docs files found."
 for file in "${SRC_DIR}"/html/*.html; do
   puzzle=$(basename "$file" .html)
-  snippet="${DIST_DIR}/help/${puzzle}-snippet.html"
+  overview="${DIST_DIR}/help/${puzzle}-overview.html"
   # Omit the first line (it's the puzzle name)
-  tail -n +2 "$file" > "${snippet}"
+  tail -n +2 "$file" > "${overview}"
   # Add a link to the manual
-  echo "<p><a href=\"${puzzle}.html#${puzzle}\">Full instructions</a></p>" >> "${snippet}"
+  echo "<p><a href=\"${puzzle}.html#${puzzle}\">Full instructions</a></p>" >> "${overview}"
 done
 
 # JavaScript related deliverables

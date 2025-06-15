@@ -72,7 +72,7 @@ export class PuzzleScreen extends LitElement {
     }
 
     const helpUrl = new URL(
-      `help/${this.puzzleType}-snippet.html`,
+      `help/${this.puzzleType}-overview.html`,
       this.router?.baseUrl,
     ).href;
     const otherPuzzlesUrl = this.router?.reverse(this.router.defaultRoute)?.href;
