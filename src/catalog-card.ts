@@ -32,8 +32,14 @@ export class CatalogCard extends LitElement {
       return html`<div class="icon unfinished" role="presentation">🚧</div>`;
     }
 
-    const icon1x = `/src/assets/icons/${this.puzzleType}-64d24.png`;
-    const icon2x = `/src/assets/icons/${this.puzzleType}-128d24.png`;
+    const icon1x = new URL(
+      `./assets/icons/${this.puzzleType}-64d24.png`,
+      import.meta.url,
+    ).href;
+    const icon2x = new URL(
+      `./assets/icons/${this.puzzleType}-128d24.png`,
+      import.meta.url,
+    ).href;
     const srcset = `${icon1x}, ${icon2x} 2x`;
     return html`
       <img class="icon" srcset=${srcset} src=${icon2x}
