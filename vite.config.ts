@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { spaFallbackIgnorePublicSubdirs } from "./viteSpaFallbackIgnorePublicSubdirs";
 
 export default defineConfig({
   build: {
@@ -9,4 +10,11 @@ export default defineConfig({
     },
   },
   appType: "spa",
+  server: {
+    middlewareMode: false,
+    fs: {
+      strict: false,
+    },
+  },
+  plugins: [spaFallbackIgnorePublicSubdirs()],
 });

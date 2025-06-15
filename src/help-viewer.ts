@@ -123,8 +123,9 @@ export class HelpViewer extends LitElement {
     );
   }
 
-  private handleDocumentError(_event: CustomEvent<{ status: number }>) {
-    // TODO: handle error
+  private handleDocumentError(event: CustomEvent<{ status: number }>) {
+    // TODO: render some error visible to the user, too
+    console.error(`help-viewer error ${event.detail.status} loading src=${this.src}`);
   }
 
   private handleDocumentLoad() {
