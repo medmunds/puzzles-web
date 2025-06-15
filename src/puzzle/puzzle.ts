@@ -51,15 +51,17 @@ export class Puzzle {
       module = await loadPuzzleModule(puzzleId);
       Puzzle.puzzleModules.set(puzzleId, new WeakRef(module));
     }
-    return new Puzzle(module);
+    return new Puzzle(puzzleId, module);
   }
 
+  public readonly puzzleId: string;
   private readonly _module: PuzzleModule;
   private readonly _frontend: Frontend;
   private _drawing?: DrawingHandle;
 
   // Private constructor; use Puzzle.create(puzzleId) to instantiate a Puzzle.
-  private constructor(module: PuzzleModule) {
+  private constructor(puzzleId: string, module: PuzzleModule) {
+    this.puzzleId = puzzleId;
     this._module = module;
     this._frontend = new module.Frontend({
       activateTimer: this.activateTimer,
