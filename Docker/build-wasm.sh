@@ -90,11 +90,11 @@ mkdir -p "${DIST_DIR}/js"
 # The emcc runtime wrapper is the same for all puzzles (differing only in the name
 # of the imported wasm file). Pick an arbitrary one to use as a shared runtime.
 # (See loadPuzzleModule() in src/puzzle.)
-sed -e 's/blackbox/-unknown-puzzle-/g' "${BUILD_DIR}"/blackbox.js > "${DIST_DIR}/js/emcc-runtime.js" || echo "[WARN] blackbox.js not found in puzzles/build-webapp."
+cp "${BUILD_DIR}"/nullgame.js "${DIST_DIR}/js/emcc-runtime.js" || echo "[WARN] nullgame.js not found in puzzles/build-webapp."
 # Clean up EmbindString in emit-tsd output. (Yes, any embind-wrapped function that
 # accepts a string can also take an ArrayBuffer, etc., but return values and
 # value object fields are always standard JS strings.)
-sed -e '/type EmbindString/d' -e 's/EmbindString/string/g' "${BUILD_DIR}"/blackbox.d.ts > "${DIST_DIR}/js/emcc-runtime.d.ts" || echo "[WARN] blackbox.d.ts found in puzzles/build-webapp."
+sed -e '/type EmbindString/d' -e 's/EmbindString/string/g' "${BUILD_DIR}"/nullgame.d.ts > "${DIST_DIR}/js/emcc-runtime.d.ts" || echo "[WARN] nullgame.d.ts found in puzzles/build-webapp."
 
 # Then deliver all of the puzzle-specific wasm files (and related sourcemaps).
 shopt -s nullglob  # (release builds don't generate .map files)
