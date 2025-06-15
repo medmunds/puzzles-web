@@ -13,5 +13,5 @@ export interface PuzzleData {
   name: string;
   description: string;
   objective: string;
-  experimental: boolean;
+  unfinished?: boolean;
 }

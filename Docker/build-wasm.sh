@@ -52,13 +52,14 @@ jq --arg version "$VERSION" -R -s '
     name: .[2],
     description: .[3],
     objective: .[4],
-    experimental: (.[1] == "unfinished")
-  }) | map({(.id): {
+    unfinished: (.[1] == "unfinished")
+  }) | map({(.id): ({
     name: .name,
     description: .description,
     objective: .objective,
-    experimental: .experimental
-  }}) | add | {
+    unfinished: .unfinished
+  } | if .unfinished then . else del(.unfinished) end)
+  }) | add | {
     puzzles: .,
     version: $version
   }

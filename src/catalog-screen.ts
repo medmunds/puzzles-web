@@ -65,7 +65,7 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
         ${Object.entries(this.puzzles)
           .filter(
             ([_puzzleType, puzzleData]) =>
-              this.showUnfinished || !puzzleData.experimental,
+              this.showUnfinished || !puzzleData.unfinished,
           )
           .map(
             ([puzzleType, puzzleData]) => html`
@@ -75,7 +75,7 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
                 name=${puzzleData.name}
                 description=${puzzleData.description}
                 objective=${puzzleData.objective}
-                ?unfinished=${puzzleData.experimental}
+                ?unfinished=${puzzleData.unfinished}
               ></catalog-card>
             `,
           )}
