@@ -1,13 +1,10 @@
 import { registerIconLibrary } from "@shoelace-style/shoelace/dist/utilities/icon-library.js";
 import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { puzzles } from "./assets/catalog.json";
-import type { PuzzleDataMap } from "./catalog.ts";
+import { puzzleDataMap } from "./catalog.ts";
 
 // Register components (note some are lazy-loaded)
 import "./catalog-screen.ts";
-
-const puzzleData: Readonly<PuzzleDataMap> = puzzles;
 
 // TODO: bundle necessary icons (this is just for easier development)
 registerIconLibrary("default", {
@@ -120,7 +117,7 @@ export class AppRouter extends LitElement {
           params: { ...params, showUnfinished: url.searchParams.has("unfinished") },
         };
       default:
-        if (puzzleData[path]) {
+        if (puzzleDataMap[path]) {
           return {
             name: "puzzle",
             params: {

@@ -3,8 +3,7 @@ import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
 import type { AppRouter } from "./app-router.ts";
-import { puzzles } from "./assets/catalog.json";
-import type { PuzzleData, PuzzleDataMap } from "./catalog.ts";
+import { type PuzzleData, puzzleDataMap } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
 
 // Register components
@@ -20,8 +19,6 @@ import "./puzzle/puzzle-keys.ts";
 import "./puzzle/puzzle-preset-menu.ts";
 import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
-
-const puzzleData: Readonly<PuzzleDataMap> = puzzles;
 
 @customElement("puzzle-screen")
 export class PuzzleScreen extends LitElement {
@@ -57,7 +54,7 @@ export class PuzzleScreen extends LitElement {
 
   willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("puzzleType") && this.puzzleType) {
-      const data = puzzleData[this.puzzleType];
+      const data = puzzleDataMap[this.puzzleType];
       if (!data) {
         throw new Error(`Unknown puzzle type ${this.puzzleType}`);
       }

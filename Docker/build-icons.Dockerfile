@@ -3,15 +3,17 @@
 # Build the image from project root:
 # podman build -t build-icons -f Docker/build-icons.Dockerfile .
 #
-# Run the build and deliver results to src/assets/icons:
-# mkdir -p ./src/assets/icons
-# podman run --rm -v ./src/assets/icons:/app/icons build-icons
-#   Additional build options (before the `build-icons` image tag):
+# Run the build and deliver results to src/assets/icons/:
+# podman run --rm \
+#   -v ./puzzles:/app/puzzles:ro \
+#   -v ./Docker/build-icons.sh:/app/build-icons.sh:ro \
+#   -v ./src/assets:/app/assets \
+#   build-icons
+# Mounting build-icons.sh is optional; use if the script has changed since the image was built.
+# Additional build options (via build-icons.sh env variables):
 #   -e DEBUG=1  # show build-icons.sh commands and other debug info
-#   -e VERBOSE=1  # show verbose `make icons` build output
-#   To pick up local changes for development builds, mount (read-only):
-#   -v ./puzzles:/app/puzzles:ro
-#   -v ./Docker/build-icons.sh:/app/build-icons.sh:ro
+#   -e VERBOSE=1  # show verbose make build output
+#   -e JOBS=1  # run make single-threaded (default nprocs, comingles output)
 
 FROM alpine:3.21
 
@@ -24,7 +26,6 @@ RUN apk add --no-cache font-noto imagemagick perl
 
 WORKDIR /app
 
-COPY ./puzzles /app/puzzles
 COPY ./Docker/build-icons.sh /app/build-icons.sh
 
 CMD ["/bin/sh", "/app/build-icons.sh"]

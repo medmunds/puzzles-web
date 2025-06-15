@@ -12,9 +12,9 @@ import type {
   NotifyStatusBarChange,
   Point,
   Size,
-} from "../assets/js/emcc-runtime";
+} from "../assets/puzzles/emcc-runtime";
 
-import createModule from "../assets/js/emcc-runtime";
+import createModule from "../assets/puzzles/emcc-runtime";
 
 // (Re-export generated types so other code doesn't need to dig into assets.)
 export type {
@@ -32,7 +32,7 @@ export type {
   PresetMenuEntry,
   Rect,
   Size,
-} from "../assets/js/emcc-runtime";
+} from "../assets/puzzles/emcc-runtime";
 
 export type ChangeNotification =
   | NotifyGameIdChange
@@ -101,7 +101,8 @@ export interface PuzzleModule extends MainModule {
 export async function loadPuzzleModule(puzzleId: string): Promise<PuzzleModule> {
   // Point the shared emcc runtime to the desired puzzle.wasm
   const module = await createModule({
-    locateFile: () => new URL(`../assets/js/${puzzleId}.wasm`, import.meta.url).href,
+    locateFile: () =>
+      new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href,
   });
   return module as PuzzleModule;
 }

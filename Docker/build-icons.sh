@@ -20,9 +20,14 @@ JOBS=${JOBS:-$(nproc 2>/dev/null || echo 1)}
 # Puzzles source code (directory containing CMakeFiles.txt):
 SRC_DIR=/app/puzzles
 # Generated build files:
-BUILD_DIR=/app/build-wasm
+BUILD_DIR=/app/build
 # Deliverables output:
-DIST_DIR=/app/icons
+DIST_DIR_ICONS=/app/assets/icons
+
+if [ ! -d "${SRC_DIR}" ]; then
+  echo "Puzzles source must be mounted on /app/puzzles (can be read-only)"
+  exit 2
+fi
 
 
 # --- Build process ---
@@ -40,8 +45,8 @@ if [ "${DEBUG:-0}" = "2" ]; then
 fi
 
 # --- Deliverables ---
-mkdir -p "${DIST_DIR}"
-rm -rf "${DIST_DIR}"/*
+mkdir -p "${DIST_DIR_ICONS}"
+rm -rf "${DIST_DIR_ICONS}"/*
 
 # The build produces some 32 versions of each puzzle's icons.
 # Deliver the ones we're most likely to use:
@@ -50,14 +55,14 @@ rm -rf "${DIST_DIR}"/*
 #   puzzle-128d24.png: resized ibase (128x128, 24bit)
 #   puzzle-web.png: resized and centered base with excess borders minimized (150x150, 24bit)
 #   puzzle-banner.jpg: angled and cropped (240x130, 24bit)
-cp "${BUILD_DIR}"/icons/*-base.png "${DIST_DIR}/"
-cp "${BUILD_DIR}"/icons/*-ibase.png "${DIST_DIR}/"
-cp "${BUILD_DIR}"/icons/*-64d24.png "${DIST_DIR}/"
-cp "${BUILD_DIR}"/icons/*-128d24.png "${DIST_DIR}/"
-cp "${BUILD_DIR}"/icons/*-web.png "${DIST_DIR}/"
-cp "${BUILD_DIR}"/icons/*-banner.jpg "${DIST_DIR}/"
+# cp "${BUILD_DIR}"/icons/*-base.png "${DIST_DIR_ICONS}/"
+# cp "${BUILD_DIR}"/icons/*-ibase.png "${DIST_DIR_ICONS}/"
+cp "${BUILD_DIR}"/icons/*-64d24.png "${DIST_DIR_ICONS}/"
+cp "${BUILD_DIR}"/icons/*-128d24.png "${DIST_DIR_ICONS}/"
+# cp "${BUILD_DIR}"/icons/*-web.png "${DIST_DIR_ICONS}/"
+# cp "${BUILD_DIR}"/icons/*-banner.jpg "${DIST_DIR_ICONS}/"
 
 if [ "${DEBUG:-0}" != "0" ]; then
-  echo "[DEBUG] Delivered ${DIST_DIR}:"
-  ls -l "${DIST_DIR}"
+  echo "[DEBUG] Delivered ${DIST_DIR_ICONS}:"
+  ls -l "${DIST_DIR_ICONS}"
 fi

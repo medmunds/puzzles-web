@@ -1,8 +1,7 @@
 import { LitElement, css, html } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import type { AppRouter, HistoryStateProvider } from "./app-router.ts";
-import { puzzles } from "./assets/catalog.json";
-import type { PuzzleDataMap } from "./catalog.ts";
+import { puzzleDataMap } from "./catalog.ts";
 import { waitForStableSize } from "./utils/resize.ts";
 
 // Register components
@@ -25,9 +24,6 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
 
   @property({ type: Boolean, attribute: "show-unfinished" })
   showUnfinished = false;
-
-  @state()
-  private readonly puzzles: Readonly<PuzzleDataMap> = puzzles;
 
   private stateKey = this.localName;
 
@@ -62,20 +58,17 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
       </header>
 
       <div class="puzzle-grid">
-        ${Object.entries(this.puzzles)
-          .filter(
-            ([_puzzleType, puzzleData]) =>
-              this.showUnfinished || !puzzleData.unfinished,
-          )
+        ${Object.entries(puzzleDataMap)
+          .filter(([_puzzleType, { unfinished }]) => this.showUnfinished || !unfinished)
           .map(
-            ([puzzleType, puzzleData]) => html`
+            ([puzzleType, { name, description, objective, unfinished }]) => html`
               <catalog-card 
                 puzzle-type=${puzzleType}
                 href=${this.router?.reverse({ name: "puzzle", params: { puzzleType } })?.href}
-                name=${puzzleData.name}
-                description=${puzzleData.description}
-                objective=${puzzleData.objective}
-                ?unfinished=${puzzleData.unfinished}
+                name=${name}
+                description=${description}
+                objective=${objective}
+                ?unfinished=${unfinished}
               ></catalog-card>
             `,
           )}

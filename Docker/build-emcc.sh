@@ -1,6 +1,7 @@
 #!/bin/bash
-# This script runs inside the build-wasm container.
+# This script runs inside the build-emcc container.
 # The puzzles directory is expected to be at /app/puzzles.
+
 set -euo pipefail
 if [ "${DEBUG:-0}" != "0" ]; then
   set -x
@@ -24,13 +25,19 @@ JOBS=${JOBS:-$(nproc 2>/dev/null || echo 1)}
 # Puzzles source code (directory containing CMakeFiles.txt):
 SRC_DIR=/app/puzzles
 # Generated build files:
-BUILD_DIR=/app/build-wasm
+BUILD_DIR=/app/build
 # Deliverables output:
-DIST_DIR=/app/wasm
+DIST_DIR_HELP=/app/public/help
+DIST_DIR_WASM=/app/assets/puzzles
+
+if [ ! -d "${SRC_DIR}" ]; then
+  echo "Puzzles source must be mounted on /app/puzzles (can be read-only)"
+  exit 2
+fi
 
 
 # --- Build process ---
-echo "[INFO] Building Wasm puzzles and docs..."
+echo "[INFO] Building wasm puzzles and docs..."
 BINARY_VERSION="1,${BUILDDATE:0:4},${BUILDDATE:4:2},${BUILDDATE:6:2}"
 VERSION="${BUILDDATE}.${VCSID}"
 VER="Version ${VERSION}"
@@ -68,40 +75,43 @@ jq --arg version "$VERSION" -R -s '
 
 # --- Deliverables ---
 echo "[INFO] Delivering..."
-# Build output is delivered to /app/wasm.
-# (This can be a mount into the host's source code.)
-mkdir -p "${DIST_DIR}"
-rm -rf "${DIST_DIR}"/*
 
-# HTML Docs
-mkdir -p "${DIST_DIR}/help"
-cp "${BUILD_DIR}"/help/en/*.html "${DIST_DIR}/help/" || echo "[WARN] No HTML docs files found."
+# Public deliverables
+mkdir -p "${DIST_DIR_HELP}"
+rm -rf "${DIST_DIR_HELP}"/*
+cp "${BUILD_DIR}"/help/en/*.html "${DIST_DIR_HELP}" || echo "[WARN] No HTML docs files found."
 for file in "${SRC_DIR}"/html/*.html; do
   puzzle=$(basename "$file" .html)
-  overview="${DIST_DIR}/help/${puzzle}-overview.html"
+  overview="${DIST_DIR_HELP}/${puzzle}-overview.html"
   # Omit the first line (it's the puzzle name)
   tail -n +2 "$file" > "${overview}"
   # Add a link to the manual
   echo "<p><a href=\"${puzzle}.html#${puzzle}\">Full instructions</a></p>" >> "${overview}"
 done
 
-# JavaScript related deliverables
-mkdir -p "${DIST_DIR}/js"
+# Assets deliverables
+mkdir -p "${DIST_DIR_WASM}"
+rm -rf "${DIST_DIR_WASM}"/*
 # The emcc runtime wrapper is the same for all puzzles (differing only in the name
 # of the imported wasm file). Pick an arbitrary one to use as a shared runtime.
 # (See loadPuzzleModule() in src/puzzle.)
-cp "${BUILD_DIR}"/nullgame.js "${DIST_DIR}/js/emcc-runtime.js" || echo "[WARN] nullgame.js not found in puzzles/build-webapp."
+cp "${BUILD_DIR}"/nullgame.js "${DIST_DIR_WASM}/emcc-runtime.js" \
+  || echo "[WARN] nullgame.js not found in puzzles/build-webapp."
 # Clean up EmbindString in emit-tsd output. (Yes, any embind-wrapped function that
 # accepts a string can also take an ArrayBuffer, etc., but return values and
 # value object fields are always standard JS strings.)
-sed -e '/type EmbindString/d' -e 's/EmbindString/string/g' "${BUILD_DIR}"/nullgame.d.ts > "${DIST_DIR}/js/emcc-runtime.d.ts" || echo "[WARN] nullgame.d.ts found in puzzles/build-webapp."
+sed -e '/type EmbindString/d' -e 's/EmbindString/string/g' \
+  "${BUILD_DIR}"/nullgame.d.ts > "${DIST_DIR_WASM}/emcc-runtime.d.ts" \
+  || echo "[WARN] nullgame.d.ts found in puzzles/build-webapp."
 
 # Then deliver all of the puzzle-specific wasm files (and related sourcemaps).
 shopt -s nullglob  # (release builds don't generate .map files)
-cp "${BUILD_DIR}"/*.{wasm,map} "${DIST_DIR}/js/" || echo "[WARN] No .wasm files found in puzzles/build-webapp."
+cp "${BUILD_DIR}"/*.{wasm,map} "${DIST_DIR_WASM}/" \
+  || echo "[WARN] No .wasm files found in puzzles/build-webapp."
 if [[ -d "${BUILD_DIR}/unfinished" ]]; then
-  cp "${BUILD_DIR}"/unfinished/*.{wasm,map} "${DIST_DIR}/js/" || echo "[WARN] No unfinished .wasm files found."
+  cp "${BUILD_DIR}"/unfinished/*.{wasm,map} "${DIST_DIR_WASM}/" \
+    || echo "[WARN] No unfinished .wasm files found."
 fi
 shopt -u nullglob
 
-cp "${BUILD_DIR}/catalog.json" "${DIST_DIR}/" || echo "[WARN] No catalog.json found."
+cp "${BUILD_DIR}/catalog.json" "${DIST_DIR_WASM}/" || echo "[WARN] No catalog.json found."
