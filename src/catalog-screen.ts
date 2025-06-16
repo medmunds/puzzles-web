@@ -36,8 +36,17 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
       console.warn("Invalid catalog-screen state in restoreHistoryState", state);
       return;
     }
-    await waitForStableSize(this);
-    this.scrollTop = state.scrollY * this.scrollHeight;
+    await this.updateComplete;
+
+    // It may take time for children to fully render. Repeatedly update
+    // the scroll as they do, to minimize appearance of jumping around.
+    const { scrollY } = state;
+    const restoreScrollPosition = () => {
+      this.scrollTop = scrollY * this.scrollHeight;
+    };
+    restoreScrollPosition();
+    await waitForStableSize(this, { resized: restoreScrollPosition });
+    restoreScrollPosition();
   };
 
   override connectedCallback() {
