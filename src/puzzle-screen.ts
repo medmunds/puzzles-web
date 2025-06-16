@@ -3,12 +3,13 @@ import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
 import type { AppRouter } from "./app-router.ts";
-import { type PuzzleData, puzzleDataMap } from "./catalog.ts";
+import { type PuzzleData, puzzleDataMap, version } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
 
 // Register components
 import "@shoelace-style/shoelace/dist/components/button/button.js";
 import "@shoelace-style/shoelace/dist/components/divider/divider.js";
+import "@shoelace-style/shoelace/dist/components/menu-label/menu-label.js";
 import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
 import "./head-matter.ts";
 import "./help-viewer.ts";
@@ -111,6 +112,8 @@ export class PuzzleScreen extends LitElement {
                 <sl-icon slot="prefix" name="arrow-left"></sl-icon>
                 Other puzzles
               </sl-menu-item>
+              <sl-divider></sl-divider>
+              <sl-menu-label class="version">v${version}</sl-menu-label>
             </puzzle-game-menu>
             <puzzle-preset-menu></puzzle-preset-menu>
             <sl-button href=${helpUrl} @click=${this.showHelp}>Help</sl-button>
@@ -267,6 +270,13 @@ export class PuzzleScreen extends LitElement {
       puzzle-end-notification {
         pointer-events: auto;
       }
+    }
+    
+    sl-menu-label.version::part(base) {
+      /* Allow selecting the version info */
+      -moz-user-select: all;
+      -webkit-user-select: all;
+      user-select: all;
     }
   `;
 }

@@ -1,7 +1,7 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import type { AppRouter, HistoryStateProvider } from "./app-router.ts";
-import { puzzleDataMap } from "./catalog.ts";
+import { puzzleDataMap, version } from "./catalog.ts";
 import { waitForStableSize } from "./utils/resize.ts";
 
 // Register components
@@ -95,6 +95,7 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
           <a href="https://github.com/medmunds/puzzles/issues">issue tracker</a>.</p>
         <p>Both the original puzzles and this adaptation are released under
           the MIT License. See the LICENSE file in the source for more details.</p>
+        <p class="version">v${version}</p>
       </footer>
     `;
   }
@@ -158,6 +159,16 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
       .puzzle-grid {
         gap: var(--sl-spacing-medium);
       }
+    }
+    
+    .version {
+      font-size: var(--sl-font-size-small);
+      color: var(--sl-color-neutral-500);
+      
+      /* Allow selecting the version info */
+      -moz-user-select: all;
+      -webkit-user-select: all;
+      user-select: all;
     }
   `;
 }

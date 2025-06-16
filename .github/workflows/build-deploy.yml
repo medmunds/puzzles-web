@@ -82,6 +82,7 @@ jobs:
           UPSTREAM_SHORT_SHA=$(git rev-parse --short "${UPSTREAM_SHA}" || echo "unknown")
           GITHUB_SHORT_SHA=$(git rev-parse --short "${GITHUB_SHA}")
           echo "vcsid=${UPSTREAM_SHORT_SHA}+${GITHUB_SHORT_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "vcsid=${UPSTREAM_SHORT_SHA}+${GITHUB_SHORT_SHA}"
 
       - name: Run emcc build
         run: |
