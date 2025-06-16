@@ -112,48 +112,46 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   }
 
   static solvedIcons = [
-    "rocket",
-    "crown",
-    "party-popper",
     "award",
-    "ferris-wheel",
+    "crown",
+    "diamond",
     "laugh",
+    "party-popper",
+    "rocket",
     "thumbs-up",
-    "ice-cream-cone",
   ] as const;
 
   static lostIcons = ["frown"] as const;
 
   static solvedMessages = [
-    "Completed!",
-    "Nice work!",
-    "Success!",
-    "Good job!",
-    "Solved!",
-    "Brilliant!",
     "Awesome!",
-    "Way to go!",
+    "Brilliant!",
     "Clever!",
-    "Splendid!",
-    "Outstanding!",
-    "Victory!",
-    "Perfect!",
-    "You got it!",
+    "Complete!",
     "Genius!",
-    "Mastered!",
+    "Good job!",
+    "Nice work!",
+    "Outstanding!",
+    "Perfect!",
+    "Solved!",
+    "Splendid!",
+    "Success!",
     "Superb!",
+    "Victory!",
+    "Way to go!",
     "Well done!",
-    "Unstoppable!",
+    "Woo hoo!",
+    "You got it!",
   ] as const;
 
   static lostMessages = [
-    "I think you’re out of options.",
-    "Hmm… that looks like the end.",
-    "That’s about the end of it.",
     "Better luck next time.",
+    "Hmm… that looks like the end.",
+    "I think you’re out of options.",
     "Looks like a dead end.",
-    "Seems like there’s no path forward.",
+    "Seems like there’s no way forward.",
     "That might be as far as you can go.",
+    "That’s about the end of it.",
   ] as const;
 
   static animations = {
