@@ -1,5 +1,6 @@
 import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
+import SlButton from "@shoelace-style/shoelace/dist/components/button/button.js";
 import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
@@ -8,6 +9,7 @@ import type { KeyLabel } from "./module.ts";
 import type { Puzzle } from "./puzzle.ts";
 
 // Components
+import "@shoelace-style/shoelace/dist/components/button/button.js";
 import "@shoelace-style/shoelace/dist/components/icon/icon.js";
 
 interface LabelIcons {
@@ -38,7 +40,25 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
 
   private renderedParams?: string;
 
-  async willUpdate() {
+  override connectedCallback() {
+    super.connectedCallback();
+    this.addEventListener("click", this.preventDoubleTapZoom);
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener("click", this.preventDoubleTapZoom);
+  }
+
+  private preventDoubleTapZoom = (event: MouseEvent) => {
+    if (event.composedPath().some((target) => target instanceof SlButton)) {
+      // Prevent double-tap zoom (on iOS) for all sl-buttons.
+      // (Sadly, CSS `touch-action: ...` doesn't achieve this on iOS.)
+      event.preventDefault();
+    }
+  };
+
+  override async willUpdate() {
     // The available keys can vary with changes to puzzle params.
     // (This should really be an effect on this.puzzle?.currentParams,
     // but @lit-labs/signals doesn't have effects yet.)
@@ -53,7 +73,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     this.keyLabels = (await this.puzzle?.requestKeys()) ?? [];
   }
 
-  render() {
+  override render() {
     return html`
       <slot slot="before"></slot>
       ${this.renderVirtualKeys()}
@@ -134,7 +154,10 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     }
     
     sl-button {
-      touch-action: manipulation;
+      /* Disable double-tap to zoom on keys that might be tapped quickly.
+       * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.)
+       */
+      touch-action: pinch-zoom;
     }
   `;
 }

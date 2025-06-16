@@ -1,12 +1,6 @@
 import { css, html } from "lit";
-import { customElement, eventOptions, property } from "lit/decorators.js";
-import { when } from "lit/directives/when.js";
-import {
-  DOMMouseButton,
-  hasCtrlKey,
-  isAppleDevice,
-  swapButtons,
-} from "../utils/events.ts";
+import { customElement, property } from "lit/decorators.js";
+import { DOMMouseButton, hasCtrlKey, swapButtons } from "../utils/events.ts";
 import { detectSecondaryButton } from "../utils/touch.ts";
 import { type Point, PuzzleButton } from "./module.ts";
 import { PuzzleView } from "./puzzle-view.ts";
@@ -77,10 +71,7 @@ export class PuzzleViewInteractive extends PuzzleView {
         @pointermove=${this.handlePointerMove}
         @pointerup=${this.handlePointerUp}
         @pointercancel=${this.handlePointerCancel}
-        @touchstart=${when(
-          isAppleDevice && this.secondaryButtonGestures,
-          () => this.fixSafariTouchAction,
-        )}
+        @click=${this.handleClick}
       ><canvas></canvas></div>
     `;
   }
@@ -334,31 +325,10 @@ export class PuzzleViewInteractive extends PuzzleView {
     // the context-menu key, so we should allow the menu.
   }
 
-  @eventOptions({ passive: false })
-  private fixSafariTouchAction(event: TouchEvent) {
-    // Despite the canvas having `touch-action: pinch-zoom`, Safari and other
-    // iOS browsers stubbornly insist that clicking rapidly on a puzzle means
-    // the user wants to double-tap-zoom in and out and in and out, and that
-    // a long press on a puzzle means the user wants both the magnifier and
-    // to select text elsewhere on the page. Since the user is probably trying
-    // to play the puzzle, iOS's behavior actually reduces accessibility.
-    //
-    // Other touch devices seem to respect touch-action and don't have this
-    // problem. Since iOS doesn't (even when set to `manipulation` or `none`),
-    // we have to resort to this device-specific hack. iOS's gestures can be
-    // disabled by preventDefault() in touchstart (but not pointerdown). We want
-    // to leave pinch-zoom and two-finger-pan enabled, because zooming can be
-    // important for low-vision users, so cancel gestures on the canvas only
-    // when exactly one touch is active. (Weirdly, preventDefault on the first
-    // touchstart but not the second _seems_ to allow multi-touch gestures.)
-    //
-    // NOTE: This prevents click events on the target (but pointer events still arrive).
-    //
-    // Also, we apply the hack only if any of our right-mouse-emulation gestures
-    // are enabled, so users who _do_ want the long-press magnifier have an option.
-    if (event.touches.length === 1) {
-      event.preventDefault();
-    }
+  private handleClick(event: MouseEvent) {
+    // This is necessary to prevent double-tap-zoom on iOS Safari.
+    // (The CSS `touch-action: ...` in insufficient for Safari.)
+    event.preventDefault();
   }
 
   //
@@ -385,8 +355,15 @@ export class PuzzleViewInteractive extends PuzzleView {
         
         /* Disable double-tap to zoom (puzzles want rapid taps) 
          * and single-finger panning (puzzles want dragging).
-         * Allow zooming and multi-finger panning for accessibility. */
+         * Allow zooming and multi-finger panning for accessibility.
+         * (Insufficient on iOS Safari; see @click handler.) 
+         */
         touch-action: pinch-zoom;
+
+        /* Disable long-press selection/magnifier bubble on iOS Safari */
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
       }
       canvas {
         max-width: 100%;
