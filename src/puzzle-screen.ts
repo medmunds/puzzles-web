@@ -68,6 +68,10 @@ export class PuzzleScreen extends LitElement {
       return;
     }
 
+    const iconUrl = new URL(
+      `./assets/icons/${this.puzzleType}-64d24.png`,
+      import.meta.url,
+    ).href;
     const helpUrl = new URL(
       `help/${this.puzzleType}-overview.html`,
       this.router?.baseUrl,
@@ -84,7 +88,7 @@ export class PuzzleScreen extends LitElement {
           <meta name="application-name" content="${this.puzzleData.name}">
           <meta name="application-title" content="${this.puzzleData.name}">
           <meta name="description" content="${this.puzzleData.description}">
-          <link rel="icon" href=${`./src/assets/icons/${this.puzzleType}-128d24.png`}>
+          <link rel="icon" href=${iconUrl}>
         </head-matter>
         
         <div class="app">
