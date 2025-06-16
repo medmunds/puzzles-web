@@ -22,8 +22,10 @@
 #   -e JOBS=1  # run make single-threaded (default nprocs, comingles output)
 
 # Debian-based official Emscripten image includes many build tools.
-ARG ARCH=amd64
-FROM emscripten/emsdk:4.0.8${ARCH:+-arm64}
+# (Add -${ARCH} suffix when ARCH is set; leave ARCH unset for default amd64.)
+ARG ARCH
+FROM emscripten/emsdk:4.0.8${ARCH:+-${ARCH}}
+
 
 # Additional dependencies:
 #  - jq for catalog.json
