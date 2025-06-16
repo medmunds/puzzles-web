@@ -123,9 +123,9 @@ export class PuzzleScreen extends LitElement {
               maximize
           ></puzzle-view-interactive>
 
-          <puzzle-keys></puzzle-keys>
-
           <div class="puzzle-end-notification-holder">
+            <!-- Directly after puzzle-view so it's next in the tab order
+                 after completing a game via physical keyboard -->
             <puzzle-end-notification>
               <sl-button 
                   slot="extra-actions-solved" 
@@ -137,6 +137,8 @@ export class PuzzleScreen extends LitElement {
                 >Other puzzles</sl-button>
             </puzzle-end-notification>
           </div>
+
+          <puzzle-keys></puzzle-keys>
         </div>
       </puzzle-context>
 
