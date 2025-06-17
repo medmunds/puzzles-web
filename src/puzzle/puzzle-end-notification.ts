@@ -114,7 +114,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   static solvedIcons = [
     "award",
     "crown",
-    "diamond",
+    "gem",
     "laugh",
     "party-popper",
     "rocket",
