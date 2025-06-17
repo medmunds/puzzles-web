@@ -239,10 +239,9 @@ export class PuzzleScreen extends LitElement {
       align-items: baseline;
       gap: var(--sl-spacing-x-small);
     }
-    .toolbar puzzle-preset-menu {
-      flex: 1 0;
-      min-width: 10rem;
-      max-width: 20rem;
+    puzzle-preset-menu {
+      flex: 0 1 auto;
+      min-width: 5rem;
     }
 
     puzzle-view-interactive {

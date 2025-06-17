@@ -1,5 +1,6 @@
 import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
+import type SlMenuItem from "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
 import { LitElement, type TemplateResult, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { puzzleContext } from "./contexts.ts";
@@ -11,26 +12,17 @@ import type { Puzzle } from "./puzzle.ts";
 import "@shoelace-style/shoelace/dist/components/button/button.js";
 import "@shoelace-style/shoelace/dist/components/divider/divider.js";
 import "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";
+import "@shoelace-style/shoelace/dist/components/icon/icon.js";
 import "@shoelace-style/shoelace/dist/components/menu/menu.js";
 import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
 import "@shoelace-style/shoelace/dist/components/menu-label/menu-label.js";
-import "@shoelace-style/shoelace/dist/components/option/option.js";
-import "@shoelace-style/shoelace/dist/components/select/select.js";
 import "./puzzle-config.ts";
-
-type PresetMenuType = "auto" | "dropdown" | "select";
 
 @customElement("puzzle-preset-menu")
 export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   @consume({ context: puzzleContext, subscribe: true })
   @state()
   private puzzle?: Puzzle;
-
-  /**
-   * How to render the preset menu (auto, dropdown, or select)
-   */
-  @property({ type: String })
-  type: PresetMenuType = "select";
 
   /**
    * The label for the menu
@@ -41,6 +33,9 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   // Game presets, with submenus flattened
   @state()
   private presets: PresetMenuEntry[] = [];
+
+  @property({ type: Boolean })
+  open = false;
 
   // TODO: @computed()
   get currentPresetId(): string {
@@ -84,41 +79,25 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   }
 
   override render(): TemplateResult {
-    const renderType = this.determineRenderType();
-    return renderType === "select" ? this.renderAsSelect() : this.renderAsDropdown();
-  }
-
-  private determineRenderType(): PresetMenuType {
-    if (this.type !== "auto") {
-      return this.type;
-    }
-    // TODO: this is meant to be container-size based
-    return this.presets.length < 10 ? "select" : "dropdown";
-  }
-
-  private renderAsDropdown(): TemplateResult {
     return html`
-      <sl-dropdown hoist part="dropdown">
-        <sl-button slot="trigger" caret>${this.label}</sl-button>
+      <sl-dropdown 
+          hoist
+          @sl-show=${this.handleDropdownShow}
+          @sl-after-show=${this.handleDropdownAfterShow}
+          @sl-hide=${this.handleDropdownHide}
+      >
+        <sl-button slot="trigger" caret>
+          <sl-icon slot="prefix" name="swatch-book"></sl-icon>
+          <div class="dropdown-label${this.open ? " open" : ""}">
+            <div class="label">${this.label}</div>
+            <div class="current-preset-label">${this.currentPresetLabel}</div>
+          </div>
+        </sl-button>
         <sl-menu @sl-select=${this.handleDropdownSelect}>
           ${this.renderPresetMenuItems()}
           <slot></slot>
         </sl-menu>
       </sl-dropdown>
-    `;
-  }
-
-  private renderAsSelect(): TemplateResult {
-    return html`
-      <sl-select 
-        part="select"
-        label=${this.label}
-        value=${this.currentPresetId}
-        @sl-change=${this.handleSelectChange}
-      >
-        ${this.renderPresetOptions()}
-        <slot></slot>
-      </sl-select>
     `;
   }
 
@@ -136,6 +115,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
         result.push(html`
           <sl-menu-item
               type="checkbox"
+              role="menuitemradio"
               ?checked=${idString === currentPresetId}
               value=${idString}
             >${title}</sl-menu-item>
@@ -146,7 +126,8 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
     result.push(html`<sl-divider></sl-divider>`);
     result.push(html`
       <sl-menu-item 
-          type="checkbox" 
+          type="checkbox"
+          role="menuitemradio"
           ?checked=${currentPresetId === "custom"} 
           value="custom"
         >Custom type…</sl-menu-item>
@@ -155,43 +136,30 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
     return result;
   }
 
-  private renderPresetOptions(): TemplateResult[] {
-    // Options for sl-select
-    const result: TemplateResult[] = [];
+  private async handleDropdownShow() {
+    this.open = true;
+  }
 
-    for (const { submenu, title, id } of this.presets) {
-      if (submenu) {
-        result.push(html`<sl-divider></sl-divider>`);
-        result.push(html`<small>${title}</small>`);
-      } else {
-        result.push(html`
-          <sl-option value=${id.toString()}>${title}</sl-option>
-        `);
-      }
+  private handleDropdownHide() {
+    this.open = false;
+  }
+
+  private async handleDropdownAfterShow() {
+    // Set the current preset's sl-menu-item as the menu's current item. This scrolls
+    // it into view and makes it the starting point for arrow key navigation.
+    const menu = this.shadowRoot?.querySelector("sl-menu");
+    const selectedItem = this.shadowRoot?.querySelector<SlMenuItem>(
+      "sl-menu-item[checked]",
+    );
+    if (menu && selectedItem) {
+      menu.setCurrentItem(selectedItem); // (@internal, but not private, SlMenuItem API.)
+      selectedItem.focus();
     }
-
-    result.push(html`<sl-divider></sl-divider>`);
-    result.push(html`
-      <sl-option @click=${this.launchCustomDialog} value="custom">Custom type…</sl-option>
-    `);
-
-    return result;
   }
 
   private async handleDropdownSelect(event: CustomEvent<{ item: { value: string } }>) {
-    const value = event.detail.item.value;
-    await this.handlePresetValue(value);
-  }
-
-  private async handleSelectChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    const value = target.value;
-    await this.handlePresetValue(value);
-  }
-
-  private async handlePresetValue(value: string) {
     if (!this.puzzle) return;
-
+    const value = event.detail.item.value;
     if (value === "custom") {
       await this.launchCustomDialog();
     } else {
@@ -243,15 +211,65 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   // Styles
   //
   static styles = css`
-    /* Move the select label to the left side */
-    sl-select::part(form-control) {
-      display: flex;
-      justify-content: flex-start;
-      align-items: baseline;
-      gap: var(--sl-spacing-x-small);
+    :host {
+      display: block;
     }
-    sl-select::part(form-control-input) {
-      flex: 1 0;
+    
+    /* Highlight selected item unless keyboard navigation in use.
+     * (See sl-menu-item css.) */
+    sl-menu:not(:has(sl-menu-item:focus-visible)) sl-menu-item[checked]::part(base) {
+      background-color: var(--sl-color-primary-600);
+      color: var(--sl-color-neutral-0) !important;
+    }
+    
+    /* Allow flexing */
+    sl-dropdown, sl-button {
+      width: 100%;
+    }
+    sl-button::part(label) {
+      flex: 0 1 auto;
+      min-width: 1rem;
+    }
+    sl-button::part(prefix), sl-button::part(suffix), sl-button::part(caret) {
+      flex: none;
+    }
+    
+    .dropdown-label {
+      /* The label and current-preset-label occupy the same space.
+       * Both are visible to screen readers, but only one is painted at a time: 
+       * the label when open, the current-preset-label when closed. 
+       * This keeps the button a constant width when switching open/closed. */
+      width: 100%;
+      position: relative;
+      
+      .label {
+        position: absolute;
+        top: 0;
+        left: 0;
+        opacity: 0;
+      }
+
+      .current-preset-label {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        opacity: 1;
+      }
+      
+      &.open {
+        .label {
+          opacity: 1;
+        }
+        .current-preset-label {
+          opacity: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .label, .current-preset-label {
+          transition: opacity var(--sl-transition-fast) ease-in-out;
+        }
+      }
     }
   `;
 }
