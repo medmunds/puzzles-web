@@ -269,6 +269,7 @@ export class PuzzleScreen extends LitElement {
 
       puzzle-end-notification {
         pointer-events: auto;
+        z-index: 1;
       }
     }
     
