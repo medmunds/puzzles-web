@@ -29,7 +29,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
    * How to render the preset menu (auto, dropdown, or select)
    */
   @property({ type: String })
-  type: PresetMenuType = "auto";
+  type: PresetMenuType = "select";
 
   /**
    * The label for the menu
