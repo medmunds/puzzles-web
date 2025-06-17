@@ -13,6 +13,7 @@ import "@shoelace-style/shoelace/dist/components/divider/divider.js";
 import "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";
 import "@shoelace-style/shoelace/dist/components/menu/menu.js";
 import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
+import "@shoelace-style/shoelace/dist/components/menu-label/menu-label.js";
 import "@shoelace-style/shoelace/dist/components/option/option.js";
 import "@shoelace-style/shoelace/dist/components/select/select.js";
 import "./puzzle-config.ts";
@@ -37,8 +38,21 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   @property({ type: String })
   label = "Type";
 
+  // Game presets, with submenus flattened
   @state()
   private presets: PresetMenuEntry[] = [];
+
+  // TODO: @computed()
+  get currentPresetId(): string {
+    return this.puzzle?.currentPresetId?.toString() ?? "custom";
+  }
+
+  // TODO: @computed()
+  get currentPresetLabel(): string {
+    const presetId = this.puzzle?.currentPresetId ?? -1;
+    const menuEntry = this.presets.find((preset) => preset.id === presetId);
+    return menuEntry?.title ?? "Custom type";
+  }
 
   private customDialog?: PuzzleConfig;
 
@@ -52,8 +66,21 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
 
   override async willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("puzzle")) {
-      this.presets = (await this.puzzle?.getPresets()) ?? [];
+      await this.loadPresets();
     }
+  }
+
+  private async loadPresets(): Promise<void> {
+    // Flatten submenus into presets list (depth first)
+    const flatten = (items: PresetMenuEntry[]): PresetMenuEntry[] => {
+      return items.flatMap((item) => [
+        item,
+        ...(item.submenu ? flatten(item.submenu) : []),
+      ]);
+    };
+
+    const entries = (await this.puzzle?.getPresets()) ?? [];
+    this.presets = flatten(entries);
   }
 
   override render(): TemplateResult {
@@ -86,7 +113,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
       <sl-select 
         part="select"
         label=${this.label}
-        value=${this.puzzle?.currentPresetId ?? "custom"}
+        value=${this.currentPresetId}
         @sl-change=${this.handleSelectChange}
       >
         ${this.renderPresetOptions()}
@@ -95,57 +122,60 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
     `;
   }
 
-  private *renderPresetMenuItems(): Generator<TemplateResult> {
-    const menuEntries = [...this.presets];
-    const currentPreset = this.puzzle?.currentPresetId ?? "custom";
-    while (menuEntries.length > 0) {
-      const menuEntry = menuEntries.shift();
-      if (!menuEntry) break;
+  private renderPresetMenuItems(): TemplateResult[] {
+    // Items for sl-dropdown menu
+    const result: TemplateResult[] = [];
+    const currentPresetId = this.currentPresetId;
 
-      const { submenu, title, id } = menuEntry;
+    for (const { submenu, title, id } of this.presets) {
       if (submenu) {
-        // TODO: for a dropdown menu, we could actually use a submenu
-        // Just inline submenu after a separator
-        yield html`<sl-divider></sl-divider>`;
-        menuEntries.unshift(...submenu);
+        result.push(html`<sl-divider></sl-divider>`);
+        result.push(html`<sl-menu-label>${title}</sl-menu-label>`);
       } else {
-        yield html`
-          <sl-menu-item 
-              type="checkbox" 
-              ?checked=${id === currentPreset} 
-              value=${id.toString()}
-          >${title}</sl-menu-item>
-        `;
+        const idString = id.toString();
+        result.push(html`
+          <sl-menu-item
+              type="checkbox"
+              ?checked=${idString === currentPresetId}
+              value=${idString}
+            >${title}</sl-menu-item>
+        `);
       }
     }
 
-    yield html`<sl-divider></sl-divider>`;
-    yield html`
+    result.push(html`<sl-divider></sl-divider>`);
+    result.push(html`
       <sl-menu-item 
           type="checkbox" 
-          ?checked=${currentPreset === "custom"} 
+          ?checked=${currentPresetId === "custom"} 
           value="custom"
-      >Custom…</sl-menu-item>`;
+        >Custom type…</sl-menu-item>
+    `);
+
+    return result;
   }
 
-  private *renderPresetOptions(): Generator<TemplateResult> {
-    const menuEntries = [...this.presets];
-    while (menuEntries.length > 0) {
-      const menuEntry = menuEntries.shift();
-      if (!menuEntry) break;
+  private renderPresetOptions(): TemplateResult[] {
+    // Options for sl-select
+    const result: TemplateResult[] = [];
 
-      const { submenu, title, id } = menuEntry;
+    for (const { submenu, title, id } of this.presets) {
       if (submenu) {
-        // Just inline submenu after a separator
-        yield html`<sl-divider></sl-divider>`;
-        menuEntries.unshift(...submenu);
+        result.push(html`<sl-divider></sl-divider>`);
+        result.push(html`<small>${title}</small>`);
       } else {
-        yield html`<sl-option value=${id.toString()}>${title}</sl-option>`;
+        result.push(html`
+          <sl-option value=${id.toString()}>${title}</sl-option>
+        `);
       }
     }
 
-    yield html`<sl-divider></sl-divider>`;
-    yield html`<sl-option @click=${this.launchCustomDialog} value="custom">Custom…</sl-option>`;
+    result.push(html`<sl-divider></sl-divider>`);
+    result.push(html`
+      <sl-option @click=${this.launchCustomDialog} value="custom">Custom type…</sl-option>
+    `);
+
+    return result;
   }
 
   private async handleDropdownSelect(event: CustomEvent<{ item: { value: string } }>) {
