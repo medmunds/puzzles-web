@@ -1,5 +1,5 @@
 import { LitElement, css, html } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import type { AppRouter, HistoryStateProvider } from "./app-router.ts";
 import { puzzleDataMap, version } from "./catalog.ts";
 import { waitForStableSize } from "./utils/resize.ts";
@@ -27,8 +27,13 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
 
   private stateKey = this.localName;
 
+  @query(".app", true)
+  private appElement?: HTMLDivElement;
+
   saveHistoryState = (): CatalogScreenState => ({
-    scrollY: this.scrollTop / this.scrollHeight,
+    scrollY: this.appElement
+      ? this.appElement.scrollTop / this.appElement.scrollHeight
+      : 0,
   });
 
   restoreHistoryState = async (state: unknown) => {
@@ -37,15 +42,20 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
       return;
     }
     await this.updateComplete;
+    if (!this.appElement) {
+      return;
+    }
 
     // It may take time for children to fully render. Repeatedly update
     // the scroll as they do, to minimize appearance of jumping around.
     const { scrollY } = state;
     const restoreScrollPosition = () => {
-      this.scrollTop = scrollY * this.scrollHeight;
+      if (this.appElement) {
+        this.appElement.scrollTop = scrollY * this.appElement.scrollHeight;
+      }
     };
     restoreScrollPosition();
-    await waitForStableSize(this, { resized: restoreScrollPosition });
+    await waitForStableSize(this.appElement, { resized: restoreScrollPosition });
     restoreScrollPosition();
   };
 
@@ -61,59 +71,86 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
 
   render() {
     return html`
-      <header>
-        <h1>Puzzles</h1>
-        <div class="subtitle">from Simon Tatham's portable puzzle collection</div>
-      </header>
-
-      <div class="puzzle-grid">
-        ${Object.entries(puzzleDataMap)
-          .filter(([_puzzleType, { unfinished }]) => this.showUnfinished || !unfinished)
-          .map(
-            ([puzzleType, { name, description, objective, unfinished }]) => html`
-              <catalog-card 
-                puzzle-type=${puzzleType}
-                href=${this.router?.reverse({ name: "puzzle", params: { puzzleType } })?.href}
-                name=${name}
-                description=${description}
-                objective=${objective}
-                ?unfinished=${unfinished}
-              ></catalog-card>
-            `,
-          )}
+      <div class="app">
+        <header>
+          <h1>Puzzles</h1>
+          <div class="subtitle">from Simon Tatham's portable puzzle collection</div>
+        </header>
+  
+        <div class="puzzle-grid">
+          ${Object.entries(puzzleDataMap)
+            .filter(
+              ([_puzzleType, { unfinished }]) => this.showUnfinished || !unfinished,
+            )
+            .map(
+              ([puzzleType, { name, description, objective, unfinished }]) => html`
+                <catalog-card 
+                  puzzle-type=${puzzleType}
+                  href=${this.router?.reverse({ name: "puzzle", params: { puzzleType } })?.href}
+                  name=${name}
+                  description=${description}
+                  objective=${objective}
+                  ?unfinished=${unfinished}
+                ></catalog-card>
+              `,
+            )}
+        </div>
+  
+        <footer>
+          <h2>About this collection</h2>
+          <p>This is Mike Edmunds' adaptation of Simon Tatham's
+            <a href="https://www.chiark.greenend.org.uk/~sgtatham/puzzles/">portable puzzles
+              collection</a>. The original collection includes
+            <a href="https://www.chiark.greenend.org.uk/~sgtatham/puzzles/doc/">full rules</a>
+            and documentation for playing the puzzles.</p>
+          <p>The <a href="https://github.com/medmunds/puzzles">source code</a>
+            for this project is on GitHub. You can report any problems in the
+            <a href="https://github.com/medmunds/puzzles/issues">issue tracker</a>.</p>
+          <p>Both the original puzzles and this adaptation are released under
+            the MIT License. See the LICENSE file in the source for more details.</p>
+          <p class="version">v${version}</p>
+        </footer>
       </div>
-
-      <footer>
-        <h2>About this collection</h2>
-        <p>This is Mike Edmunds' adaptation of Simon Tatham's
-          <a href="https://www.chiark.greenend.org.uk/~sgtatham/puzzles/">portable puzzles
-            collection</a>. The original collection includes
-          <a href="https://www.chiark.greenend.org.uk/~sgtatham/puzzles/doc/">full rules</a>
-          and documentation for playing the puzzles.</p>
-        <p>The <a href="https://github.com/medmunds/puzzles">source code</a>
-          for this project is on GitHub. You can report any problems in the
-          <a href="https://github.com/medmunds/puzzles/issues">issue tracker</a>.</p>
-        <p>Both the original puzzles and this adaptation are released under
-          the MIT License. See the LICENSE file in the source for more details.</p>
-        <p class="version">v${version}</p>
-      </footer>
     `;
   }
 
   static styles = css`
     :host {
-      box-sizing: border-box;
+      display: block;
+      width: 100%;
+      height: 100%;
+      container-type: size;
+    }
+    
+    .app {
       width: 100%;
       height: 100%;
 
-      max-width: 1200px;
+      --app-padding: var(--sl-spacing-x-large);
+      --app-spacing: var(--sl-spacing-large);
+
+      box-sizing: border-box;
+      max-width: 75rem;
       margin: 0 auto;
-      padding: var(--sl-spacing-2x-large);
+      padding: var(--app-padding);
       overflow-y: auto;
 
       display: flex;
       flex-direction: column;
-      gap: var(--sl-spacing-x-large);
+      gap: var(--app-spacing);
+
+      @media (prefers-reduced-motion: no-preference) {
+        transition:
+            gap var(--sl-transition-fast) ease-in-out,
+            padding var(--sl-transition-fast) ease-in-out;
+      }
+    }
+
+    @container (max-width: 40rem) {
+      .app {
+        --app-padding: var(--sl-spacing-large);
+        --app-spacing: var(--sl-spacing-medium);
+      }
     }
 
     h1,
@@ -144,23 +181,23 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
     }
     header h1 {
       margin-inline-end: 0.5em;
+      line-height: var(--sl-line-height-dense);    
     }
 
     .puzzle-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-      gap: var(--sl-spacing-x-large);
+      gap: var(--app-spacing);
       align-items: stretch;
 
       touch-action: manipulation;
-    }
 
-    @media (max-width: 768px) {
-      .puzzle-grid {
-        gap: var(--sl-spacing-medium);
+      @media (prefers-reduced-motion: no-preference) {
+        transition:
+            gap var(--sl-transition-fast) ease-in-out;
       }
     }
-    
+
     .version {
       font-size: var(--sl-font-size-small);
       color: var(--sl-color-neutral-500);
