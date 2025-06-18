@@ -183,8 +183,16 @@ export class PuzzleScreen extends LitElement {
       height: 100%;
       container-type: size;
     }
-
+    
     .app {
+      --app-padding: var(--sl-spacing-x-large);
+      --app-spacing: var(--sl-spacing-large);
+
+      @container (max-width: 40rem) {
+        --app-padding: var(--sl-spacing-large);
+        --app-spacing: var(--sl-spacing-medium);
+      }
+
       height: 100%;
       box-sizing: border-box;
       position: relative;
@@ -193,18 +201,27 @@ export class PuzzleScreen extends LitElement {
       flex-direction: column;
       align-items: flex-start;
 
-      gap: var(--sl-spacing-x-large);
-      padding: var(--sl-spacing-x-large);
-
-      @container (max-width: 40rem) {
-        gap: var(--sl-spacing-medium);
-        padding: var(--sl-spacing-large);
+      /* The padding is split between vertical padding and horizontal margin
+       * on children to allow the puzzle-view (alone) to extend into the 
+       * horizontal "padding" on narrow screens. (Negative margin doesn't
+       * work with puzzle-view's automatic size calculations.) */
+      gap: var(--app-spacing);
+      padding: var(--app-padding) 0;
+      & > * {
+        margin: 0 var(--app-padding);
+      }
+      
+      .toolbar {
+        max-width: calc(100% - 2 * var(--app-padding));
       }
 
       @media (prefers-reduced-motion: no-preference) {
         transition:
             gap var(--sl-transition-fast) ease-in-out,
             padding var(--sl-transition-fast) ease-in-out;
+        & > * {
+          transition: margin var(--sl-transition-fast) ease-in-out;
+        }
       }
 
       background-color: var(--sl-color-neutral-200);
@@ -231,7 +248,6 @@ export class PuzzleScreen extends LitElement {
       justify-content: flex-start;
       align-items: baseline;
       gap: var(--sl-spacing-small);
-      max-width: 100%;
     }
 
     puzzle-preset-menu {
@@ -248,6 +264,16 @@ export class PuzzleScreen extends LitElement {
       overflow: auto; /* scrollbars if it still can't fit */
       background-color: var(--sl-color-neutral-50);
       border-radius: var(--sl-border-radius-medium);
+      --padding: var(--sl-spacing-medium);
+    }
+    
+    @container (max-width: 25rem) {
+      .app puzzle-view-interactive {
+        margin: 0;
+        border-radius: 0;
+        min-width: 100%;
+        --padding: var(--sl-spacing-large); /* --app-padding */
+      }
     }
 
     .puzzle-end-notification-holder {
