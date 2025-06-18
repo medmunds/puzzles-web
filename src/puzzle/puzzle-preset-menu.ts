@@ -162,6 +162,15 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
     if (!this.puzzle) return;
     const value = event.detail.item.value;
     if (value === "custom") {
+      // sl-menu automatically toggles checked, which results in custom getting
+      // stuck in checked state even if user cancels dialog or matches some other
+      // preset. Undo the automatic checked to prevent that.
+      const customItem = this.shadowRoot?.querySelector<SlMenuItem>(
+        'sl-menu-item[value="custom"]',
+      );
+      if (customItem) {
+        customItem.checked = false;
+      }
       await this.launchCustomDialog();
     } else {
       const preset = Number.parseInt(value, 10);
