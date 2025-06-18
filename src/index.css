@@ -14,6 +14,12 @@
   -webkit-font-smoothing: antialiased;
 }
 
+@media (any-pointer: coarse) {
+  :root {
+    font-size: 120%;
+  }
+}
+
 html,
 body {
   margin: 0;

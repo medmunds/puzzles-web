@@ -135,7 +135,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
 
   static styles = css`
     :host {
-      --gap: var(--sl-spacing-x-small); 
+      --gap: var(--sl-spacing-small); 
 
       display: flex;
       flex-wrap: wrap;

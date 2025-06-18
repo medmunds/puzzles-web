@@ -230,15 +230,10 @@ export class PuzzleScreen extends LitElement {
       display: flex;
       justify-content: flex-start;
       align-items: baseline;
-      gap: var(--sl-spacing-large);
+      gap: var(--sl-spacing-small);
       max-width: 100%;
     }
-    .toolbar-group {
-      display: flex;
-      justify-content: flex-start;
-      align-items: baseline;
-      gap: var(--sl-spacing-x-small);
-    }
+
     puzzle-preset-menu {
       flex: 0 1 auto;
       min-width: 5rem;
