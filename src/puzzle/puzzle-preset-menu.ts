@@ -3,6 +3,7 @@ import { consume } from "@lit/context";
 import type SlMenuItem from "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
 import { LitElement, type TemplateResult, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { classMap } from "lit/directives/class-map.js";
 import { puzzleContext } from "./contexts.ts";
 import type { PresetMenuEntry } from "./module.ts";
 import type { PuzzleConfig } from "./puzzle-config.ts";
@@ -88,9 +89,9 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
       >
         <sl-button slot="trigger" caret>
           <sl-icon slot="prefix" name="swatch-book"></sl-icon>
-          <div class="dropdown-label${this.open ? " open" : ""}">
-            <div class="label">${this.label}</div>
-            <div class="current-preset-label">${this.currentPresetLabel}</div>
+          <div class=${classMap({ "dropdown-label": true, open: this.open })}>
+            ${this.label}<br>
+            ${this.currentPresetLabel}
           </div>
         </sl-button>
         <sl-menu @sl-select=${this.handleDropdownSelect}>
@@ -233,44 +234,33 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
     sl-button::part(prefix), sl-button::part(suffix), sl-button::part(caret) {
       flex: none;
     }
-    
     .dropdown-label {
-      /* The label and current-preset-label occupy the same space.
-       * Both are visible to screen readers, but only one is painted at a time: 
-       * the label when open, the current-preset-label when closed. 
-       * This keeps the button a constant width when switching open/closed. */
       width: 100%;
-      position: relative;
-      
-      .label {
-        position: absolute;
-        top: 0;
-        left: 0;
-        opacity: 0;
-      }
-
-      .current-preset-label {
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        opacity: 1;
-      }
-      
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    
+    /* Crop the trigger button's two-line label to display either only one
+     * of the menu label or the or its current value at any given time.
+     * (Both are always rendered for accessibility.)
+      */
+    sl-button::part(label) {
+      /*height: calc(var(--sl-input-height-medium) - var(--sl-input-border-width) * 2);*/
+      height: 1lh;
+      overflow: hidden;
+    }
+    .dropdown-label {
+      text-align: start;
+      transform: translateY(-50%); /* second line: current value */
       &.open {
-        .label {
-          opacity: 1;
-        }
-        .current-preset-label {
-          opacity: 0;
-        }
+        transform: translateY(0); /* first line: menu label */
       }
-
       @media (prefers-reduced-motion: no-preference) {
-        .label, .current-preset-label {
-          transition: opacity var(--sl-transition-fast) ease-in-out;
-        }
+        transition: transform 100ms ease; /* match sl-dropdown animation timing */
       }
     }
+    
   `;
 }
 
