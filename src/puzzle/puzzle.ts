@@ -1,5 +1,5 @@
 import { type Signal, computed, signal } from "@lit-labs/signals";
-import type { Drawing } from "./drawing.ts";
+import { Drawing, type FontInfo } from "./drawing.ts";
 import {
   type ChangeNotification,
   type Colour,
@@ -55,9 +55,11 @@ export class Puzzle {
   }
 
   public readonly puzzleId: string;
+
   private readonly _module: PuzzleModule;
   private readonly _frontend: Frontend;
-  private _drawing?: DrawingHandle;
+  private _drawing?: Drawing;
+  private _drawingHandle?: DrawingHandle;
 
   // Private constructor; use Puzzle.create(puzzleId) to instantiate a Puzzle.
   private constructor(puzzleId: string, module: PuzzleModule) {
@@ -71,15 +73,10 @@ export class Puzzle {
     });
   }
 
-  setDrawing(drawing: Drawing) {
-    this._drawing = drawing.bind(this._module);
-    this._frontend.setDrawing(this._drawing);
-  }
-
-  delete() {
+  async delete() {
     this.deactivateTimer();
+    await this.detachCanvas();
     this._frontend.delete();
-    this._drawing?.delete();
   }
 
   notifyChange = async (message: ChangeNotification) => {
@@ -262,6 +259,49 @@ export class Puzzle {
   }
   async setGameId(id: string) {
     return this._frontend.setGameId(id);
+  }
+
+  //
+  // Public API to Drawing
+  //
+
+  public async attachCanvas(canvas: OffscreenCanvas, fontInfo: FontInfo) {
+    if (this._drawing) {
+      throw new Error("attachCanvas called with another canvas already attached");
+    }
+    this._drawing = new Drawing(canvas, fontInfo);
+    this._drawingHandle = this._drawing.bind(this._module);
+    this._frontend.setDrawing(this._drawingHandle);
+  }
+
+  public async detachCanvas(): Promise<void> {
+    if (this._drawing) {
+      this._frontend.setDrawing(null);
+      this._drawingHandle?.delete();
+      this._drawingHandle = undefined;
+      this._drawing = undefined;
+    }
+  }
+
+  public async resizeDrawing({ w, h }: Size, dpr: number) {
+    if (!this._drawing) {
+      throw new Error("resizeDrawing called with no canvas attached");
+    }
+    this._drawing.resize(w, h, dpr);
+  }
+
+  public async setDrawingPalette(colors: string[]) {
+    if (!this._drawing) {
+      throw new Error("setDrawingPalette called with no canvas attached");
+    }
+    this._drawing.setPalette(colors);
+  }
+
+  public async setDrawingFontInfo(fontInfo: FontInfo) {
+    if (!this._drawing) {
+      throw new Error("setDrawingFontInfo called with no canvas attached");
+    }
+    this._drawing.setFontInfo(fontInfo);
   }
 
   //

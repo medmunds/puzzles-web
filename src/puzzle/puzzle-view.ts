@@ -8,7 +8,7 @@ import { query } from "lit/decorators/query.js";
 import { coordsToColour, equalColour } from "../utils/colour.ts";
 import { almostEqual } from "../utils/math.ts";
 import { puzzleContext } from "./contexts.ts";
-import { Drawing } from "./drawing.ts";
+import type { FontInfo } from "./drawing.ts";
 import type { Puzzle } from "./puzzle.ts";
 
 ColorSpace.register(sRGB);
@@ -40,9 +40,6 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   @state()
   protected puzzle?: Puzzle;
 
-  // The drawing api instance
-  protected drawing?: Drawing = undefined;
-
   @query("canvas", true)
   protected canvas?: HTMLCanvasElement;
 
@@ -61,13 +58,22 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   // effects, simulate one by tracking the last rendered currentGameId.
   private renderedGameId?: string;
 
-  protected async updated() {
+  private isAttachedToPuzzle = false;
+
+  protected override async updated() {
     let needsResizeRedraw = false;
 
     // Initialize drawing when dependencies become available
-    if (!this.drawing && this.canvas && this.puzzle) {
-      this.drawing = new Drawing(this.canvas);
-      this.puzzle.setDrawing(this.drawing);
+    if (!this.isAttachedToPuzzle && this.canvas && this.puzzle) {
+      this.isAttachedToPuzzle = true;
+      const computedStyle = window.getComputedStyle(this.canvas);
+      const fontInfo: FontInfo = {
+        "font-family": computedStyle.fontFamily,
+        "font-weight": computedStyle.fontWeight,
+        "font-style": computedStyle.fontStyle,
+      };
+      const offscreenCanvas = this.canvas.transferControlToOffscreen();
+      await this.puzzle.attachCanvas(offscreenCanvas, fontInfo);
       await this.updateColorPalette();
       needsResizeRedraw = true;
     }
@@ -84,7 +90,15 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     }
   }
 
-  render() {
+  override async disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.isAttachedToPuzzle) {
+      await this.puzzle?.detachCanvas();
+      this.isAttachedToPuzzle = false;
+    }
+  }
+
+  override render() {
     const result = [this.renderPuzzle()];
     if (this.statusbar && this.puzzle?.wantsStatusbar) {
       result.push(this.renderStatusbar());
@@ -148,7 +162,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       // );
       this.canvas.style.width = `${size.w}px`;
       this.canvas.style.height = `${size.h}px`;
-      this.drawing?.resize(size.w, size.h, dpr);
+      await this.puzzle.resizeDrawing(size, dpr);
       redraw = true;
     }
     if (redraw) {
@@ -161,8 +175,8 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   //
 
   protected async updateColorPalette() {
-    if (!this.puzzle || !this.drawing) {
-      throw new Error("updateColorPalette called before puzzle and drawing ready");
+    if (!this.puzzle || !this.isAttachedToPuzzle) {
+      throw new Error("updateColorPalette called before puzzle ready");
     }
 
     // Get our (original) CSS background color, as RGB.
@@ -200,7 +214,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     });
 
     // Pass the resulting palette to the drawing API.
-    this.drawing.setPalette(palette);
+    await this.puzzle.setDrawingPalette(palette);
 
     // Update our own CSS background color to match (for any padding area).
     let bgIndex = puzzlePalette.findIndex((colour) =>
@@ -243,7 +257,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         padding: 0 !important;
         border-width: 0 !important;
       }
-      
+
       [part="puzzle"].resizing {
         /* Allow full flexing during resize calculations, but disable
          * otherwise to prevent vertical stretching */

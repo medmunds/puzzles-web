@@ -10,11 +10,17 @@ import type {
 
 // Type definitions
 
-interface FontInfo {
+export interface FontInfo {
   "font-family": string;
   "font-weight": string;
   "font-style": string;
 }
+
+export const defaultFontInfo: FontInfo = {
+  "font-family": "sans-serif",
+  "font-weight": "normal",
+  "font-style": "normal",
+} as const;
 
 interface Blitter {
   w: number;
@@ -27,8 +33,8 @@ interface Blitter {
  * Drawing class for canvas-based rendering
  */
 export class Drawing implements DrawingImpl<Blitter> {
-  private canvas: HTMLCanvasElement;
-  private context: CanvasRenderingContext2D;
+  private readonly canvas: OffscreenCanvas;
+  private context: OffscreenCanvasRenderingContext2D;
   private palette: string[] = [];
   private fontInfo: FontInfo;
   private dpr = 1; // devicePixelRatio of the canvas
@@ -36,8 +42,9 @@ export class Drawing implements DrawingImpl<Blitter> {
   /**
    * Create a new Drawing instance
    */
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: OffscreenCanvas, fontInfo?: FontInfo) {
     this.canvas = canvas;
+    this.fontInfo = fontInfo ?? defaultFontInfo;
 
     // Get context
     const context = this.canvas.getContext("2d", {
@@ -52,14 +59,6 @@ export class Drawing implements DrawingImpl<Blitter> {
     // emcclib.js uses round for everything
     this.context.lineCap = "round";
     this.context.lineJoin = "round";
-
-    // Get font info
-    const computedStyle = window.getComputedStyle(this.canvas);
-    this.fontInfo = {
-      "font-family": computedStyle.fontFamily,
-      "font-weight": computedStyle.fontWeight,
-      "font-style": computedStyle.fontStyle,
-    };
   }
 
   bind(module: PuzzleModule): DrawingHandle {
@@ -68,16 +67,25 @@ export class Drawing implements DrawingImpl<Blitter> {
 
   /**
    * Install the color palette, which must be CSS color strings
-   * in the same order as the return from Midend.getColours.
+   * in the same order as the return from Frontend.getColourPalette.
+   * (Does not redraw anything already on the canvas.)
    */
   setPalette(colors: string[]): void {
     this.palette = colors;
   }
 
   /**
+   * Update font for later text drawing.
+   * (Does not redraw text already on the canvas.)
+   */
+  public setFontInfo(fontInfo: FontInfo): void {
+    this.fontInfo = { ...fontInfo };
+  }
+
+  /**
    * Resize the canvas
    */
-  resize(w: number, h: number, dpr: number): void {
+  public resize(w: number, h: number, dpr: number): void {
     // https://web.dev/articles/canvas-hidipi
     // Most canvas operations will be scaled by the dpr,
     // allowing the puzzle to work in CSS pixels.
@@ -176,16 +184,14 @@ export class Drawing implements DrawingImpl<Blitter> {
     this.context.stroke();
   }
 
-  // TODO: double buffering; investigate OffscreenCanvas
-  startDraw(): void {
-    // zero out invalid rects
-  }
-  drawUpdate(_rect: Rect): void {
-    // accumulate invalid rect(s)
-  }
-  endDraw(): void {
-    // copy invalid rect(s) from offscreen to onscreen
-  }
+  // Invalidation region management (startDraw/drawUpdate/endDraw):
+  // Because our offscreen canvas automatically syncs to the onscreen canvas,
+  // there's no need to keep track of the dirty region or notify about updates.
+  startDraw(): void {}
+
+  drawUpdate(_rect: Rect): void {}
+
+  endDraw(): void {}
 
   clip({ x, y, w, h }: Rect): void {
     this.context.save();
