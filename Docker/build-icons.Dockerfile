@@ -23,6 +23,8 @@ RUN apk add --no-cache cmake make coreutils pkgconfig
 RUN apk add --no-cache build-base gtk+3.0-dev
 # Requirements for running the built puzzle apps and processing screenshots:
 RUN apk add --no-cache font-noto imagemagick perl
+# Requirements for optimizing generated icons:
+RUN apk add --no-cache oxipng
 
 WORKDIR /app
 

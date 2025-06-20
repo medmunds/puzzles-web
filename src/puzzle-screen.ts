@@ -70,7 +70,7 @@ export class PuzzleScreen extends LitElement {
     }
 
     const iconUrl = new URL(
-      `./assets/icons/${this.puzzleType}-64d24.png`,
+      `./assets/icons/${this.puzzleType}-64d8.png`,
       import.meta.url,
     ).href;
     const helpUrl = new URL(

@@ -33,11 +33,11 @@ export class CatalogCard extends LitElement {
     }
 
     const icon1x = new URL(
-      `./assets/icons/${this.puzzleType}-64d24.png`,
+      `./assets/icons/${this.puzzleType}-64d8.png`,
       import.meta.url,
     ).href;
     const icon2x = new URL(
-      `./assets/icons/${this.puzzleType}-128d24.png`,
+      `./assets/icons/${this.puzzleType}-128d8.png`,
       import.meta.url,
     ).href;
     const srcset = `${icon1x}, ${icon2x} 2x`;

@@ -57,10 +57,15 @@ rm -rf "${DIST_DIR_ICONS}"/*
 #   puzzle-banner.jpg: angled and cropped (240x130, 24bit)
 # cp "${BUILD_DIR}"/icons/*-base.png "${DIST_DIR_ICONS}/"
 # cp "${BUILD_DIR}"/icons/*-ibase.png "${DIST_DIR_ICONS}/"
-cp "${BUILD_DIR}"/icons/*-64d24.png "${DIST_DIR_ICONS}/"
-cp "${BUILD_DIR}"/icons/*-128d24.png "${DIST_DIR_ICONS}/"
+#cp "${BUILD_DIR}"/icons/*-64d24.png "${DIST_DIR_ICONS}/"
+#cp "${BUILD_DIR}"/icons/*-128d24.png "${DIST_DIR_ICONS}/"
+cp "${BUILD_DIR}"/icons/*-64d8.png "${DIST_DIR_ICONS}/"
+cp "${BUILD_DIR}"/icons/*-128d8.png "${DIST_DIR_ICONS}/"
 # cp "${BUILD_DIR}"/icons/*-web.png "${DIST_DIR_ICONS}/"
 # cp "${BUILD_DIR}"/icons/*-banner.jpg "${DIST_DIR_ICONS}/"
+
+# Optimize the delivered icons in place.
+oxipng -o max --zopfli --fast -s "${DIST_DIR_ICONS}"/*.png
 
 if [ "${DEBUG:-0}" != "0" ]; then
   echo "[DEBUG] Delivered ${DIST_DIR_ICONS}:"

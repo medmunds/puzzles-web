@@ -3,6 +3,7 @@ import { spaFallbackIgnorePublicSubdirs } from "./viteSpaFallbackIgnorePublicSub
 
 export default defineConfig({
   build: {
+    assetsInlineLimit: 5120, // default 4096; this covers a few icons above that
     rollupOptions: {
       input: {
         main: "index.html",
