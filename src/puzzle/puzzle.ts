@@ -9,7 +9,9 @@ import type {
   FontInfo,
   Frontend,
   FrontendConstructorArgs,
+  KeyLabel,
   Point,
+  PresetMenuEntry,
   PuzzleModule,
   PuzzleStaticAttributes,
   Size,
@@ -22,7 +24,7 @@ import type {
  * Mediates handoff of OffscreenCanvas to the Drawing object.
  */
 export class Puzzle {
-  static async create(puzzleId: string) {
+  public static async create(puzzleId: string): Promise<Puzzle> {
     // (Module initialization and querying static properties moves to worker.
     // Static property values should be passed to main thread with worker's
     // response to "createPuzzle" call.)
@@ -62,7 +64,7 @@ export class Puzzle {
     });
   }
 
-  async delete() {
+  public async delete(): Promise<void> {
     await this.detachCanvas();
     this._frontend.delete();
   }
@@ -81,7 +83,7 @@ export class Puzzle {
     this.wantsStatusbar = wantsStatusbar;
   }
 
-  notifyChange = async (message: ChangeNotification) => {
+  private notifyChange = async (message: ChangeNotification) => {
     // Callback from C++ Frontend: update signals with provided data.
     // (Runs in main thread; message could originate in a worker.)
     function update<T>(signal: Signal.State<T>, newValue: T) {
@@ -101,7 +103,8 @@ export class Puzzle {
         update(this._canRedo, message.canRedo);
         update(this._isSolved, message.isSolved);
         update(this._isLost, message.isLost);
-        // TODO: message.usedSolveCommand
+        // TODO: usedSolveCommand
+        // TODO: canFormatAsText
         break;
       case "preset-id-change":
         update(this._currentPresetId, message.presetId);
@@ -139,117 +142,119 @@ export class Puzzle {
   private _canFormatAsText = signal(false);
   private _statusbarText = signal<string>("");
 
-  get canUndo(): boolean {
+  public get canUndo(): boolean {
     return this._canUndo.get();
   }
 
-  get canRedo(): boolean {
+  public get canRedo(): boolean {
     return this._canRedo.get();
   }
 
-  get isSolved(): boolean {
+  public get isSolved(): boolean {
     return this._isSolved.get();
   }
 
-  get isLost(): boolean {
+  public get isLost(): boolean {
     return this._isLost.get();
   }
 
-  get currentPresetId(): number | undefined {
+  public get currentPresetId(): number | undefined {
     return this._currentPresetId.get();
   }
 
-  get currentParams(): string | undefined {
+  public get currentParams(): string | undefined {
     return this._currentParams.get();
   }
 
-  get currentGameId(): string | undefined {
+  public get currentGameId(): string | undefined {
     return this._currentGameId.get();
   }
 
-  get randomSeed(): string | undefined {
+  public get randomSeed(): string | undefined {
     return this._randomSeed.get();
   }
 
-  get canFormatAsText(): boolean {
-    // TODO: make this reactive (game-state-change?)
+  public get canFormatAsText(): boolean {
     return this._canFormatAsText.get();
   }
 
-  get statusbarText(): string | null {
+  public get statusbarText(): string | null {
     return this._statusbarText.get();
   }
 
   // Methods
-  async newGame() {
+  public async newGame(): Promise<void> {
     this._frontend.newGame();
   }
 
-  async restartGame() {
+  public async restartGame(): Promise<void> {
     this._frontend.restartGame();
   }
 
-  async undo() {
+  public async undo(): Promise<void> {
     this._frontend.undo();
   }
 
-  async redo() {
+  public async redo(): Promise<void> {
     this._frontend.redo();
   }
 
-  async solve() {
+  public async solve(): Promise<string | undefined> {
     return this._frontend.solve();
   }
 
-  async setPreset(id: number) {
+  public async setPreset(id: number): Promise<void> {
     this._frontend.setPreset(id);
   }
 
-  async processKey(key: number) {
+  public async processKey(key: number): Promise<boolean> {
     return this._frontend.processKey(0, 0, key);
   }
 
-  async processMouse({ x, y }: Point, button: number) {
+  public async processMouse({ x, y }: Point, button: number): Promise<boolean> {
     return this._frontend.processKey(x, y, button);
   }
 
-  async requestKeys() {
+  public async requestKeys(): Promise<KeyLabel[]> {
     return this._frontend.requestKeys();
   }
 
-  async getPresets() {
+  public async getPresets(): Promise<PresetMenuEntry[]> {
     return this._frontend.getPresets();
   }
 
-  async getConfigItems(which: number): Promise<ConfigItems> {
+  public async getConfigItems(which: number): Promise<ConfigItems> {
     return this._frontend.getConfigItems(which);
   }
 
-  async setConfigItems(which: number, items: ConfigItems): Promise<string | undefined> {
+  public async setConfigItems(
+    which: number,
+    items: ConfigItems,
+  ): Promise<string | undefined> {
     return this._frontend.setConfigItems(which, items);
   }
 
-  async redraw() {
+  public async redraw(): Promise<void> {
     return this._frontend.redraw();
   }
 
-  async getColourPalette(defaultBackground: Colour) {
+  public async getColourPalette(defaultBackground: Colour): Promise<Colour[]> {
     return this._frontend.getColourPalette(defaultBackground);
   }
 
-  async timer(tplus: number) {
-    return this._frontend.timer(tplus);
-  }
-
-  async size(maxSize: Size, isUserSize: boolean, devicePixelRatio: number) {
+  public async size(
+    maxSize: Size,
+    isUserSize: boolean,
+    devicePixelRatio: number,
+  ): Promise<Size> {
     return this._frontend.size(maxSize, isUserSize, devicePixelRatio);
   }
 
-  async formatAsText() {
+  public async formatAsText(): Promise<string | undefined> {
     return this._frontend.formatAsText();
   }
 
-  async setGameId(id: string) {
+  public async setGameId(id: string): Promise<string | undefined> {
     return this._frontend.setGameId(id);
   }
 
@@ -257,7 +262,10 @@ export class Puzzle {
   // Public API to Drawing
   //
 
-  public async attachCanvas(canvas: OffscreenCanvas, fontInfo: FontInfo) {
+  public async attachCanvas(
+    canvas: OffscreenCanvas,
+    fontInfo: FontInfo,
+  ): Promise<void> {
     if (this._drawing) {
       throw new Error("attachCanvas called with another canvas already attached");
     }
@@ -275,21 +283,21 @@ export class Puzzle {
     }
   }
 
-  public async resizeDrawing({ w, h }: Size, dpr: number) {
+  public async resizeDrawing({ w, h }: Size, dpr: number): Promise<void> {
     if (!this._drawing) {
       throw new Error("resizeDrawing called with no canvas attached");
     }
     this._drawing.resize(w, h, dpr);
   }
 
-  public async setDrawingPalette(colors: string[]) {
+  public async setDrawingPalette(colors: string[]): Promise<void> {
     if (!this._drawing) {
       throw new Error("setDrawingPalette called with no canvas attached");
     }
     this._drawing.setPalette(colors);
   }
 
-  public async setDrawingFontInfo(fontInfo: FontInfo) {
+  public async setDrawingFontInfo(fontInfo: FontInfo): Promise<void> {
     if (!this._drawing) {
       throw new Error("setDrawingFontInfo called with no canvas attached");
     }
