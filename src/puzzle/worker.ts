@@ -18,53 +18,10 @@ import type {
 } from "./types.ts";
 
 /**
- * Frontend callbacks implementation for worker.
- */
-class FrontendCallbacks implements Omit<FrontendConstructorArgs, "notifyChange"> {
-  constructor(
-    private readonly serviceTimer: Frontend["timer"],
-    private readonly notifyTimerState: (isActive: boolean) => void,
-  ) {}
-
-  private timerId?: number;
-  private lastTimeMs = 0;
-
-  private onAnimationFrame = async (timestampMs: number) => {
-    if (this.timerId !== undefined) {
-      // puzzle timer requires secs, not msec
-      this.serviceTimer((timestampMs - this.lastTimeMs) / 1000);
-      this.lastTimeMs = timestampMs;
-      this.timerId = self.requestAnimationFrame(this.onAnimationFrame);
-    }
-  };
-
-  activateTimer = (): void => {
-    if (this.timerId === undefined) {
-      this.lastTimeMs = self.performance.now();
-      this.timerId = self.requestAnimationFrame(this.onAnimationFrame);
-      this.notifyTimerState(true);
-    }
-  };
-
-  deactivateTimer = (): void => {
-    if (this.timerId !== undefined) {
-      self.cancelAnimationFrame(this.timerId);
-      this.timerId = undefined;
-      this.notifyTimerState(false);
-    }
-  };
-
-  textFallback = (strings: string[]): string => {
-    // Probably any Unicode string can be rendered, so use the preferred one.
-    return strings[0];
-  };
-}
-
-/**
  * Worker-side puzzle implementation that handles all WASM operations.
  */
-export class WorkerPuzzle {
-  public static async create(puzzleId: string): Promise<WorkerPuzzle> {
+export class WorkerPuzzle implements FrontendConstructorArgs {
+  static async create(puzzleId: string): Promise<WorkerPuzzle> {
     const module = await createModule({
       locateFile: () =>
         new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href,
@@ -72,42 +29,29 @@ export class WorkerPuzzle {
     return new WorkerPuzzle(puzzleId, module);
   }
 
-  public readonly puzzleId: string;
+  readonly puzzleId: string;
 
   private readonly _module: PuzzleModule;
   private readonly _frontend: Frontend;
-  private readonly _frontendCallbacks: FrontendCallbacks;
   private _drawing?: Drawing;
   private _drawingHandle?: DrawingHandle;
-
-  // Comlink callbacks to main thread
-  private _earlyChangeNotifications: ChangeNotification[] = [];
-  private _notifyChange: (message: ChangeNotification) => void = (message) => {
-    // Frontend constructor notifies of initial state. Queue pending
-    // messages to deliver when the main thread callbacks are set up.
-    this._earlyChangeNotifications.push(message);
-  };
-  private _notifyTimerState: (isActive: boolean) => void = () => {
-    // (This shouldn't happen.)
-    throw new Error("Unhandled early notifyTimerState");
-  };
 
   private constructor(puzzleId: string, module: PuzzleModule) {
     this.puzzleId = puzzleId;
     this._module = module;
-    this._frontendCallbacks = new FrontendCallbacks(
-      this.serviceTimer,
-      this.notifyTimerState,
-    );
     this._frontend = new module.Frontend({
-      activateTimer: this._frontendCallbacks.activateTimer,
-      deactivateTimer: this._frontendCallbacks.deactivateTimer,
-      textFallback: this._frontendCallbacks.textFallback,
-      notifyChange: (message: ChangeNotification) => this._notifyChange(message),
+      activateTimer: this.activateTimer,
+      deactivateTimer: this.deactivateTimer,
+      textFallback: this.textFallback,
+      notifyChange: this.notifyChange,
     });
   }
 
-  // Set up callbacks from main thread
+  // Comlink callbacks to main thread
+  private _earlyChangeNotifications: ChangeNotification[] = [];
+  private _notifyChange?: (message: ChangeNotification) => void;
+  private _notifyTimerState?: (isActive: boolean) => void;
+
   setCallbacks(
     notifyChange: (message: ChangeNotification) => void,
     notifyTimerState: (isActive: boolean) => void,
@@ -137,14 +81,6 @@ export class WorkerPuzzle {
       wantsStatusbar: this._frontend.wantsStatusbar,
     };
   }
-
-  private serviceTimer = (tplus: number) => {
-    this._frontend.timer(tplus);
-  };
-
-  private notifyTimerState = (isActive: boolean) => {
-    this._notifyTimerState(isActive);
-  };
 
   // All the puzzle methods
   newGame(): void {
@@ -215,7 +151,10 @@ export class WorkerPuzzle {
     return this._frontend.setGameId(id);
   }
 
+  //
   // Drawing methods
+  //
+
   attachCanvas(canvas: OffscreenCanvas, fontInfo: FontInfo): void {
     if (this._drawing) {
       throw new Error("attachCanvas called with another canvas already attached");
@@ -254,6 +193,58 @@ export class WorkerPuzzle {
     }
     this._drawing.setFontInfo(fontInfo);
   }
+
+  //
+  // Timer
+  //
+
+  private timerId?: number;
+  private lastTimeMs = 0;
+
+  private onAnimationFrame = async (timestampMs: number) => {
+    if (this.timerId !== undefined) {
+      // puzzle timer requires secs, not msec
+      this._frontend.timer((timestampMs - this.lastTimeMs) / 1000);
+      this.lastTimeMs = timestampMs;
+      this.timerId = self.requestAnimationFrame(this.onAnimationFrame);
+    }
+  };
+
+  //
+  // Frontend callbacks
+  //
+
+  activateTimer = (): void => {
+    if (this.timerId === undefined) {
+      this.lastTimeMs = self.performance.now();
+      this.timerId = self.requestAnimationFrame(this.onAnimationFrame);
+      this._notifyTimerState?.(true);
+    }
+  };
+
+  deactivateTimer = (): void => {
+    if (this.timerId !== undefined) {
+      self.cancelAnimationFrame(this.timerId);
+      this.timerId = undefined;
+      this._notifyTimerState?.(false);
+    }
+  };
+
+  textFallback = (strings: string[]): string => {
+    // Probably any Unicode string can be rendered, so use the preferred one.
+    return strings[0];
+  };
+
+  notifyChange = (message: ChangeNotification): void => {
+    if (this._notifyChange) {
+      this._notifyChange(message);
+    } else {
+      // Early notification before main thread has installed callbacks
+      // (e.g., initial state in Frontend constructor). Queue for delivery
+      // when callbacks installed.
+      this._earlyChangeNotifications.push(message);
+    }
+  };
 }
 
 // Factory function to create puzzle instances
