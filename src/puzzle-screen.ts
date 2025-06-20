@@ -102,11 +102,19 @@ export class PuzzleScreen extends LitElement {
 
           <div class="toolbar">
             <puzzle-game-menu @sl-select=${this.handleGameMenuCommand}>
-              <sl-menu-item value="checkpoint" disabled>Checkpoint</sl-menu-item>
               <sl-divider></sl-divider>
-              <sl-menu-item value="share" disabled>Share…</sl-menu-item>
-              <sl-menu-item value="save" disabled>Save…</sl-menu-item>
-              <sl-menu-item value="load" disabled>Load…</sl-menu-item>
+              <sl-menu-item value="share" disabled>
+                <sl-icon slot="prefix" name="share-2"></sl-icon>
+                Share…
+              </sl-menu-item>
+              <sl-menu-item value="save" disabled>
+                <sl-icon slot="prefix" name="download"></sl-icon>
+                Save…
+              </sl-menu-item>
+              <sl-menu-item value="load" disabled>
+                <sl-icon slot="prefix" name="upload"></sl-icon>
+                Load…
+              </sl-menu-item>
               <sl-divider></sl-divider>
               <sl-menu-item value="catalog">
                 <sl-icon slot="prefix" name="arrow-left"></sl-icon>
@@ -116,7 +124,10 @@ export class PuzzleScreen extends LitElement {
               <sl-menu-label class="version">v${version}</sl-menu-label>
             </puzzle-game-menu>
             <puzzle-preset-menu></puzzle-preset-menu>
-            <sl-button href=${helpUrl} @click=${this.showHelp}>Help</sl-button>
+            <sl-button href=${helpUrl} @click=${this.showHelp}>
+              <sl-icon slot="prefix" name="circle-help"></sl-icon>
+              Help
+            </sl-button>
           </div>
 
           <puzzle-view-interactive 
@@ -133,11 +144,17 @@ export class PuzzleScreen extends LitElement {
               <sl-button 
                   slot="extra-actions-solved" 
                   @click=${this.handleChangeType}
-                >Change type</sl-button>
+                >
+                <sl-icon slot="prefix" name="swatch-book"></sl-icon>
+                Change type
+              </sl-button>
               <sl-button 
                   slot="extra-actions-solved" 
                   href=${otherPuzzlesUrl}
-                >Other puzzles</sl-button>
+                >
+                <sl-icon slot="prefix" name="arrow-left"></sl-icon>
+                Other puzzles
+              </sl-button>
             </puzzle-end-notification>
           </div>
 

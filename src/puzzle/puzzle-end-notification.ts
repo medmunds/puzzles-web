@@ -10,7 +10,6 @@ import type { Puzzle } from "./puzzle.ts";
 
 // Register components
 import "@shoelace-style/shoelace/dist/components/alert/alert.js";
-import "@shoelace-style/shoelace/dist/components/animation/animation.js";
 import "@shoelace-style/shoelace/dist/components/button/button.js";
 import "@shoelace-style/shoelace/dist/components/icon/icon.js";
 import { query } from "lit/decorators/query.js";
@@ -43,18 +42,36 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
       : randomItem(PuzzleEndNotification.lostIcons);
 
     const actions = [
-      html`<sl-button variant="neutral" @click=${this.newGame}>New game</sl-button>`,
+      html`
+        <sl-button variant="neutral" @click=${this.newGame}>
+          <sl-icon slot="prefix" name="plus"></sl-icon>
+          New game
+        </sl-button>
+      `,
     ];
     if (this.puzzle.isLost) {
-      actions.push(html`<sl-button @click=${this.restartGame}>Restart</sl-button>`);
+      actions.push(html`
+        <sl-button @click=${this.restartGame}>
+          <sl-icon slot="prefix" name="iteration-cw"></sl-icon>
+          Restart
+        </sl-button>
+      `);
       if (this.puzzle.canUndo) {
-        actions.push(html`<sl-button @click=${this.undo}>Undo</sl-button>`);
+        actions.push(html`
+          <sl-button @click=${this.undo}>
+            <sl-icon slot="prefix" name="undo-2"></sl-icon>
+            Undo
+          </sl-button>
+        `);
       }
       if (this.puzzle.canSolve) {
         // TODO: && !usedSolveButton
-        actions.push(
-          html`<sl-button @click=${this.showSolution}>Show solution</sl-button>`,
-        );
+        actions.push(html`
+          <sl-button @click=${this.showSolution}>
+            <sl-icon slot="prefix" name="sparkles"></sl-icon>
+            Show solution
+          </sl-button>
+        `);
       }
       actions.push(html`<slot name="extra-actions-lost"></slot>`);
     } else {

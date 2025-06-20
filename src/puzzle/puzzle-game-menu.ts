@@ -11,9 +11,10 @@ import type { Puzzle } from "./puzzle.ts";
 import "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";
 import "@shoelace-style/shoelace/dist/components/button/button.js";
 import "@shoelace-style/shoelace/dist/components/divider/divider.js";
+import "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";
+import "@shoelace-style/shoelace/dist/components/icon/icon.js";
 import "@shoelace-style/shoelace/dist/components/menu/menu.js";
 import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
-import "@shoelace-style/shoelace/dist/components/divider/divider.js";
 import "./puzzle-config.ts";
 
 @customElement("puzzle-game-menu")
@@ -37,16 +38,29 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
       <sl-dropdown hoist>
         <sl-button slot="trigger" caret>Game</sl-button>
         <sl-menu @sl-select=${this.handleGameMenuCommand}>
-          <sl-menu-item value="new">New game</sl-menu-item>
-          <sl-menu-item value="restart">Restart game</sl-menu-item>
+          <sl-menu-item value="new">
+            <sl-icon slot="prefix" name="plus"></sl-icon>
+            New game
+          </sl-menu-item>
+          <sl-menu-item value="restart">
+            <sl-icon slot="prefix" name="iteration-cw"></sl-icon>
+            Restart game
+          </sl-menu-item>
           ${when(
             this.puzzle?.canSolve,
             () =>
               html`
-                <sl-menu-item value="solve" ?disabled=${this.puzzle?.isSolved}>Solve</sl-menu-item>`,
+                <sl-menu-item value="solve" ?disabled=${this.puzzle?.isSolved}>
+                  <sl-icon slot="prefix" name="sparkles"></sl-icon>
+                  Solve
+                </sl-menu-item>
+              `,
           )}
           <sl-divider></sl-divider>
-          <sl-menu-item value="preferences">Preferences…</sl-menu-item>
+          <sl-menu-item value="preferences">
+            <sl-icon slot="prefix" name="settings"></sl-icon>
+            Preferences…
+          </sl-menu-item>
           <slot></slot>
         </sl-menu>
       </sl-dropdown>
