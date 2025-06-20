@@ -28,7 +28,10 @@ export class Puzzle {
     // (Module initialization and querying static properties moves to worker.
     // Static property values should be passed to main thread with worker's
     // response to "createPuzzle" call.)
-    const module = await loadPuzzleModule(puzzleId);
+    const module = await createModule({
+      locateFile: () =>
+        new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href,
+    });
     const puzzle = new Puzzle(puzzleId, module);
     await puzzle.initStaticProperties({
       displayName: puzzle._frontend.name,
@@ -119,6 +122,7 @@ export class Puzzle {
   };
 
   // Static properties (no reactivity needed)
+  // (These are effectively readonly, but are late initialized.)
   public displayName = "";
   public canConfigure = false;
   public canSolve = false;
@@ -329,29 +333,6 @@ export class Puzzle {
   private serviceTimer = (tplus: number) => {
     this._frontend.timer(tplus);
   };
-}
-
-// Puzzles of the same type (on the same page) can share the WASM module
-// (and its heap, etc.). And a single worker can service all puzzleModules.
-const puzzleModuleCache: Map<string, WeakRef<PuzzleModule>> = new Map();
-
-/**
- * Load a wasm puzzle module for puzzleId.
- * (Moves to worker.)
- */
-async function loadPuzzleModule(puzzleId: string): Promise<PuzzleModule> {
-  let module = puzzleModuleCache.get(puzzleId)?.deref();
-
-  if (module === undefined) {
-    // Point the shared emcc runtime to the desired puzzle.wasm
-    module = await createModule({
-      locateFile: () =>
-        new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href,
-    });
-    puzzleModuleCache.set(puzzleId, new WeakRef(module));
-  }
-
-  return module;
 }
 
 /**
