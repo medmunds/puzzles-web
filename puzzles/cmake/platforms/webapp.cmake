@@ -14,17 +14,6 @@ set(CMAKE_EXECUTABLE_SUFFIX ".js")
 set(WASM ON
         CACHE BOOL "Compile to WebAssembly rather than plain JavaScript")
 
-# The minimal versions here are the ones that Puzzles' own JavaScript
-# is written for. For most browsers, that's the earliest version whose
-# WASM Emscripten is still willing to target (as of Emscripten
-# 4.0.8). This build only supports WASM.
-set(MIN_FIREFOX_VERSION 79 CACHE STRING
-        "Oldest major version of Firefox to target")
-set(MIN_SAFARI_VERSION 150000 CACHE STRING
-        "Oldest version of desktop Safari to target (XXYYZZ for version XX.YY.ZZ)")
-set(MIN_CHROME_VERSION 85 CACHE STRING
-        "Oldest version of Chrome to target")
-
 find_program(HALIBUT halibut)
 if(NOT HALIBUT)
     message(WARNING "HTML documentation cannot be built (did not find halibut)")
@@ -50,12 +39,9 @@ set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} \
 -lexports.js \
 -sALLOW_MEMORY_GROWTH=1 \
 -sALLOW_TABLE_GROWTH=1 \
--sENVIRONMENT=web \
+-sENVIRONMENT=worker \
 -sEXPORT_BINDINGS=1 \
 -sEXPORT_ES6=1 \
--sMIN_FIREFOX_VERSION=${MIN_FIREFOX_VERSION} \
--sMIN_SAFARI_VERSION=${MIN_SAFARI_VERSION} \
--sMIN_CHROME_VERSION=${MIN_CHROME_VERSION} \
 -sMODULARIZE=1 \
 -sWASM=1 \
 -sWASM_BIGINT \
