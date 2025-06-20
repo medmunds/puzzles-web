@@ -12,11 +12,5 @@ export default defineConfig({
     sourcemap: true,
   },
   appType: "mpa",
-  server: {
-    middlewareMode: false,
-    fs: {
-      strict: false,
-    },
-  },
   plugins: [puzzlesSpaRouting()],
 });
