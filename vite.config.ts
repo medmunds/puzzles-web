@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { spaFallbackIgnorePublicSubdirs } from "./viteSpaFallbackIgnorePublicSubdirs";
+import { puzzlesSpaRouting } from "./vitePuzzlesSpaRouting";
 
 export default defineConfig({
   build: {
@@ -11,12 +11,12 @@ export default defineConfig({
     },
     sourcemap: true,
   },
-  appType: "spa",
+  appType: "mpa",
   server: {
     middlewareMode: false,
     fs: {
       strict: false,
     },
   },
-  plugins: [spaFallbackIgnorePublicSubdirs()],
+  plugins: [puzzlesSpaRouting()],
 });
