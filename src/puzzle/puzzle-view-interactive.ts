@@ -163,11 +163,7 @@ export class PuzzleViewInteractive extends PuzzleView {
       mods |= PuzzleButton.MOD_NUM_KEYPAD;
     }
 
-    const consumed = await this.puzzle.processKey(button | mods);
-    if (consumed) {
-      // TODO: this is too late to preventDefault
-      event.preventDefault();
-    }
+    await this.puzzle.processKey(button | mods);
   };
 
   //
@@ -247,10 +243,8 @@ export class PuzzleViewInteractive extends PuzzleView {
     const { press, drag, release } = PuzzleViewInteractive.domToPuzzleButtons[button];
     const consumed = await this.puzzle.processMouse(location, press);
     if (consumed) {
-      // Defer stateChanged until pointerup.
       this.pointerTracking = { drag, release, pointerId };
       this.canvas.setPointerCapture(pointerId);
-      // Don't preventDefault (breaks focus management).
     } else {
       // Puzzle doesn't want this mouse button, so don't bother tracking.
       // But the midend requires a release event for every press.
@@ -316,13 +310,20 @@ export class PuzzleViewInteractive extends PuzzleView {
   // No pointermove events are sent for the right button, and there isn't
   // any way to track right-click dragging in a browser.
   private handleContextMenu(event: PointerEvent) {
-    if (this.pointerTracking?.pointerId === event.pointerId) {
-      // Puzzle consumed the pointerdown event,
-      // so it needs the pointerup, and we don't want a menu.
-      event.preventDefault();
-    }
-    // Else the puzzle didn't consume pointerdown or the user pressed
-    // the context-menu key, so we should allow the menu.
+    // Cancel contextmenu conditioned on whether puzzle wanted right button
+    // at the particular location:
+    //   if (this.pointerTracking?.pointerId === event.pointerId) ...
+    // Unfortunately, async processMouseEvent in the worker means the
+    // response arrives too late for handlePointerDown to set up the
+    // pointerTracking object before handleContextMenu is called.
+    //
+    // TODO: Cancel contextmenu only if the puzzle wants the right button:
+    //   if (this.puzzle?.needsRightButton) ...
+    // Unfortunately, some puzzles (e.g., Tracks) say they don't *need*
+    // the right button, even though they can *use* it.
+    //
+    // Cancel contextmenu unconditionally for all puzzles:
+    event.preventDefault();
   }
 
   private handleClick(event: MouseEvent) {
