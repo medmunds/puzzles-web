@@ -6,7 +6,8 @@ import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
 import { when } from "lit/directives/when.js";
 import { puzzleContext } from "./contexts.ts";
-import type { ConfigItem, ConfigItems, Puzzle } from "./puzzle.ts";
+import type { Puzzle } from "./puzzle.ts";
+import type { ConfigItem, ConfigItems } from "./types.ts";
 
 // Register components
 import "@shoelace-style/shoelace/dist/components/button/button.js";

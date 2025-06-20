@@ -8,8 +8,8 @@ import { query } from "lit/decorators/query.js";
 import { coordsToColour, equalColour } from "../utils/colour.ts";
 import { almostEqual } from "../utils/math.ts";
 import { puzzleContext } from "./contexts.ts";
-import type { FontInfo } from "./drawing.ts";
 import type { Puzzle } from "./puzzle.ts";
+import type { FontInfo } from "./types.ts";
 
 ColorSpace.register(sRGB);
 ColorSpace.register(OKLCH);
