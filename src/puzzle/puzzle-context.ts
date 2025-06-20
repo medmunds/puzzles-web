@@ -41,38 +41,34 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
       return;
     }
 
-    try {
-      this._puzzle = await Puzzle.create(this.type);
+    this._puzzle = await Puzzle.create(this.type);
 
-      // Set up the game based on attributes
-      if (this.params) {
-        const preset = Number.parseInt(this.params, 10);
-        if (!Number.isNaN(preset)) {
-          await this._puzzle.setPreset(preset);
-        }
+    // Set up the game based on attributes
+    if (this.params) {
+      const preset = Number.parseInt(this.params, 10);
+      if (!Number.isNaN(preset)) {
+        await this._puzzle.setPreset(preset);
       }
-
-      if (this.gameid === "none") {
-        // Just set up the midend but don't create a new game
-      } else if (this.gameid) {
-        // Use the specified game ID
-        await this._puzzle.setGameId(this.gameid);
-      } else {
-        // Create a new random game
-        await this._puzzle.newGame();
-      }
-
-      // Dispatch event to indicate the puzzle is loaded
-      this.dispatchEvent(
-        new CustomEvent("puzzle-loaded", {
-          bubbles: true,
-          composed: true,
-          detail: { puzzle: this._puzzle },
-        }),
-      );
-    } catch (error) {
-      console.error("Failed to load puzzle:", error);
     }
+
+    if (this.gameid === "none") {
+      // Just set up the midend but don't create a new game
+    } else if (this.gameid) {
+      // Use the specified game ID
+      await this._puzzle.setGameId(this.gameid);
+    } else {
+      // Create a new random game
+      await this._puzzle.newGame();
+    }
+
+    // Dispatch event to indicate the puzzle is loaded
+    this.dispatchEvent(
+      new CustomEvent("puzzle-loaded", {
+        bubbles: true,
+        composed: true,
+        detail: { puzzle: this._puzzle },
+      }),
+    );
   }
 }
 

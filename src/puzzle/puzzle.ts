@@ -278,7 +278,6 @@ export class Puzzle {
   public timerComplete: Promise<void> = Promise.resolve();
   private timerCompleteResolve?: () => void;
 
-  // Handle notification from worker to update timerComplete promise
   private notifyTimerState = (isActive: boolean) => {
     // Resolve the current activation (if any)
     this.timerCompleteResolve?.();
