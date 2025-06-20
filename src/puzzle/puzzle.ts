@@ -1,84 +1,51 @@
 import { type Signal, computed, signal } from "@lit-labs/signals";
-import createModule from "../assets/puzzles/emcc-runtime";
-import { Drawing } from "./drawing.ts";
+import * as Comlink from "comlink";
 import type {
   ChangeNotification,
   Colour,
   ConfigItems,
-  Drawing as DrawingHandle,
   FontInfo,
-  Frontend,
-  FrontendConstructorArgs,
   KeyLabel,
   Point,
   PresetMenuEntry,
-  PuzzleModule,
   PuzzleStaticAttributes,
   Size,
 } from "./types.ts";
+import type { RemoteWorkerPuzzle, RemoteWorkerPuzzleFactory } from "./worker.ts";
 
 /**
- * Public API to the WASM puzzle module.
+ * Public API to the remote WASM puzzle module running in a worker.
  * Exposes reactive properties for puzzle state.
  * Exposes async methods for calling WASM Frontend APIs.
- * Mediates handoff of OffscreenCanvas to the Drawing object.
  */
 export class Puzzle {
   public static async create(puzzleId: string): Promise<Puzzle> {
-    // (Module initialization and querying static properties moves to worker.
-    // Static property values should be passed to main thread with worker's
-    // response to "createPuzzle" call.)
-    const module = await createModule({
-      locateFile: () =>
-        new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href,
+    const worker = new Worker(new URL("./worker.ts", import.meta.url), {
+      type: "module",
+      name: `puzzle-${puzzleId}`,
     });
-    const puzzle = new Puzzle(puzzleId, module);
-    await puzzle.initStaticProperties({
-      displayName: puzzle._frontend.name,
-      canConfigure: puzzle._frontend.canConfigure,
-      canSolve: puzzle._frontend.canSolve,
-      needsRightButton: puzzle._frontend.needsRightButton,
-      wantsStatusbar: puzzle._frontend.wantsStatusbar,
-    });
+    const workerFactory = Comlink.wrap<RemoteWorkerPuzzleFactory>(worker);
+    const workerPuzzle = await workerFactory.create(puzzleId);
+
+    const staticProps = await workerPuzzle.getStaticProperties();
+    const puzzle = new Puzzle(puzzleId, worker, workerPuzzle, staticProps);
+    await puzzle.initialize();
     return puzzle;
   }
 
-  public readonly puzzleId: string;
-
-  private readonly _module: PuzzleModule;
-  private readonly _frontend: Frontend;
-  private readonly _frontendCallbacks: FrontendCallbacks;
-  private _drawing?: Drawing;
-  private _drawingHandle?: DrawingHandle;
-
   // Private constructor; use Puzzle.create(puzzleId) to instantiate a Puzzle.
-  private constructor(puzzleId: string, module: PuzzleModule) {
-    this.puzzleId = puzzleId;
-    this._module = module;
-    this._frontendCallbacks = new FrontendCallbacks(
-      this.serviceTimer,
-      this.notifyTimerState,
-    );
-    this._frontend = new module.Frontend({
-      activateTimer: this._frontendCallbacks.activateTimer,
-      deactivateTimer: this._frontendCallbacks.deactivateTimer,
-      textFallback: this._frontendCallbacks.textFallback,
-      notifyChange: this.notifyChange,
-    });
-  }
-
-  public async delete(): Promise<void> {
-    await this.detachCanvas();
-    this._frontend.delete();
-  }
-
-  private async initStaticProperties({
-    displayName,
-    canConfigure,
-    canSolve,
-    needsRightButton,
-    wantsStatusbar,
-  }: PuzzleStaticAttributes): Promise<void> {
+  private constructor(
+    public readonly puzzleId: string,
+    private readonly worker: Worker,
+    private readonly workerPuzzle: RemoteWorkerPuzzle,
+    {
+      displayName,
+      canConfigure,
+      canSolve,
+      needsRightButton,
+      wantsStatusbar,
+    }: PuzzleStaticAttributes,
+  ) {
     this.displayName = displayName;
     this.canConfigure = canConfigure;
     this.canSolve = canSolve;
@@ -86,9 +53,23 @@ export class Puzzle {
     this.wantsStatusbar = wantsStatusbar;
   }
 
+  private async initialize(): Promise<void> {
+    await this.workerPuzzle.setCallbacks(
+      Comlink.proxy(this.notifyChange),
+      Comlink.proxy(this.notifyTimerState),
+    );
+  }
+
+  public async delete(): Promise<void> {
+    await this.detachCanvas();
+    await this.workerPuzzle.delete();
+    this.workerPuzzle[Comlink.releaseProxy]();
+    this.worker.terminate();
+  }
+
   private notifyChange = async (message: ChangeNotification) => {
     // Callback from C++ Frontend: update signals with provided data.
-    // (Runs in main thread; message could originate in a worker.)
+    // (Message originates in worker.)
     function update<T>(signal: Signal.State<T>, newValue: T) {
       if (signal.get() !== newValue) {
         signal.set(newValue);
@@ -122,12 +103,11 @@ export class Puzzle {
   };
 
   // Static properties (no reactivity needed)
-  // (These are effectively readonly, but are late initialized.)
-  public displayName = "";
-  public canConfigure = false;
-  public canSolve = false;
-  public needsRightButton = false;
-  public wantsStatusbar = false;
+  public readonly displayName: string;
+  public readonly canConfigure: boolean;
+  public readonly canSolve: boolean;
+  public readonly needsRightButton: boolean;
+  public readonly wantsStatusbar: boolean;
 
   // Reactive properties
   private _canUndo = signal(false);
@@ -188,62 +168,62 @@ export class Puzzle {
 
   // Methods
   public async newGame(): Promise<void> {
-    this._frontend.newGame();
+    await this.workerPuzzle.newGame();
   }
 
   public async restartGame(): Promise<void> {
-    this._frontend.restartGame();
+    await this.workerPuzzle.restartGame();
   }
 
   public async undo(): Promise<void> {
-    this._frontend.undo();
+    await this.workerPuzzle.undo();
   }
 
   public async redo(): Promise<void> {
-    this._frontend.redo();
+    await this.workerPuzzle.redo();
   }
 
   public async solve(): Promise<string | undefined> {
-    return this._frontend.solve();
+    return await this.workerPuzzle.solve();
   }
 
   public async setPreset(id: number): Promise<void> {
-    this._frontend.setPreset(id);
+    await this.workerPuzzle.setPreset(id);
   }
 
   public async processKey(key: number): Promise<boolean> {
-    return this._frontend.processKey(0, 0, key);
+    return await this.workerPuzzle.processKey(key);
   }
 
   public async processMouse({ x, y }: Point, button: number): Promise<boolean> {
-    return this._frontend.processKey(x, y, button);
+    return await this.workerPuzzle.processMouse({ x, y }, button);
   }
 
   public async requestKeys(): Promise<KeyLabel[]> {
-    return this._frontend.requestKeys();
+    return await this.workerPuzzle.requestKeys();
   }
 
   public async getPresets(): Promise<PresetMenuEntry[]> {
-    return this._frontend.getPresets();
+    return await this.workerPuzzle.getPresets();
   }
 
   public async getConfigItems(which: number): Promise<ConfigItems> {
-    return this._frontend.getConfigItems(which);
+    return await this.workerPuzzle.getConfigItems(which);
   }
 
   public async setConfigItems(
     which: number,
     items: ConfigItems,
   ): Promise<string | undefined> {
-    return this._frontend.setConfigItems(which, items);
+    return await this.workerPuzzle.setConfigItems(which, items);
   }
 
   public async redraw(): Promise<void> {
-    return this._frontend.redraw();
+    await this.workerPuzzle.redraw();
   }
 
   public async getColourPalette(defaultBackground: Colour): Promise<Colour[]> {
-    return this._frontend.getColourPalette(defaultBackground);
+    return await this.workerPuzzle.getColourPalette(defaultBackground);
   }
 
   public async size(
@@ -251,15 +231,15 @@ export class Puzzle {
     isUserSize: boolean,
     devicePixelRatio: number,
   ): Promise<Size> {
-    return this._frontend.size(maxSize, isUserSize, devicePixelRatio);
+    return await this.workerPuzzle.size(maxSize, isUserSize, devicePixelRatio);
   }
 
   public async formatAsText(): Promise<string | undefined> {
-    return this._frontend.formatAsText();
+    return await this.workerPuzzle.formatAsText();
   }
 
   public async setGameId(id: string): Promise<string | undefined> {
-    return this._frontend.setGameId(id);
+    return await this.workerPuzzle.setGameId(id);
   }
 
   //
@@ -270,42 +250,24 @@ export class Puzzle {
     canvas: OffscreenCanvas,
     fontInfo: FontInfo,
   ): Promise<void> {
-    if (this._drawing) {
-      throw new Error("attachCanvas called with another canvas already attached");
-    }
-    this._drawing = new Drawing(canvas, fontInfo);
-    this._drawingHandle = this._drawing.bind(this._module);
-    this._frontend.setDrawing(this._drawingHandle);
+    // Transfer the canvas to the worker
+    await this.workerPuzzle.attachCanvas(Comlink.transfer(canvas, [canvas]), fontInfo);
   }
 
   public async detachCanvas(): Promise<void> {
-    if (this._drawing) {
-      this._frontend.setDrawing(null);
-      this._drawingHandle?.delete();
-      this._drawingHandle = undefined;
-      this._drawing = undefined;
-    }
+    await this.workerPuzzle.detachCanvas();
   }
 
   public async resizeDrawing({ w, h }: Size, dpr: number): Promise<void> {
-    if (!this._drawing) {
-      throw new Error("resizeDrawing called with no canvas attached");
-    }
-    this._drawing.resize(w, h, dpr);
+    await this.workerPuzzle.resizeDrawing({ w, h }, dpr);
   }
 
   public async setDrawingPalette(colors: string[]): Promise<void> {
-    if (!this._drawing) {
-      throw new Error("setDrawingPalette called with no canvas attached");
-    }
-    this._drawing.setPalette(colors);
+    await this.workerPuzzle.setDrawingPalette(colors);
   }
 
   public async setDrawingFontInfo(fontInfo: FontInfo): Promise<void> {
-    if (!this._drawing) {
-      throw new Error("setDrawingFontInfo called with no canvas attached");
-    }
-    this._drawing.setFontInfo(fontInfo);
+    await this.workerPuzzle.setDrawingFontInfo(fontInfo);
   }
 
   //
@@ -316,7 +278,7 @@ export class Puzzle {
   public timerComplete: Promise<void> = Promise.resolve();
   private timerCompleteResolve?: () => void;
 
-  // (handle notification from worker to update timerComplete promise)
+  // Handle notification from worker to update timerComplete promise
   private notifyTimerState = (isActive: boolean) => {
     // Resolve the current activation (if any)
     this.timerCompleteResolve?.();
@@ -327,54 +289,5 @@ export class Puzzle {
         this.timerCompleteResolve = resolve;
       });
     }
-  };
-
-  // (moves to worker)
-  private serviceTimer = (tplus: number) => {
-    this._frontend.timer(tplus);
-  };
-}
-
-/**
- * Frontend callbacks implementation.
- * (Moves to worker.)
- */
-class FrontendCallbacks implements Omit<FrontendConstructorArgs, "notifyChange"> {
-  constructor(
-    private readonly serviceTimer: Frontend["timer"],
-    private readonly notifyTimerState: (isActive: boolean) => void,
-  ) {}
-
-  private timerId?: number;
-  private lastTimeMs = 0;
-
-  private onAnimationFrame = async (timestampMs: number) => {
-    if (this.timerId !== undefined) {
-      // puzzle timer requires secs, not msec
-      this.serviceTimer((timestampMs - this.lastTimeMs) / 1000);
-      this.lastTimeMs = timestampMs;
-      this.timerId = globalThis.requestAnimationFrame(this.onAnimationFrame);
-    }
-  };
-
-  activateTimer = (): void => {
-    if (this.timerId === undefined) {
-      this.lastTimeMs = globalThis.performance.now();
-      this.timerId = globalThis.requestAnimationFrame(this.onAnimationFrame);
-      this.notifyTimerState(true);
-    }
-  };
-
-  deactivateTimer = (): void => {
-    if (this.timerId !== undefined) {
-      globalThis.cancelAnimationFrame(this.timerId);
-      this.timerId = undefined;
-      this.notifyTimerState(false);
-    }
-  };
-
-  textFallback = (strings: string[]): string => {
-    // Probably any Unicode string can be rendered, so use the preferred one.
-    return strings[0];
   };
 }
