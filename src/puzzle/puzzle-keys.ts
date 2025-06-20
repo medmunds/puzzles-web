@@ -5,8 +5,8 @@ import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { puzzleContext } from "./contexts.ts";
-import type { KeyLabel } from "./module.ts";
 import type { Puzzle } from "./puzzle.ts";
+import type { KeyLabel } from "./types.ts";
 
 // Components
 import "@shoelace-style/shoelace/dist/components/button/button.js";

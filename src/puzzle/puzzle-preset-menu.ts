@@ -5,9 +5,9 @@ import { LitElement, type TemplateResult, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { puzzleContext } from "./contexts.ts";
-import type { PresetMenuEntry } from "./module.ts";
 import type { PuzzleConfig } from "./puzzle-config.ts";
 import type { Puzzle } from "./puzzle.ts";
+import type { PresetMenuEntry } from "./types.ts";
 
 // Register components
 import "@shoelace-style/shoelace/dist/components/button/button.js";

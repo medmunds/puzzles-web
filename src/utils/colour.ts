@@ -1,4 +1,4 @@
-import type { Colour } from "../puzzle/module.ts";
+import type { Colour } from "../puzzle/types.ts";
 import { almostEqual } from "./math.ts";
 
 export const equalColour = (

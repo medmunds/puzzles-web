@@ -2,8 +2,8 @@ import { css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { DOMMouseButton, hasCtrlKey, swapButtons } from "../utils/events.ts";
 import { detectSecondaryButton } from "../utils/touch.ts";
-import { type Point, PuzzleButton } from "./module.ts";
 import { PuzzleView } from "./puzzle-view.ts";
+import { type Point, PuzzleButton } from "./types.ts";
 
 /**
  * The `<puzzle-view-interactive>` component subclasses `<puzzle-view>`
@@ -49,13 +49,13 @@ export class PuzzleViewInteractive extends PuzzleView {
     return this.longPress || this.twoFingerTap;
   }
 
-  async connectedCallback() {
+  override connectedCallback() {
     super.connectedCallback();
     this.addEventListener("keydown", this.handleKeyEvent);
   }
 
-  disconnectedCallback() {
-    super.disconnectedCallback();
+  override async disconnectedCallback() {
+    await super.disconnectedCallback();
     this.removeEventListener("keydown", this.handleKeyEvent);
   }
 

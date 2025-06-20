@@ -1,63 +1,48 @@
 import { type Signal, computed, signal } from "@lit-labs/signals";
-import { Drawing, type FontInfo } from "./drawing.ts";
-import {
-  type ChangeNotification,
-  type Colour,
-  type Drawing as DrawingHandle,
-  type Frontend,
-  type Point,
-  type PuzzleModule,
-  type Size,
-  loadPuzzleModule,
-} from "./module.ts";
+import createModule from "../assets/puzzles/emcc-runtime";
+import { Drawing } from "./drawing.ts";
+import type {
+  ChangeNotification,
+  Colour,
+  ConfigItems,
+  Drawing as DrawingHandle,
+  FontInfo,
+  Frontend,
+  FrontendConstructorArgs,
+  Point,
+  PuzzleModule,
+  PuzzleStaticAttributes,
+  Size,
+} from "./types.ts";
 
-// Cleaner types for getConfigItems/setConfigItems
-// (emcc-generated <puzzle>.d.ts just uses a big union)
-export interface ConfigItemBase {
-  type: string;
-  label: string;
-}
-export interface ConfigItemTitle extends ConfigItemBase {
-  type: "title";
-}
-export interface ConfigItemText extends ConfigItemBase {
-  type: "text";
-  value: string;
-}
-export interface ConfigItemCheckbox extends ConfigItemBase {
-  type: "checkbox";
-  value: boolean;
-}
-export interface ConfigItemSelect extends ConfigItemBase {
-  type: "select";
-  value: number;
-  options: string[];
-}
-export type ConfigItem =
-  | ConfigItemTitle
-  | ConfigItemText
-  | ConfigItemCheckbox
-  | ConfigItemSelect;
-export type ConfigItems = ConfigItem[];
-
+/**
+ * Public API to the WASM puzzle module.
+ * Exposes reactive properties for puzzle state.
+ * Exposes async methods for calling WASM Frontend APIs.
+ * Mediates handoff of OffscreenCanvas to the Drawing object.
+ */
 export class Puzzle {
-  // Puzzles of the same type (on the same page) can share the WASM module
-  // (and its heap, etc.). They just need their own midend objects.
-  private static puzzleModules: Map<string, WeakRef<PuzzleModule>> = new Map();
-
   static async create(puzzleId: string) {
-    let module = Puzzle.puzzleModules.get(puzzleId)?.deref();
-    if (module === undefined) {
-      module = await loadPuzzleModule(puzzleId);
-      Puzzle.puzzleModules.set(puzzleId, new WeakRef(module));
-    }
-    return new Puzzle(puzzleId, module);
+    // (Module initialization and querying static properties moves to worker.
+    // Static property values should be passed to main thread with worker's
+    // response to "createPuzzle" call.)
+    const module = await loadPuzzleModule(puzzleId);
+    const puzzle = new Puzzle(puzzleId, module);
+    await puzzle.initStaticProperties({
+      displayName: puzzle._frontend.name,
+      canConfigure: puzzle._frontend.canConfigure,
+      canSolve: puzzle._frontend.canSolve,
+      needsRightButton: puzzle._frontend.needsRightButton,
+      wantsStatusbar: puzzle._frontend.wantsStatusbar,
+    });
+    return puzzle;
   }
 
   public readonly puzzleId: string;
 
   private readonly _module: PuzzleModule;
   private readonly _frontend: Frontend;
+  private readonly _frontendCallbacks: FrontendCallbacks;
   private _drawing?: Drawing;
   private _drawingHandle?: DrawingHandle;
 
@@ -65,22 +50,40 @@ export class Puzzle {
   private constructor(puzzleId: string, module: PuzzleModule) {
     this.puzzleId = puzzleId;
     this._module = module;
+    this._frontendCallbacks = new FrontendCallbacks(
+      this.serviceTimer,
+      this.notifyTimerState,
+    );
     this._frontend = new module.Frontend({
-      activateTimer: this.activateTimer,
-      deactivateTimer: this.deactivateTimer,
-      textFallback: this.textFallback,
+      activateTimer: this._frontendCallbacks.activateTimer,
+      deactivateTimer: this._frontendCallbacks.deactivateTimer,
+      textFallback: this._frontendCallbacks.textFallback,
       notifyChange: this.notifyChange,
     });
   }
 
   async delete() {
-    this.deactivateTimer();
     await this.detachCanvas();
     this._frontend.delete();
   }
 
+  private async initStaticProperties({
+    displayName,
+    canConfigure,
+    canSolve,
+    needsRightButton,
+    wantsStatusbar,
+  }: PuzzleStaticAttributes): Promise<void> {
+    this.displayName = displayName;
+    this.canConfigure = canConfigure;
+    this.canSolve = canSolve;
+    this.needsRightButton = needsRightButton;
+    this.wantsStatusbar = wantsStatusbar;
+  }
+
   notifyChange = async (message: ChangeNotification) => {
     // Callback from C++ Frontend: update signals with provided data.
+    // (Runs in main thread; message could originate in a worker.)
     function update<T>(signal: Signal.State<T>, newValue: T) {
       if (signal.get() !== newValue) {
         signal.set(newValue);
@@ -112,6 +115,13 @@ export class Puzzle {
     }
   };
 
+  // Static properties (no reactivity needed)
+  public displayName = "";
+  public canConfigure = false;
+  public canSolve = false;
+  public needsRightButton = false;
+  public wantsStatusbar = false;
+
   // Reactive properties
   private _canUndo = signal(false);
   private _canRedo = signal(false);
@@ -132,50 +142,42 @@ export class Puzzle {
   get canUndo(): boolean {
     return this._canUndo.get();
   }
+
   get canRedo(): boolean {
     return this._canRedo.get();
   }
+
   get isSolved(): boolean {
     return this._isSolved.get();
   }
+
   get isLost(): boolean {
     return this._isLost.get();
   }
+
   get currentPresetId(): number | undefined {
     return this._currentPresetId.get();
   }
+
   get currentParams(): string | undefined {
     return this._currentParams.get();
   }
+
   get currentGameId(): string | undefined {
     return this._currentGameId.get();
   }
+
   get randomSeed(): string | undefined {
     return this._randomSeed.get();
   }
+
   get canFormatAsText(): boolean {
     // TODO: make this reactive (game-state-change?)
     return this._canFormatAsText.get();
   }
+
   get statusbarText(): string | null {
     return this._statusbarText.get();
-  }
-
-  // Static properties (no reactivity needed)
-  get canConfigure() {
-    return this._frontend.canConfigure;
-  }
-  get canSolve() {
-    return this._frontend.canSolve;
-  }
-  get displayName() {
-    return this._frontend.name;
-  }
-  get needsRightButton() {
-    return this._frontend.needsRightButton;
-  }
-  get wantsStatusbar() {
-    return this._frontend.wantsStatusbar;
   }
 
   // Methods
@@ -211,52 +213,42 @@ export class Puzzle {
     return this._frontend.processKey(x, y, button);
   }
 
-  // Pass-through methods that don't change state
   async requestKeys() {
     return this._frontend.requestKeys();
   }
+
   async getPresets() {
     return this._frontend.getPresets();
   }
+
   async getConfigItems(which: number): Promise<ConfigItems> {
     return this._frontend.getConfigItems(which);
   }
+
   async setConfigItems(which: number, items: ConfigItems): Promise<string | undefined> {
     return this._frontend.setConfigItems(which, items);
   }
-  async resetTileSize() {
-    return this._frontend.resetTileSize();
-  }
-  async stopAnimation() {
-    return this._frontend.stopAnimation();
-  }
-  async forceRedraw() {
-    return this._frontend.forceRedraw();
-  }
+
   async redraw() {
     return this._frontend.redraw();
   }
-  async getCursorLocation() {
-    return this._frontend.getCursorLocation();
-  }
+
   async getColourPalette(defaultBackground: Colour) {
     return this._frontend.getColourPalette(defaultBackground);
   }
-  async freezeTimer(tprop: number) {
-    return this._frontend.freezeTimer(tprop);
-  }
+
   async timer(tplus: number) {
     return this._frontend.timer(tplus);
   }
+
   async size(maxSize: Size, isUserSize: boolean, devicePixelRatio: number) {
     return this._frontend.size(maxSize, isUserSize, devicePixelRatio);
   }
+
   async formatAsText() {
     return this._frontend.formatAsText();
   }
-  async currentKeyLabel(button: number) {
-    return this._frontend.currentKeyLabel(button);
-  }
+
   async setGameId(id: string) {
     return this._frontend.setGameId(id);
   }
@@ -305,41 +297,90 @@ export class Puzzle {
   }
 
   //
-  // Frontend callbacks implementation
+  // Timer state
   //
 
   // Pending while timer active; resolves when deactivated
-  timerComplete: Promise<void> = Promise.resolve();
-
-  private timerId?: number;
-  private lastTimeMs = 0;
+  public timerComplete: Promise<void> = Promise.resolve();
   private timerCompleteResolve?: () => void;
 
-  private onAnimationFrame = async (timestampMs: number) => {
-    if (this.timerId !== undefined) {
-      // puzzle timer requires secs, not msec
-      this._frontend.timer((timestampMs - this.lastTimeMs) / 1000);
-      this.lastTimeMs = timestampMs;
-      this.timerId = window.requestAnimationFrame(this.onAnimationFrame);
-    }
-  };
-
-  activateTimer = (): void => {
-    if (this.timerId === undefined) {
-      this.lastTimeMs = globalThis.performance.now();
-      this.timerId = window.requestAnimationFrame(this.onAnimationFrame);
+  // (handle notification from worker to update timerComplete promise)
+  private notifyTimerState = (isActive: boolean) => {
+    // Resolve the current activation (if any)
+    this.timerCompleteResolve?.();
+    this.timerCompleteResolve = undefined;
+    if (isActive) {
+      // Start a new activation cycle
       this.timerComplete = new Promise<void>((resolve) => {
         this.timerCompleteResolve = resolve;
       });
     }
   };
 
+  // (moves to worker)
+  private serviceTimer = (tplus: number) => {
+    this._frontend.timer(tplus);
+  };
+}
+
+// Puzzles of the same type (on the same page) can share the WASM module
+// (and its heap, etc.). And a single worker can service all puzzleModules.
+const puzzleModuleCache: Map<string, WeakRef<PuzzleModule>> = new Map();
+
+/**
+ * Load a wasm puzzle module for puzzleId.
+ * (Moves to worker.)
+ */
+async function loadPuzzleModule(puzzleId: string): Promise<PuzzleModule> {
+  let module = puzzleModuleCache.get(puzzleId)?.deref();
+
+  if (module === undefined) {
+    // Point the shared emcc runtime to the desired puzzle.wasm
+    module = await createModule({
+      locateFile: () =>
+        new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href,
+    });
+    puzzleModuleCache.set(puzzleId, new WeakRef(module));
+  }
+
+  return module;
+}
+
+/**
+ * Frontend callbacks implementation.
+ * (Moves to worker.)
+ */
+class FrontendCallbacks implements Omit<FrontendConstructorArgs, "notifyChange"> {
+  constructor(
+    private readonly serviceTimer: Frontend["timer"],
+    private readonly notifyTimerState: (isActive: boolean) => void,
+  ) {}
+
+  private timerId?: number;
+  private lastTimeMs = 0;
+
+  private onAnimationFrame = async (timestampMs: number) => {
+    if (this.timerId !== undefined) {
+      // puzzle timer requires secs, not msec
+      this.serviceTimer((timestampMs - this.lastTimeMs) / 1000);
+      this.lastTimeMs = timestampMs;
+      this.timerId = globalThis.requestAnimationFrame(this.onAnimationFrame);
+    }
+  };
+
+  activateTimer = (): void => {
+    if (this.timerId === undefined) {
+      this.lastTimeMs = globalThis.performance.now();
+      this.timerId = globalThis.requestAnimationFrame(this.onAnimationFrame);
+      this.notifyTimerState(true);
+    }
+  };
+
   deactivateTimer = (): void => {
     if (this.timerId !== undefined) {
-      window.cancelAnimationFrame(this.timerId);
+      globalThis.cancelAnimationFrame(this.timerId);
       this.timerId = undefined;
-      this.timerCompleteResolve?.();
-      this.timerCompleteResolve = undefined;
+      this.notifyTimerState(false);
     }
   };
 

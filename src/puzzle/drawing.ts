@@ -2,19 +2,14 @@ import type {
   DrawTextOptions,
   Drawing as DrawingHandle,
   DrawingImpl,
+  FontInfo,
   Point,
   PuzzleModule,
   Rect,
   Size,
-} from "./module.ts";
+} from "./types.ts";
 
 // Type definitions
-
-export interface FontInfo {
-  "font-family": string;
-  "font-weight": string;
-  "font-style": string;
-}
 
 export const defaultFontInfo: FontInfo = {
   "font-family": "sans-serif",

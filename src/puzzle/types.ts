@@ -1,5 +1,5 @@
 /**
- * Typing and declaration for Emscripten's Module object.
+ * Additional typing for the Emscripten generated code.
  */
 
 import type {
@@ -14,8 +14,6 @@ import type {
   Size,
 } from "../assets/puzzles/emcc-runtime";
 
-import createModule from "../assets/puzzles/emcc-runtime";
-
 // (Re-export generated types so other code doesn't need to dig into assets.)
 export type {
   Colour,
@@ -23,6 +21,7 @@ export type {
   DrawingWrapper,
   DrawTextOptions,
   Frontend,
+  FrontendConstructorArgs,
   NotifyGameIdChange,
   NotifyGameStateChange,
   NotifyPresetIdChange,
@@ -33,6 +32,35 @@ export type {
   Rect,
   Size,
 } from "../assets/puzzles/emcc-runtime";
+
+// Cleaner types for getConfigItems/setConfigItems
+// (emcc-generated <puzzle>.d.ts just uses a big union)
+export interface ConfigItemBase {
+  type: string;
+  label: string;
+}
+export interface ConfigItemTitle extends ConfigItemBase {
+  type: "title";
+}
+export interface ConfigItemText extends ConfigItemBase {
+  type: "text";
+  value: string;
+}
+export interface ConfigItemCheckbox extends ConfigItemBase {
+  type: "checkbox";
+  value: boolean;
+}
+export interface ConfigItemSelect extends ConfigItemBase {
+  type: "select";
+  value: number;
+  options: string[];
+}
+export type ConfigItem =
+  | ConfigItemTitle
+  | ConfigItemText
+  | ConfigItemCheckbox
+  | ConfigItemSelect;
+export type ConfigItems = ConfigItem[];
 
 export type ChangeNotification =
   | NotifyGameIdChange
@@ -74,8 +102,17 @@ export enum PuzzleButton {
   MOD_MASK = 0x7000 /* mask for all modifiers */,
 }
 
+export interface PuzzleStaticAttributes {
+  displayName: string;
+  canConfigure: boolean;
+  canSolve: boolean;
+  // TODO: canFormatAsTextEver: boolean;
+  needsRightButton: boolean;
+  wantsStatusbar: boolean;
+}
+
 /**
- * Required JS_side implementation for Drawing API
+ * Required JS-side implementation for Drawing API
  */
 export interface DrawingImpl<Blitter = unknown>
   extends Omit<DrawingWrapper, keyof ClassHandle | "notifyOnDestruction">,
@@ -88,21 +125,21 @@ export interface DrawingImpl<Blitter = unknown>
 }
 
 /**
- * The generated module object
+ * The Emscripten generated module object
  */
 export interface PuzzleModule extends MainModule {
-  // Replace `any` args for Drawing.implement() and Frontend.implement()
+  // Replace `any` args for Drawing.implement()
   Drawing: {
     implement(drawing: DrawingImpl): DrawingWrapper;
     extend: MainModule["Drawing"]["extend"];
   };
 }
 
-export async function loadPuzzleModule(puzzleId: string): Promise<PuzzleModule> {
-  // Point the shared emcc runtime to the desired puzzle.wasm
-  const module = await createModule({
-    locateFile: () =>
-      new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href,
-  });
-  return module as PuzzleModule;
+/**
+ * Drawing font selection
+ */
+export interface FontInfo {
+  "font-family": string;
+  "font-weight": string;
+  "font-style": string;
 }
