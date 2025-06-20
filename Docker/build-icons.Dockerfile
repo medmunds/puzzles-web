@@ -15,7 +15,7 @@
 #   -e VERBOSE=1  # show verbose make build output
 #   -e JOBS=1  # run make single-threaded (default nprocs, comingles output)
 
-FROM alpine:3.21
+FROM alpine:3.22
 
 # Requirements for configuring the build (coreutils is for nproc):
 RUN apk add --no-cache cmake make coreutils pkgconfig
