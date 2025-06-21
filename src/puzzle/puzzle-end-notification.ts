@@ -44,7 +44,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     const actions = [
       html`
         <sl-button variant="neutral" @click=${this.newGame}>
-          <sl-icon slot="prefix" name="plus"></sl-icon>
+          <sl-icon slot="prefix" name="new-game"></sl-icon>
           New game
         </sl-button>
       `,
@@ -52,14 +52,14 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     if (this.puzzle.isLost) {
       actions.push(html`
         <sl-button @click=${this.restartGame}>
-          <sl-icon slot="prefix" name="iteration-cw"></sl-icon>
+          <sl-icon slot="prefix" name="restart-game"></sl-icon>
           Restart
         </sl-button>
       `);
       if (this.puzzle.canUndo) {
         actions.push(html`
           <sl-button @click=${this.undo}>
-            <sl-icon slot="prefix" name="undo-2"></sl-icon>
+            <sl-icon slot="prefix" name="undo"></sl-icon>
             Undo
           </sl-button>
         `);
@@ -68,7 +68,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
         // TODO: && !usedSolveButton
         actions.push(html`
           <sl-button @click=${this.showSolution}>
-            <sl-icon slot="prefix" name="sparkles"></sl-icon>
+            <sl-icon slot="prefix" name="show-solution"></sl-icon>
             Show solution
           </sl-button>
         `);
@@ -129,16 +129,16 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   }
 
   static solvedIcons = [
-    "award",
-    "crown",
-    "gem",
-    "laugh",
-    "party-popper",
-    "rocket",
-    "thumbs-up",
+    "solved-a",
+    "solved-b",
+    "solved-c",
+    "solved-d",
+    "solved-e",
+    "solved-f",
+    "solved-g",
   ] as const;
 
-  static lostIcons = ["frown"] as const;
+  static lostIcons = ["lost-a"] as const;
 
   static solvedMessages = [
     "Awesome!",

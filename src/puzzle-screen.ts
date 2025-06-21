@@ -104,20 +104,20 @@ export class PuzzleScreen extends LitElement {
             <puzzle-game-menu @sl-select=${this.handleGameMenuCommand}>
               <sl-divider></sl-divider>
               <sl-menu-item value="share" disabled>
-                <sl-icon slot="prefix" name="share-2"></sl-icon>
+                <sl-icon slot="prefix" name="share"></sl-icon>
                 Share…
               </sl-menu-item>
               <sl-menu-item value="save" disabled>
-                <sl-icon slot="prefix" name="download"></sl-icon>
+                <sl-icon slot="prefix" name="save-game"></sl-icon>
                 Save…
               </sl-menu-item>
               <sl-menu-item value="load" disabled>
-                <sl-icon slot="prefix" name="upload"></sl-icon>
+                <sl-icon slot="prefix" name="load-game"></sl-icon>
                 Load…
               </sl-menu-item>
               <sl-divider></sl-divider>
               <sl-menu-item value="catalog">
-                <sl-icon slot="prefix" name="arrow-left"></sl-icon>
+                <sl-icon slot="prefix" name="back-to-catalog"></sl-icon>
                 Other puzzles
               </sl-menu-item>
               <sl-divider></sl-divider>
@@ -125,7 +125,7 @@ export class PuzzleScreen extends LitElement {
             </puzzle-game-menu>
             <puzzle-preset-menu></puzzle-preset-menu>
             <sl-button href=${helpUrl} @click=${this.showHelp}>
-              <sl-icon slot="prefix" name="circle-help"></sl-icon>
+              <sl-icon slot="prefix" name="help"></sl-icon>
               Help
             </sl-button>
           </div>
@@ -145,14 +145,14 @@ export class PuzzleScreen extends LitElement {
                   slot="extra-actions-solved" 
                   @click=${this.handleChangeType}
                 >
-                <sl-icon slot="prefix" name="swatch-book"></sl-icon>
+                <sl-icon slot="prefix" name="puzzle-type"></sl-icon>
                 Change type
               </sl-button>
               <sl-button 
                   slot="extra-actions-solved" 
                   href=${otherPuzzlesUrl}
                 >
-                <sl-icon slot="prefix" name="arrow-left"></sl-icon>
+                <sl-icon slot="prefix" name="back-to-catalog"></sl-icon>
                 Other puzzles
               </sl-button>
             </puzzle-end-notification>

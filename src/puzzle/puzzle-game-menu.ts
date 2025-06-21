@@ -39,11 +39,11 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
         <sl-button slot="trigger" caret>Game</sl-button>
         <sl-menu @sl-select=${this.handleGameMenuCommand}>
           <sl-menu-item value="new">
-            <sl-icon slot="prefix" name="plus"></sl-icon>
+            <sl-icon slot="prefix" name="new-game"></sl-icon>
             New game
           </sl-menu-item>
           <sl-menu-item value="restart">
-            <sl-icon slot="prefix" name="iteration-cw"></sl-icon>
+            <sl-icon slot="prefix" name="restart-game"></sl-icon>
             Restart game
           </sl-menu-item>
           ${when(
@@ -51,7 +51,7 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
             () =>
               html`
                 <sl-menu-item value="solve" ?disabled=${this.puzzle?.isSolved}>
-                  <sl-icon slot="prefix" name="sparkles"></sl-icon>
+                  <sl-icon slot="prefix" name="show-solution"></sl-icon>
                   Solve
                 </sl-menu-item>
               `,

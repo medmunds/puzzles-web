@@ -9,8 +9,6 @@ import "@shoelace-style/shoelace/dist/components/icon/icon.js";
 import "@shoelace-style/shoelace/dist/components/icon-button/icon-button.js";
 import "@shoelace-style/shoelace/dist/components/include/include.js";
 
-const offsiteIconName = "square-arrow-out-up-right";
-
 /**
  * Essentially a miniature browser in an sl-drawer, constrained to subpaths
  * of its initial src (other links open a new tab/window). Renders content
@@ -65,7 +63,7 @@ export class HelpViewer extends LitElement {
         <sl-icon-button 
             slot="header-actions"
             label="Open in new tab"
-            name=${offsiteIconName} 
+            name="offsite-link" 
             href=${currentSrc}
             target="_blank"
         ></sl-icon-button>
@@ -88,19 +86,19 @@ export class HelpViewer extends LitElement {
       <sl-icon-button
           slot="header-actions"
           label="Back to start"
-          name="arrow-left-to-line"
+          name="history-back-to-start"
           ?disabled=${this.historyIndex < 1}
           @click=${this.goHome}></sl-icon-button>
       <sl-icon-button
           slot="header-actions"
           label="Back"
-          name="arrow-left"
+          name="history-back"
           ?disabled=${this.historyIndex < 1}
           @click=${this.goBack}></sl-icon-button>
       <sl-icon-button
           slot="header-actions"
           label="Forward"
-          name="arrow-right"
+          name="history-forward"
           ?disabled=${this.historyIndex >= this.history.length - 1}
           @click=${this.goForward}></sl-icon-button>
     `;
@@ -157,7 +155,7 @@ export class HelpViewer extends LitElement {
         if (!anchor.querySelector("sl-icon")) {
           const offsiteIcon = document.createElement("sl-icon");
           offsiteIcon.classList.add("offsite");
-          offsiteIcon.setAttribute("name", offsiteIconName);
+          offsiteIcon.setAttribute("name", "offsite-link");
           offsiteIcon.setAttribute("label", "Opens in new tab");
           anchor.appendChild(offsiteIcon);
         }

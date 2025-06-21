@@ -88,7 +88,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
           @sl-hide=${this.handleDropdownHide}
       >
         <sl-button slot="trigger" caret>
-          <sl-icon slot="prefix" name="swatch-book"></sl-icon>
+          <sl-icon slot="prefix" name="puzzle-type"></sl-icon>
           <div class=${classMap({ "dropdown-label": true, open: this.open })}>
             ${this.label}<br>
             ${this.currentPresetLabel}

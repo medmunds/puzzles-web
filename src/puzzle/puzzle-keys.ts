@@ -27,9 +27,9 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
 
   // Maps KeyLabel.label to sl-icon name
   static defaultLabelIcons: LabelIcons = {
-    Clear: "delete",
-    Marks: "square-pen", // or maybe rectangle-ellipsis?
-    Hints: "wand",
+    Clear: "key-clear",
+    Marks: "key-marks",
+    Hints: "key-hints",
   };
 
   @property({ type: Object })
@@ -120,14 +120,14 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
         <sl-button
             ?disabled=${!this.puzzle?.canUndo}
             @click=${() => this.puzzle?.undo()}>
-          <sl-icon slot="prefix" name="undo-2"></sl-icon>
+          <sl-icon slot="prefix" name="undo"></sl-icon>
           Undo
         </sl-button>
         <sl-button
             ?disabled=${!this.puzzle?.canRedo}
             @click=${() => this.puzzle?.redo()}>
           Redo
-          <sl-icon slot="prefix" name="redo-2"></sl-icon>
+          <sl-icon slot="prefix" name="redo"></sl-icon>
         </sl-button>
       </div>
     `;

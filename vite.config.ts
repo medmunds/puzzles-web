@@ -46,24 +46,6 @@ export default defineConfig({
         // Use same fallback routing as production and dev servers
         navigateFallback: "index.html",
         navigateFallbackAllowlist: [fallbackRouteRe],
-        runtimeCaching: [
-          {
-            // Cache Lucide icons from CDN for offline use.
-            // (See registerIconLibrary in main.ts.)
-            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/lucide-static.*\.svg/,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "lucide-icons-cache",
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // <== 365 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-        ],
       },
     }),
   ],
