@@ -206,8 +206,21 @@ export class PuzzleViewInteractive extends PuzzleView {
       return;
     }
     if (this.pointerTracking) {
-      // Ignore simultaneous presses
-      return;
+      if (event.pointerType === "touch" && !event.isPrimary) {
+        // Ignore multiple simultaneous touches.
+        // (detectSecondaryButton() handles those on its own.)
+        return;
+      }
+      if (event.pointerType !== "touch" && event.buttons !== 2 ** event.button) {
+        // Ignore simultaneous clicks on different buttons.
+        return;
+      }
+      // PointerUp event for earlier tracking was somehow missed.
+      // Start over with this PointerDown and let the midend sort it out.
+      if (this.canvas?.hasPointerCapture(this.pointerTracking.pointerId)) {
+        this.canvas.releasePointerCapture(this.pointerTracking.pointerId);
+      }
+      this.pointerTracking = undefined;
     }
 
     const location = this.getPuzzleLocation(event);
@@ -276,6 +289,7 @@ export class PuzzleViewInteractive extends PuzzleView {
         this.getPuzzleLocation(event),
         this.pointerTracking.release,
       );
+      // pointerCapture is automatically released on pointerup.
       this.pointerTracking = undefined;
     }
   }
@@ -296,7 +310,9 @@ export class PuzzleViewInteractive extends PuzzleView {
         await this.puzzle.processMouse(location, this.pointerTracking.drag);
         await this.puzzle.processMouse(location, this.pointerTracking.release);
       }
-      this.canvas?.releasePointerCapture(this.pointerTracking.pointerId);
+      if (this.canvas?.hasPointerCapture(this.pointerTracking.pointerId)) {
+        this.canvas.releasePointerCapture(this.pointerTracking.pointerId);
+      }
       this.pointerTracking = undefined;
     }
   }
