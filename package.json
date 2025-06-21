@@ -25,10 +25,12 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^24.0.1",
+    "@vite-pwa/assets-generator": "^1.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.2",
     "typescript": "~5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-plugin-pwa": "^1.0.0"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx,json,css,html}": ["biome check --write --no-errors-on-unmatched"]

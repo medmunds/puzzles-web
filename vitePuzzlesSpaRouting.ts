@@ -4,32 +4,52 @@ import { resolve } from "node:path";
 import type { Connect, Plugin } from "vite";
 
 /**
+ * Returns a list of known puzzleIds from the generated catalog.json data.
+ * catalogFile must point to catalog.json relative to projectRoot.
+ */
+export const getKnownPuzzleIds = (
+  options: {
+    catalogFile?: string;
+    projectRoot?: string;
+  } = {},
+): string[] => {
+  const { catalogFile = "src/assets/puzzles/catalog.json", projectRoot = "." } =
+    options;
+  try {
+    const catalogPath = resolve(projectRoot, catalogFile);
+    const catalogContent = readFileSync(catalogPath, "utf-8");
+    const catalog = JSON.parse(catalogContent);
+    return Object.keys(catalog.puzzles);
+  } catch (error) {
+    throw new Error(`Failed to load puzzle IDs from ${catalogFile}: ${error}`);
+  }
+};
+
+/**
+ * Returns a RegExp that exactly matches any of these urls, where :puzzleId
+ * is one of puzzleIds:
+ *    /
+ *    /:puzzleId
+ *    /:puzzleId/  (trailing slash allowed)
+ * Any search params are allowed (/:puzzleId?type=3 matches),
+ * but trailing path portions are not (/:puzzleId/other won't match).
+ */
+export const getFallbackRouteRe = (puzzleIds: string[]): RegExp => {
+  const puzzleIdsRe = puzzleIds.join("|");
+  // Matches '/', optionally followed by :puzzleId (itself optionally followed by '/').
+  // Entire match must start at beginning and terminate either at end or at '?'.
+  return new RegExp(`^/((${puzzleIdsRe})/?)?($|[?])`);
+};
+
+/**
  * Vite plugin that routes / and /:puzzleId (for known puzzle ids)
  * to /index.html. Use with appType: "mpa". Puzzle ids are read (at startup)
  * from catalogFile.
  */
-export const puzzlesSpaRouting = (
-  catalogFile = "src/assets/puzzles/catalog.json",
-): Plugin => {
-  const getPuzzlePaths = (catalogPath: string): string[] => {
-    try {
-      const catalogContent = readFileSync(catalogPath, "utf-8");
-      const catalog = JSON.parse(catalogContent);
-      const puzzleIds = Object.keys(catalog.puzzles);
-      return puzzleIds.map((id) => `/${id}`);
-    } catch (error) {
-      console.error(`Failed to load puzzle IDs from ${catalogPath}:`, error);
-      return [];
-    }
-  };
-
-  const createMiddleware = (root: string): Connect.NextHandleFunction => {
-    const catalogPath = resolve(root, catalogFile);
-    const fallbackPaths = ["/", ...getPuzzlePaths(catalogPath)];
-    // console.log("Fallback paths:", fallbackPaths);
-    // RegExp.escape requires node v24 or later
-    const fallbackPathsRe = fallbackPaths.map((path) => RegExp.escape(path)).join("|");
-    const fallbackRe = new RegExp(`^(${fallbackPathsRe})/?($|[?#])`);
+export const puzzlesSpaRouting = (catalogFile?: string): Plugin => {
+  const createMiddleware = (projectRoot?: string): Connect.NextHandleFunction => {
+    const puzzleIds = getKnownPuzzleIds({ catalogFile, projectRoot });
+    const fallbackRe = getFallbackRouteRe(puzzleIds);
 
     return (req, _res, next) => {
       if (req.url && fallbackRe.test(req.url)) {
