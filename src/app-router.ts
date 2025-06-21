@@ -1,16 +1,9 @@
-import { registerIconLibrary } from "@shoelace-style/shoelace/dist/utilities/icon-library.js";
 import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { puzzleDataMap } from "./catalog.ts";
 
 // Register components (note some are lazy-loaded)
 import "./catalog-screen.ts";
-
-// TODO: bundle necessary icons (this is just for easier development)
-registerIconLibrary("default", {
-  resolver: (name) =>
-    `https://cdn.jsdelivr.net/npm/lucide-static@0.511.0/icons/${name}.svg`,
-});
 
 export interface Route {
   name: string;
