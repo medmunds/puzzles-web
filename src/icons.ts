@@ -4,14 +4,17 @@ import arrowLeftIcon from "lucide-static/icons/arrow-left.svg";
 import arrowRightIcon from "lucide-static/icons/arrow-right.svg";
 import awardIcon from "lucide-static/icons/award.svg";
 import badgeQuestionMarkIcon from "lucide-static/icons/badge-question-mark.svg";
+import checkIcon from "lucide-static/icons/check.svg";
 import circleQuestionMarkIcon from "lucide-static/icons/circle-question-mark.svg";
 import crownIcon from "lucide-static/icons/crown.svg";
 import deleteIcon from "lucide-static/icons/delete.svg";
 import downloadIcon from "lucide-static/icons/download.svg";
 import frownIcon from "lucide-static/icons/frown.svg";
 import gemIcon from "lucide-static/icons/gem.svg";
+import infoIcon from "lucide-static/icons/info.svg";
 import iterationCWIcon from "lucide-static/icons/iteration-cw.svg";
 import laughIcon from "lucide-static/icons/laugh.svg";
+import octagonAlertIcon from "lucide-static/icons/octagon-alert.svg";
 import partyPopperIcon from "lucide-static/icons/party-popper.svg";
 import plusIcon from "lucide-static/icons/plus.svg";
 import redo2Icon from "lucide-static/icons/redo-2.svg";
@@ -23,6 +26,7 @@ import squareArrowOutUpRightIcon from "lucide-static/icons/square-arrow-out-up-r
 import squarePenIcon from "lucide-static/icons/square-pen.svg";
 import swatchBookIcon from "lucide-static/icons/swatch-book.svg";
 import thumbsUpIcon from "lucide-static/icons/thumbs-up.svg";
+import triangleAlertIcon from "lucide-static/icons/triangle-alert.svg";
 import undo2Icon from "lucide-static/icons/undo-2.svg";
 import uploadIcon from "lucide-static/icons/upload.svg";
 import wandIcon from "lucide-static/icons/wand.svg";
@@ -46,6 +50,12 @@ const icons: Record<string, string> = {
   "share": share2Icon,
   "show-solution": sparklesIcon,
   "undo": undo2Icon,
+  // alert notification
+  "alert-primary": infoIcon,
+  "alert-success": checkIcon,
+  "alert-neutral": infoIcon,
+  "alert-warning": triangleAlertIcon,
+  "alert-danger": octagonAlertIcon,
   // help-viewer
   "history-back": arrowLeftIcon,
   "history-back-to-start": arrowLeftToLineIcon,
