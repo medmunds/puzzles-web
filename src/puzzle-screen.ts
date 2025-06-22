@@ -137,26 +137,24 @@ export class PuzzleScreen extends LitElement {
               maximize
           ></puzzle-view-interactive>
 
-          <div class="puzzle-end-notification-holder">
-            <!-- Directly after puzzle-view so it's next in the tab order
-                 after completing a game via physical keyboard -->
-            <puzzle-end-notification>
-              <sl-button 
-                  slot="extra-actions-solved" 
-                  @click=${this.handleChangeType}
-                >
-                <sl-icon slot="prefix" name="puzzle-type"></sl-icon>
-                Change type
-              </sl-button>
-              <sl-button 
-                  slot="extra-actions-solved" 
-                  href=${otherPuzzlesUrl}
-                >
-                <sl-icon slot="prefix" name="back-to-catalog"></sl-icon>
-                Other puzzles
-              </sl-button>
-            </puzzle-end-notification>
-          </div>
+          <!-- Directly after puzzle-view so it's next in the tab order
+               after completing a game via physical keyboard -->
+          <puzzle-end-notification>
+            <sl-button 
+                slot="extra-actions-solved" 
+                @click=${this.handleChangeType}
+              >
+              <sl-icon slot="prefix" name="puzzle-type"></sl-icon>
+              Change type
+            </sl-button>
+            <sl-button 
+                slot="extra-actions-solved" 
+                href=${otherPuzzlesUrl}
+              >
+              <sl-icon slot="prefix" name="back-to-catalog"></sl-icon>
+              Other puzzles
+            </sl-button>
+          </puzzle-end-notification>
 
           <puzzle-keys></puzzle-keys>
         </div>
@@ -293,23 +291,6 @@ export class PuzzleScreen extends LitElement {
       }
     }
 
-    .puzzle-end-notification-holder {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-
-      puzzle-end-notification {
-        pointer-events: auto;
-        z-index: 1;
-      }
-    }
-    
     sl-menu-label.version::part(base) {
       /* Allow selecting the version info */
       -moz-user-select: all;

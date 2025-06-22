@@ -1,18 +1,18 @@
 import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
 import { zoomInUp, zoomOutDown } from "@shoelace-style/animations";
-import type SlAlert from "@shoelace-style/shoelace/dist/components/alert/alert.js";
+import type SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.js";
 import { setAnimation } from "@shoelace-style/shoelace/dist/utilities/animation-registry.js";
 import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { query } from "lit/decorators/query.js";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 
 // Register components
-import "@shoelace-style/shoelace/dist/components/alert/alert.js";
 import "@shoelace-style/shoelace/dist/components/button/button.js";
+import "@shoelace-style/shoelace/dist/components/dialog/dialog.js";
 import "@shoelace-style/shoelace/dist/components/icon/icon.js";
-import { query } from "lit/decorators/query.js";
 
 function randomItem<T>(array: ReadonlyArray<T>): T {
   return array[Math.floor(Math.random() * array.length)];
@@ -24,15 +24,14 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   @state()
   private puzzle?: Puzzle;
 
-  @query("sl-alert")
-  private alert?: SlAlert;
+  @query("sl-dialog")
+  private dialog?: SlDialog;
 
   override render() {
     if (!this.puzzle?.isSolved && !this.puzzle?.isLost) {
       return;
     }
     const solved = !this.puzzle.isLost;
-    const variant = solved ? "success" : "neutral";
     // TODO: don't show a solvedMessage or solvedIcon if player used the "Solve" command
     const message = solved
       ? randomItem(PuzzleEndNotification.solvedMessages)
@@ -43,7 +42,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
 
     const actions = [
       html`
-        <sl-button variant="neutral" @click=${this.newGame}>
+        <sl-button variant="primary" @click=${this.newGame}>
           <sl-icon slot="prefix" name="new-game"></sl-icon>
           New game
         </sl-button>
@@ -80,31 +79,31 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     actions.push(html`<slot name="extra-actions"></slot>`);
 
     return html`
-      <sl-alert variant=${variant} closable>
-        <sl-icon slot="icon" name=${icon}></sl-icon>
-        <div class="message">${message}</div>
-        <div class="actions">${actions}</div>
-      </sl-alert>
+      <sl-dialog class=${solved ? "solved" : ""}>
+        <sl-icon slot="label" name=${icon}></sl-icon>
+        <div slot="label">${message}</div>
+        <div slot="footer">${actions}</div>
+      </sl-dialog>
     `;
   }
 
   override async updated() {
-    // Run the sl-alert's "show" animation after it's in the DOM.
+    // Run the sl-dialog's "show" animation after it's in the DOM.
     // (Including the "open" attribute at render time skips the animation.)
-    if (this.alert) {
+    if (this.dialog) {
       // Use different animations, just for this sl-alert
       for (const [name, animation] of Object.entries(
         PuzzleEndNotification.animations,
       )) {
-        setAnimation(this.alert, name, animation);
+        setAnimation(this.dialog, name, animation);
       }
       await Promise.all([this.updateComplete, this.puzzle?.timerComplete]);
-      await this.alert.show();
+      await this.dialog.show();
     }
   }
 
   hide(): Promise<void> {
-    return this.alert?.hide() ?? Promise.resolve();
+    return this.dialog?.hide() ?? Promise.resolve();
   }
 
   private async newGame() {
@@ -162,23 +161,20 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   ] as const;
 
   static lostMessages = [
-    "Better luck next time.",
-    "Hmm… that looks like the end.",
-    "I think you’re out of options.",
-    "Looks like a dead end.",
-    "Seems like there’s no way forward.",
-    "That might be as far as you can go.",
-    "That’s about the end of it.",
+    // "Better luck next time",
+    // "No more moves",
+    "Out of moves",
+    // "Out of options",
   ] as const;
 
   static animations = {
-    "alert.show": {
+    "dialog.show": {
       keyframes: zoomInUp,
       options: {
         duration: 500,
       },
     },
-    "alert.hide": {
+    "dialog.hide": {
       keyframes: zoomOutDown,
       options: {
         duration: 250,
@@ -187,33 +183,26 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   } as const;
 
   static styles = css`
-    :host {
-      max-width: 100%;
+    sl-dialog::part(title) {
+      display: flex;
+      align-items: center;
+      gap: var(--sl-spacing-medium);
     }
-    
-    .message {
-      margin-bottom: var(--sl-spacing-large);
-      font-size: var(--sl-font-size-medium);
+    sl-dialog::part(body) {
+      display: none;
     }
-    .actions {
+    sl-dialog::part(footer) {
+      padding-block-start: 0;
       display: flex;
       flex-wrap: wrap;
       gap: var(--sl-spacing-medium);
     }
+    div[slot="footer"] {
+      display: contents;
+    }
     
-    sl-alert::part(base) {
-      align-items: flex-start;
-      box-shadow: var(--sl-shadow-medium);
-    }
-    sl-alert::part(icon) {
-      margin-top: var(--sl-spacing-large);
-    }
-    sl-alert::part(message) {
-      
-    }
-    sl-alert::part(close-button) {
-      align-self: flex-start;
-      margin-top: var(--sl-spacing-medium);
+    sl-dialog.solved sl-icon[slot="label"] {
+      color: var(--sl-color-primary-600);
     }
   `;
 }
