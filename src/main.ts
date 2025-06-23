@@ -11,11 +11,13 @@ import "./icons";
 import "./app-router";
 
 // Install PWA service worker (from vite-pwa)
-export const updateSW: (reloadPage?: boolean) => Promise<void> = registerSW({
+const updateSW = registerSW({
   onNeedRefresh() {
     // TODO: auto-update (preserving game state) when refresh needed
     console.log("App needs refresh");
-    notify("An update is available");
+    notify("Update is available; dismiss to install and reload").then(() =>
+      updateSW(/* reloadPage= */ true),
+    );
   },
   onOfflineReady() {
     console.log("App is ready for offline use");

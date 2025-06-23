@@ -31,12 +31,12 @@ export default defineConfig({
         background_color: "#f9f9f9", // --sl-neutral-50
         theme_color: "#0284c7", // --sl-primary-600
       },
-      registerType: "autoUpdate", // TODO: "prompt" and preserve game state
+      registerType: "prompt",
       pwaAssets: {
         image: "public/favicon.svg",
       },
       workbox: {
-        mode: "development", // see workbox logging in production TODO: remove!
+        // mode: "development", // see workbox logging in production
         globPatterns: [
           // Include all help files, icons, etc.
           // But include wasm's only for the intended puzzles (skip nullgame, etc.)
