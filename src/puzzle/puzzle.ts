@@ -1,5 +1,9 @@
 import { type Signal, computed, signal } from "@lit-labs/signals";
 import * as Comlink from "comlink";
+import {
+  installWorkerErrorReceivers,
+  uninstallWorkerErrorReceivers,
+} from "../utils/errors.ts";
 import type {
   ChangeNotification,
   Colour,
@@ -22,8 +26,9 @@ export class Puzzle {
   public static async create(puzzleId: string): Promise<Puzzle> {
     const worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
-      name: `puzzle-${puzzleId}`,
+      name: `puzzle-worker-${puzzleId}`,
     });
+    installWorkerErrorReceivers(worker);
     const workerFactory = Comlink.wrap<RemoteWorkerPuzzleFactory>(worker);
     const workerPuzzle = await workerFactory.create(puzzleId);
 
@@ -64,6 +69,7 @@ export class Puzzle {
     await this.detachCanvas();
     await this.workerPuzzle.delete();
     this.workerPuzzle[Comlink.releaseProxy]();
+    uninstallWorkerErrorReceivers(this.worker);
     this.worker.terminate();
   }
 

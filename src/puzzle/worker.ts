@@ -1,5 +1,6 @@
 import * as Comlink from "comlink";
 import createModule from "../assets/puzzles/emcc-runtime";
+import { installErrorHandlersInWorker } from "../utils/errors.ts";
 import { Drawing } from "./drawing.ts";
 import type {
   ChangeNotification,
@@ -16,6 +17,8 @@ import type {
   PuzzleStaticAttributes,
   Size,
 } from "./types.ts";
+
+installErrorHandlersInWorker();
 
 /**
  * Worker-side implementation of main-thread Puzzle class

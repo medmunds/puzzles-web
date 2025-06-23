@@ -4,7 +4,6 @@ import arrowLeftIcon from "lucide-static/icons/arrow-left.svg";
 import arrowRightIcon from "lucide-static/icons/arrow-right.svg";
 import awardIcon from "lucide-static/icons/award.svg";
 import badgeQuestionMarkIcon from "lucide-static/icons/badge-question-mark.svg";
-import checkIcon from "lucide-static/icons/check.svg";
 import circleQuestionMarkIcon from "lucide-static/icons/circle-question-mark.svg";
 import crownIcon from "lucide-static/icons/crown.svg";
 import deleteIcon from "lucide-static/icons/delete.svg";
@@ -50,12 +49,10 @@ const icons: Record<string, string> = {
   "share": share2Icon,
   "show-solution": sparklesIcon,
   "undo": undo2Icon,
-  // alert notification
-  "alert-primary": infoIcon,
-  "alert-success": checkIcon,
-  "alert-neutral": infoIcon,
-  "alert-warning": triangleAlertIcon,
-  "alert-danger": octagonAlertIcon,
+  // generic notifications
+  "info": infoIcon,
+  "warning": triangleAlertIcon,
+  "error": octagonAlertIcon,
   // help-viewer
   "history-back": arrowLeftIcon,
   "history-back-to-start": arrowLeftToLineIcon,
