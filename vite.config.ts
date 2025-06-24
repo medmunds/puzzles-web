@@ -10,6 +10,7 @@ const puzzleIds = getKnownPuzzleIds();
 const fallbackRouteRe = getFallbackRouteRe(puzzleIds);
 
 export default defineConfig({
+  appType: "mpa",
   build: {
     assetsInlineLimit: 5120, // default 4096; this covers a few icons above that
     rollupOptions: {
@@ -18,8 +19,8 @@ export default defineConfig({
       },
     },
     sourcemap: true,
+    target: "es2022",
   },
-  appType: "mpa",
   plugins: [
     puzzlesSpaRouting(),
     VitePWA({
