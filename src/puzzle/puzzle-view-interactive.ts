@@ -72,7 +72,7 @@ export class PuzzleViewInteractive extends PuzzleView {
         @pointerup=${this.handlePointerUp}
         @pointercancel=${this.handlePointerCancel}
         @click=${this.handleClick}
-      ><canvas></canvas></div>
+      ><canvas style=${this.renderCanvasStyle()}></canvas></div>
     `;
   }
 

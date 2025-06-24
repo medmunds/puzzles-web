@@ -1,4 +1,3 @@
-import { ResizeController } from "@lit-labs/observers/resize-controller.js";
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
@@ -38,20 +37,6 @@ export class PuzzleScreen extends LitElement {
 
   @query("help-viewer")
   private helpPanel?: HelpViewer;
-
-  constructor() {
-    super();
-    // puzzle-view observes its own size, but we also want it to grow
-    // when we're getting larger (without enabling flex-grow).
-    new ResizeController(this, {
-      callback: async () => {
-        const puzzleView = this.shadowRoot?.querySelector("puzzle-view-interactive");
-        if (puzzleView?.maximize) {
-          await puzzleView.resize(false);
-        }
-      },
-    });
-  }
 
   willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("puzzleType") && this.puzzleType) {
@@ -135,6 +120,11 @@ export class PuzzleScreen extends LitElement {
               role="figure"
               aria-label="interactive puzzle displayed as an image"
               maximize
+              .resizeElement=${
+                // puzzle-view observes its own size, but we also want it to grow
+                // when we're getting larger (without enabling flex-grow).
+                this
+              }
           ></puzzle-view-interactive>
 
           <!-- Directly after puzzle-view so it's next in the tab order

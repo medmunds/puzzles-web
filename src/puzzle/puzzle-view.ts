@@ -5,11 +5,13 @@ import { ColorSpace, OKLCH, to as convert, display, parse, sRGB } from "colorjs.
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
+import { styleMap } from "lit/directives/style-map.js";
 import { coordsToColour, equalColour } from "../utils/colour.ts";
 import { almostEqual } from "../utils/math.ts";
+import { throttle } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
-import type { FontInfo } from "./types.ts";
+import type { FontInfo, Size } from "./types.ts";
 
 ColorSpace.register(sRGB);
 ColorSpace.register(OKLCH);
@@ -36,9 +38,28 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   @property({ type: Boolean })
   statusbar = true;
 
+  /**
+   * An additional element whose size can affect the puzzle-view.
+   * Added to the ResizeObserver the puzzle-view uses to compute canvas size.
+   */
+  @property({ type: Element })
+  resizeElement?: Element;
+
   @consume({ context: puzzleContext, subscribe: true })
   @state()
   protected puzzle?: Puzzle;
+
+  @state()
+  protected renderedPuzzleGameId?: string;
+
+  @state()
+  protected renderedPuzzleParams?: string;
+
+  @state()
+  protected canvasDpr = window.devicePixelRatio ?? 1;
+
+  @state()
+  protected canvasSize: Size = { w: 150, h: 150 };
 
   @query("canvas", true)
   protected canvas?: HTMLCanvasElement;
@@ -46,26 +67,43 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   @query("[part=puzzle]", true)
   protected puzzleElement?: HTMLElement;
 
-  constructor() {
-    super();
-    new ResizeController(this, {
-      callback: () => this.resize(false),
-    });
-  }
-
-  // We need to resize and redraw when this.puzzle.currentGameId changes
-  // (e.g., after "new game"). Since @lit-labs/signals doesn't yet have
-  // effects, simulate one by tracking the last rendered currentGameId.
-  private renderedGameId?: string;
+  protected resizeController = new ResizeController(this, {
+    callback: throttle(() => this.resize(false), 10),
+  });
 
   private isAttachedToPuzzle = false;
+  private isAttachingToPuzzle = false;
 
-  protected override async updated() {
-    let needsResizeRedraw = false;
+  protected override willUpdate(changedProperties: Map<string, unknown>) {
+    // Since lit signals doesn't yet support effects on reactive properties, copy the
+    // puzzle's reactive currentGameId and currentParams into local reactive state.
+    // If they have changed, this will cause "effects" via updated().
+    this.renderedPuzzleGameId = this.puzzle?.currentGameId;
+    this.renderedPuzzleParams = this.puzzle?.currentParams;
 
+    if (changedProperties.has("resizeElement")) {
+      // Altering ResizeController's observables will requestUpdate().
+      // Apply changes in willUpdate() to avoid triggering a second update
+      // on initial render (Lit change-in-update warning).
+      const oldValue = changedProperties.get("resizeElement") as Element | undefined;
+      if (oldValue) {
+        this.resizeController.unobserve(oldValue);
+      }
+      if (this.resizeElement) {
+        this.resizeController.observe(this.resizeElement);
+      }
+    }
+  }
+
+  protected override async updated(changedProperties: Map<string, unknown>) {
     // Initialize drawing when dependencies become available
-    if (!this.isAttachedToPuzzle && this.canvas && this.puzzle) {
-      this.isAttachedToPuzzle = true;
+    if (
+      !this.isAttachedToPuzzle &&
+      !this.isAttachingToPuzzle &&
+      this.canvas &&
+      this.puzzle
+    ) {
+      this.isAttachingToPuzzle = true;
       const computedStyle = window.getComputedStyle(this.canvas);
       const fontInfo: FontInfo = {
         "font-family": computedStyle.fontFamily,
@@ -74,19 +112,39 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       };
       const offscreenCanvas = this.canvas.transferControlToOffscreen();
       await this.puzzle.attachCanvas(offscreenCanvas, fontInfo);
+      this.isAttachedToPuzzle = true;
+
       await this.updateColorPalette();
-      needsResizeRedraw = true;
+      // Recalculate canvas size for newly-attached puzzle. If somehow the current
+      // size was already correct, we need to redraw immediately; else redraw when
+      // the canvasSize change comes through.
+      if (!(await this.resize(false))) {
+        await this.puzzle.redraw();
+      }
     }
 
-    // Run effects on currentGameId change
-    const currentGameId = this.puzzle?.currentGameId;
-    if (currentGameId !== this.renderedGameId) {
-      this.renderedGameId = currentGameId;
-      needsResizeRedraw = true;
-    }
+    if (this.isAttachedToPuzzle && this.canvas && this.puzzle) {
+      let needsRedraw = false;
 
-    if (needsResizeRedraw) {
-      await this.resize(false, true);
+      if (changedProperties.has("renderedPuzzleParams")) {
+        // Changing game params may alter desired canvas size.
+        // (Since game id has probably also changed, we'll redraw either way.)
+        needsRedraw = !(await this.resize(false));
+      }
+
+      if (changedProperties.has("renderedPuzzleGameId")) {
+        // Current canvasSize should be fine, but we need to draw the new game.
+        needsRedraw = true;
+      }
+
+      if (changedProperties.has("canvasSize") || changedProperties.has("canvasDpr")) {
+        await this.puzzle.resizeDrawing(this.canvasSize, this.canvasDpr);
+        needsRedraw = true;
+      }
+
+      if (needsRedraw) {
+        await this.puzzle.redraw();
+      }
     }
   }
 
@@ -95,6 +153,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     if (this.isAttachedToPuzzle) {
       await this.puzzle?.detachCanvas();
       this.isAttachedToPuzzle = false;
+      this.isAttachingToPuzzle = false;
     }
   }
 
@@ -106,19 +165,24 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     return result;
   }
 
+  renderCanvasStyle() {
+    const { w, h } = this.canvasSize;
+    return styleMap({
+      width: `${w}px`,
+      height: `${h}px`,
+    });
+  }
+
   renderPuzzle() {
-    return html`<canvas part="puzzle"></canvas>`;
+    return html`<canvas part="puzzle" style=${this.renderCanvasStyle()}></canvas>`;
   }
 
   renderStatusbar() {
     return html`<div part="statusbar">${this.puzzle?.statusbarText}</div>`;
   }
 
-  //
-  // Public methods
-  //
-
-  async resize(isUserSize = true, forceRedraw = false): Promise<void> {
+  // Returns true if canvasSize changed
+  protected async resize(isUserSize = true): Promise<boolean> {
     if (
       !this.hasUpdated ||
       !this.canvas ||
@@ -128,12 +192,9 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       // midend_size() is only valid while there's a game.
       // (We'll get called again when that's true.)
       // (We can end up in here before the first update thanks to resize observers.)
-      return;
+      return false;
     }
-
-    let redraw = forceRedraw;
-
-    const current = this.canvas.getBoundingClientRect();
+    // const current = this.canvas.getBoundingClientRect();
 
     const classes = ["resizing"];
     if (!isUserSize && this.maximize) {
@@ -145,7 +206,6 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     const available = this.canvas.getBoundingClientRect();
     this.puzzleElement.classList.remove(...classes);
 
-    const dpr = window.devicePixelRatio ?? 1;
     // TODO: unclear if we should pass dpr to midend as 1 or actual dpr
     //   (since we use css pixels and scale to dpr in the drawing context)
     const size = await this.puzzle.size(
@@ -153,21 +213,18 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       isUserSize || this.maximize,
       1,
     );
+    const changed = size.w !== this.canvasSize.w || size.h !== this.canvasSize.h;
 
-    if (size.w !== current.width || size.h !== current.height) {
+    if (changed) {
       // console.log(
       //   `Resize: current ${current.width}x${current.height},` +
       //     ` available ${available.width}x${available.height},` +
       //     ` used ${size.w}x${size.h}`,
       // );
-      this.canvas.style.width = `${size.w}px`;
-      this.canvas.style.height = `${size.h}px`;
-      await this.puzzle.resizeDrawing(size, dpr);
-      redraw = true;
+      this.canvasSize = size;
     }
-    if (redraw) {
-      await this.puzzle.redraw();
-    }
+
+    return changed;
   }
 
   //
