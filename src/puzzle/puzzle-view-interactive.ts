@@ -195,6 +195,13 @@ export class PuzzleViewInteractive extends PuzzleView {
     },
   } as const;
 
+  private static buttonToButtons: Record<number, number> = {
+    // MouseEvent.button number -> MouseEvent.buttons bit mask
+    0: 1, // main (left) button
+    1: 4, // auxiliary (middle) button
+    2: 2, // secondary (right) button
+  } as const;
+
   private pointerTracking?: {
     readonly pointerId: PointerEvent["pointerId"];
     readonly drag: PuzzleButton;
@@ -205,16 +212,16 @@ export class PuzzleViewInteractive extends PuzzleView {
     if (!this.puzzle || !this.canvas) {
       return;
     }
+    if (!event.isPrimary) {
+      // Ignore multiple simultaneous touches (or pens).
+      // (detectSecondaryButton() handles those on its own.)
+      return;
+    }
+    if (event.buttons !== PuzzleViewInteractive.buttonToButtons[event.button]) {
+      // Ignore simultaneous clicks on different buttons.
+      return;
+    }
     if (this.pointerTracking) {
-      if (event.pointerType === "touch" && !event.isPrimary) {
-        // Ignore multiple simultaneous touches.
-        // (detectSecondaryButton() handles those on its own.)
-        return;
-      }
-      if (event.pointerType !== "touch" && event.buttons !== 2 ** event.button) {
-        // Ignore simultaneous clicks on different buttons.
-        return;
-      }
       // PointerUp event for earlier tracking was somehow missed.
       // Start over with this PointerDown and let the midend sort it out.
       if (this.canvas?.hasPointerCapture(this.pointerTracking.pointerId)) {
@@ -257,7 +264,12 @@ export class PuzzleViewInteractive extends PuzzleView {
     const consumed = await this.puzzle.processMouse(location, press);
     if (consumed) {
       this.pointerTracking = { drag, release, pointerId };
-      this.canvas.setPointerCapture(pointerId);
+      try {
+        this.canvas.setPointerCapture(pointerId);
+      } catch (error) {
+        // The pointer is already up (pointerId is no longer active).
+        // Probably a tap that's completed -- pointer capture isn't needed.
+      }
     } else {
       // Puzzle doesn't want this mouse button, so don't bother tracking.
       // But the midend requires a release event for every press.
