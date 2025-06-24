@@ -3,7 +3,30 @@ import { registerSW } from "virtual:pwa-register";
 import { installErrorHandlers } from "./utils/errors.ts";
 import { escapeHtml } from "./utils/html.ts";
 
-installErrorHandlers();
+if (new URL(window.location.href).searchParams.has("console")) {
+  // Inject an in-document emulated console
+  // const src = "https://cdn.jsdelivr.net/npm/eruda@3.4.3"; // too heavy for mobile
+  const version = "51239dd85ea707bd06159024a8ad64028d0862f6"; // 2.0.7
+  const src = `https://cdn.jsdelivr.net/gh/c-kick/mobileConsole@${version}/hnl.mobileconsole.min.js`;
+  const script = Object.assign(document.createElement("script"), { src });
+  await new Promise((resolve) => {
+    script.onload = resolve;
+    document.head.appendChild(script);
+  });
+  if (src.indexOf("eruda") !== -1) {
+    // @ts-ignore
+    window.eruda?.init();
+  } else {
+    // mobileConsole treats assert(assertion, ...) as a log level
+    console.assert = (assertion?: boolean, ...data: unknown[]) => {
+      if (!assertion) {
+        console.error("assert failed", ...data);
+      }
+    };
+  }
+} else {
+  installErrorHandlers();
+}
 
 // Register components (that are used here or directly by index.html)
 import "@shoelace-style/shoelace/dist/components/alert/alert.js";

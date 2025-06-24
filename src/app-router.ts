@@ -91,7 +91,10 @@ export class AppRouter extends LitElement {
     }
 
     // Global search params
-    const params = { debug: url.searchParams.has("debug") };
+    const params = {
+      console: url.searchParams.has("console"),
+      debug: url.searchParams.has("debug"),
+    };
 
     // We only have two routes to match, so this is not fancy:
     //   "catalog" (/ or /index or /index.html)
@@ -152,7 +155,10 @@ export class AppRouter extends LitElement {
         throw new Error(`Unknown route name ${route.name}`);
     }
 
-    // Debug is a global param that persists into all routes
+    // Debug and console are global params that persist into all routes
+    if (route.params.console || this.route?.params?.console) {
+      searchParams.append("console", "");
+    }
     if (route.params.debug || this.route?.params?.debug) {
       searchParams.append("debug", "");
     }

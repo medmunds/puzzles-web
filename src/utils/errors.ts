@@ -63,15 +63,18 @@ export function installErrorHandlers() {
 const workerUnhandledErrorMessageType = "worker-unhandlederror";
 interface WorkerUnhandledErrorMessage {
   type: typeof workerUnhandledErrorMessageType;
-  errorMessage: string;
+  message: string;
+  error?: Error;
 }
 
 // Construct a WorkerUnhandledErrorMessage
 const workerUnhandledErrorMessage = (
-  errorMessage: string,
+  message: string,
+  error?: Error,
 ): WorkerUnhandledErrorMessage => ({
   type: workerUnhandledErrorMessageType,
-  errorMessage,
+  message,
+  error,
 });
 
 const isWorkerUnhandledErrorMessage = (
@@ -84,7 +87,8 @@ const isWorkerUnhandledErrorMessage = (
 
 const handleWorkerMessage = (event: MessageEvent<unknown>) => {
   if (isWorkerUnhandledErrorMessage(event)) {
-    notifyError(String(event.data.errorMessage));
+    console.error(event.data.message, event.data.error);
+    notifyError(String(event.data.message));
   }
 };
 
@@ -99,19 +103,26 @@ export function installErrorHandlersInWorker() {
     throw new Error("installErrorHandlersInWorker must be called from a worker");
   }
 
-  // Unhandled errors (but not promise rejections) already propagate to the main,
-  // so this is unnecessary:
-  //   self.onerror = (...) => { self.postMessage(...); }
+  // Unhandled errors (but not promise rejections) already propagate
+  // to the main thread's onerror, but not when using mobile emulated console.
+  self.onerror = (message, filename, lineno, colno, error) => {
+    try {
+      // (The message already starts with "Uncaught Error:".)
+      const errorMessage = `${message}${
+        filename ? ` at ${filename}:${lineno}:${colno}` : ""
+      }`;
+      self.postMessage(workerUnhandledErrorMessage(errorMessage, error));
+    } catch (error) {
+      console.error("Error in onerror handler", error);
+    }
+  };
 
   self.onunhandledrejection = (event) => {
     try {
-      const description = String(
-        event.reason instanceof Error && event.reason.stack
-          ? event.reason.stack
-          : event.reason,
-      );
-      const errorMessage = `Unhandled Promise Rejection in worker: ${description}`;
-      self.postMessage(workerUnhandledErrorMessage(errorMessage));
+      const error = event.reason instanceof Error ? event.reason : undefined;
+      const description = String(error?.stack ?? event.reason);
+      const message = `Unhandled Promise Rejection in worker: ${description}`;
+      self.postMessage(workerUnhandledErrorMessage(message, error));
     } catch (error) {
       console.error("Error in worker onunhandledrejection handler", error);
     }
