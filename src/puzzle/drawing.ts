@@ -44,8 +44,11 @@ export class Drawing implements DrawingImpl<Blitter> {
     // Get context
     const context = this.canvas.getContext("2d", {
       alpha: false,
-      // TODO: maybe defer willReadFrequently until blitter gets used?
-      willReadFrequently: true,
+      // willReadFrequently causes lost context when used with
+      // OffscreenCanvas transferred to worker in Android Chrome:
+      // https://issues.chromium.org/issues/417354558#comment3.
+      // (Otherwise it would be helpful for blitter use.)
+      //   willReadFrequently: true,
     });
     if (!context) {
       throw new Error("Failed to get canvas 2d context");
