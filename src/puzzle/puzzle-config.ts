@@ -20,6 +20,8 @@ import "@shoelace-style/shoelace/dist/components/select/select.js";
 import "@shoelace-style/shoelace/dist/components/radio-button/radio-button.js";
 import "@shoelace-style/shoelace/dist/components/radio-group/radio-group.js";
 
+const isNumeric = (s: string) => /[0-9]+/.test(s);
+
 /**
  * The `<puzzle-config>` component renders a configuration dialog for a puzzle.
  * It must be used within a puzzle-context component.
@@ -137,8 +139,10 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
         return html`
           <sl-input
             data-index=${index}
+            inputmode=${isNumeric(item.value) ? "decimal" : "text"}
             label=${item.label}
             value=${item.value}
+            @sl-focus=${this.autoSelectInput}
             @sl-input=${this.updateTextValue}
           ></sl-input>
         `;
@@ -198,6 +202,11 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
     }
     const index = Number.parseInt(dataIndex, 10);
     return this.configItems[index];
+  }
+
+  private autoSelectInput(event: FocusEvent) {
+    const target = event.target as HTMLInputElement;
+    target.select();
   }
 
   private updateTextValue(event: CustomEvent) {
