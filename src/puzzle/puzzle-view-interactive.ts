@@ -381,7 +381,18 @@ export class PuzzleViewInteractive extends PuzzleView {
 
       [part="puzzle"] {
         padding: var(--padding);
-        
+      }
+      [part="statusbar"] {
+        margin-block-end: var(--padding);
+      }
+
+      canvas {
+        max-width: 100%;
+        max-height: 100%;
+      }
+
+      [part="puzzle"], 
+      [part="statusbar"] {
         /* Disable double-tap to zoom (puzzles want rapid taps) 
          * and single-finger panning (puzzles want dragging).
          * Allow zooming and multi-finger panning for accessibility.
@@ -389,18 +400,15 @@ export class PuzzleViewInteractive extends PuzzleView {
          */
         touch-action: pinch-zoom;
 
-        /* Disable long-press selection/magnifier bubble on iOS Safari */
+        /* Disable long-press selection/magnifier bubble on iOS Safari.
+         * If Safari gets a long-press on something that's not selectable
+         * (like the puzzle), it looks for something--anything--nearby
+         * to select instead (like the statusbar). A bubble on the statusbar
+         * when you long-press the puzzle is annoying, so disable on both.
+         */
         -webkit-user-select: none;
         -moz-user-select: none;
         user-select: none;
-      }
-      canvas {
-        max-width: 100%;
-        max-height: 100%;
-      }
-      
-      [part="statusbar"] {
-        margin-block-end: var(--padding);
       }
     `,
   ];
