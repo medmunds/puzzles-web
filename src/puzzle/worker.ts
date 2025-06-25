@@ -206,15 +206,16 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
   // Timer
   //
 
-  private timerId?: number;
+  private timerActive = false;
   private lastTimeMs = 0;
 
   private onAnimationFrame = async (timestampMs: number) => {
-    if (this.timerId !== undefined) {
+    if (this.timerActive) {
       // puzzle timer requires secs, not msec
-      this.frontend.timer((timestampMs - this.lastTimeMs) / 1000);
+      const tplus = (timestampMs - this.lastTimeMs) / 1000;
       this.lastTimeMs = timestampMs;
-      this.timerId = self.requestAnimationFrame(this.onAnimationFrame);
+      this.frontend.timer(tplus);
+      self.requestAnimationFrame(this.onAnimationFrame);
     }
   };
 
@@ -223,17 +224,18 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
   //
 
   activateTimer = (): void => {
-    if (this.timerId === undefined) {
+    if (!this.timerActive) {
+      this.timerActive = true;
       this.lastTimeMs = self.performance.now();
-      this.timerId = self.requestAnimationFrame(this.onAnimationFrame);
       this.notifyTimerStateRemote?.(true);
+      self.requestAnimationFrame(this.onAnimationFrame);
     }
   };
 
   deactivateTimer = (): void => {
-    if (this.timerId !== undefined) {
-      self.cancelAnimationFrame(this.timerId);
-      this.timerId = undefined;
+    if (this.timerActive) {
+      this.timerActive = false;
+      // (No need to cancelAnimationFrame--we'll get one more and ignore it.)
       this.notifyTimerStateRemote?.(false);
     }
   };

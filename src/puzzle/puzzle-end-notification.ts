@@ -97,6 +97,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
       )) {
         setAnimation(this.dialog, name, animation);
       }
+      // Wait for any game animations/flashes to finish before showing dialog
       await Promise.all([this.updateComplete, this.puzzle?.timerComplete]);
       await this.dialog.show();
     }
