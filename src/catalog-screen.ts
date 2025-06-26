@@ -134,6 +134,7 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
       margin: 0 auto;
       padding: var(--app-padding);
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
 
       display: flex;
       flex-direction: column;
