@@ -249,6 +249,9 @@ export class HelpViewer extends LitElement {
     
     /* TODO: share the base page styles somehow */
     sl-include {
+      /* try to avoid horizontal scrolling on small screens */
+      overflow-wrap: break-word;
+
       h1, h2, h3 {
         color: var(--sl-color-neutral-800);
         line-height: var(--sl-line-height-dense);
@@ -274,6 +277,11 @@ export class HelpViewer extends LitElement {
       a > code {
         /* urls are all formatted as code; we'd prefer to skip the monoface font */
         font-family: inherit;
+      }
+      
+      pre {
+        /* try to avoid horizontal scrolling on small screens */
+        white-space: pre-wrap;
       }
       
       sl-icon.offsite {
