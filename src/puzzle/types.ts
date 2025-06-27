@@ -5,6 +5,7 @@
 import type {
   ClassHandle,
   DrawingWrapper,
+  Frontend,
   MainModule,
   NotifyGameIdChange,
   NotifyGameStateChange,
@@ -33,34 +34,9 @@ export type {
   Size,
 } from "../assets/puzzles/emcc-runtime";
 
-// Cleaner types for getConfigItems/setConfigItems
-// (emcc-generated <puzzle>.d.ts just uses a big union)
-export interface ConfigItemBase {
-  type: string;
-  label: string;
-}
-export interface ConfigItemTitle extends ConfigItemBase {
-  type: "title";
-}
-export interface ConfigItemText extends ConfigItemBase {
-  type: "text";
-  value: string;
-}
-export interface ConfigItemCheckbox extends ConfigItemBase {
-  type: "checkbox";
-  value: boolean;
-}
-export interface ConfigItemSelect extends ConfigItemBase {
-  type: "select";
-  value: number;
-  options: string[];
-}
-export type ConfigItem =
-  | ConfigItemTitle
-  | ConfigItemText
-  | ConfigItemCheckbox
-  | ConfigItemSelect;
-export type ConfigItems = ConfigItem[];
+export type ConfigDescription = ReturnType<Frontend["getPreferencesConfig"]>;
+export type ConfigItem = ReturnType<Frontend["getPreferencesConfig"]>["items"]["any"];
+export type ConfigValues = ReturnType<Frontend["getPreferences"]>;
 
 export type ChangeNotification =
   | NotifyGameIdChange

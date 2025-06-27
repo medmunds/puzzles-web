@@ -28,6 +28,28 @@ EM_JS(void, throw_js_error, (const char* message), {
     throw new Error(UTF8ToString(message));
 });
 
+std::string slugify(const std::string& text) {
+    std::string slug;
+    slug.reserve(text.length());
+
+    bool last_was_delimiter = false;
+    for (const unsigned char c : text) {
+        if (c > 127) {
+            fatal("slugify: non-ASCII character: 0x%02X", c);
+        }
+        if (std::isalnum(c)) {
+            if (last_was_delimiter && !slug.empty()) {
+                slug += '-';
+            }
+            slug += static_cast<char>(std::tolower(c));
+            last_was_delimiter = false;
+        } else {
+            last_was_delimiter = true;
+        }
+    }
+
+    return slug;
+}
 
 // Converting std::vector to JS Array:
 //
@@ -603,7 +625,9 @@ struct PresetMenuEntry {
     }
 };
 
-EMSCRIPTEN_DECLARE_VAL_TYPE(ConfigItemList);
+EMSCRIPTEN_DECLARE_VAL_TYPE(ConfigDescription);
+EMSCRIPTEN_DECLARE_VAL_TYPE(ConfigValues);
+EMSCRIPTEN_DECLARE_VAL_TYPE(ConfigValuesIn);
 
 EMSCRIPTEN_DECLARE_VAL_TYPE(ActivateTimerFunc);
 EMSCRIPTEN_DECLARE_VAL_TYPE(DeactivateTimerFunc);
@@ -827,41 +851,44 @@ public:
         return midend_wants_statusbar(me());
     }
 
-    [[nodiscard]] ConfigItemList getConfigItems(const int which) const {
-        // TODO: this is kind of hacked in, and not really using type checking.
-        //   We can come up with a better API.
+private:
+    static std::string config_item_id(const int which, const config_item *item) {
+        // CFG_PREFS have keywords defined.
+        if (which == CFG_PREFS) {
+            return item->kw;
+        }
+        // CFG_SETTINGS and other CFG types don't use kw (and leave it uninitialized).
+        // Use the slugified name instead.
+        return slugify(item->name);
+    }
+
+    [[nodiscard]] ConfigDescription build_config_description(const int which) const {
         char *wintitle;
-        auto *items = midend_get_config(me(), which, &wintitle);
+        auto *config_items = midend_get_config(me(), which, &wintitle);
 
-        std::vector<val> items_vec;
+        auto config = val::object();
+        config.set("title", std::string(wintitle));
 
-        // Add title entry first
-        auto title_obj = val::object();
-        title_obj.set("type", "title");
-        title_obj.set("label", std::string(wintitle));
-        items_vec.push_back(title_obj);
-
+        auto items = val::object();
         // Process config items until we hit C_END
-        for (config_item *item = items; item->type != C_END; item++) {
-            auto config_obj = val::object();
-            config_obj.set("label", std::string(item->name));
+        for (config_item *config_item = config_items; config_item->type != C_END; config_item++) {
+            auto item = val::object();
+            item.set("name", std::string(config_item->name));
 
-            switch (item->type) {
+            switch (config_item->type) {
                 case C_STRING:
-                    config_obj.set("type", "text");
-                    config_obj.set("value", std::string(item->u.string.sval));
+                    item.set("type", "string");
                     break;
 
                 case C_BOOLEAN:
-                    config_obj.set("type", "checkbox");
-                    config_obj.set("value", item->u.boolean.bval != 0);
+                    item.set("type", "boolean");
                     break;
 
                 case C_CHOICES: {
                     // Split options string using first char as delimiter
                     std::vector<std::string> options;
-                    const char *str = item->u.choices.choicenames + 1; // Skip delimiter char
-                    char delimiter = item->u.choices.choicenames[0];
+                    const char *str = config_item->u.choices.choicenames + 1; // Skip delimiter char
+                    char delimiter = config_item->u.choices.choicenames[0];
 
                     while (*str != '\0') {
                         const char *end = strchr(str, delimiter);
@@ -873,61 +900,122 @@ public:
                         str = end + 1;
                     }
 
-                    config_obj.set("type", "select");
-                    config_obj.set("value", item->u.choices.selected);
-                    config_obj.set("options", val::array(options));
+                    item.set("type", "choices");
+                    item.set("choicenames", val::array(options));
                     break;
                 }
 
                 default:
-                    config_obj.set("type", "unknown");
-                    config_obj.set("raw_type", item->type);
+                    item.set("type", "unknown");
+                    item.set("raw_type", config_item->type);
                     break;
             }
 
-            items_vec.push_back(config_obj);
+            auto id = config_item_id(which, config_item);
+            items.set(id, item);
         }
 
-        free_cfg(items);
+        free_cfg(config_items);
         sfree(wintitle);
-        return val::array(items_vec).as<ConfigItemList>();
+
+        config.set("items", items);
+        return config.as<ConfigDescription>();
     }
 
-    [[nodiscard]] std::optional<std::string> setConfigItems(
-        const int which, const ConfigItemList &js_items
+    [[nodiscard]] ConfigValues get_config_values(const int which) const {
+        char *wintitle;
+        auto *config_items = midend_get_config(me(), which, &wintitle);
+
+        auto values = val::object();
+        for (config_item *config_item = config_items; config_item->type != C_END; config_item++) {
+            auto id = config_item_id(which, config_item);
+            switch (config_item->type) {
+                case C_STRING:
+                    values.set(id, std::string(config_item->u.string.sval));
+                    break;
+                case C_BOOLEAN:
+                    values.set(id, config_item->u.boolean.bval != 0);
+                    break;
+                case C_CHOICES:
+                    values.set(id, config_item->u.choices.selected);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        free_cfg(config_items);
+        sfree(wintitle);
+        return values.as<ConfigValues>();
+    }
+
+    [[nodiscard]] std::optional<std::string> set_config_values(
+        const int which, const ConfigValuesIn &values
     ) const {
         char *wintitle;
-        auto *items = midend_get_config(me(), which, &wintitle);
+        auto *config_items = midend_get_config(me(), which, &wintitle);
 
-        // Skip first item (title)
-        auto length = js_items["length"].as<int>();
-        for (int i = 1; i < length; i++) {
-            val js_item = js_items[i];
-            auto type = js_item["type"].as<std::string>();
-            if (type == "text") {
-                items[i - 1].u.string.sval = dupstr(
-                    js_item["value"].as<std::string>().c_str()
-                );
-            } else if (type == "checkbox") {
-                items[i - 1].u.boolean.bval = js_item["value"].as<bool>();
-            } else if (type == "select") {
-                items[i - 1].u.choices.selected = js_item["value"].as<int>();
+        for (config_item *config_item = config_items; config_item->type != C_END; config_item++) {
+            auto id = config_item_id(which, config_item);
+            auto value = values[id];
+            if (value.isUndefined() || value.isNull()) {
+                // Keep current value for this config_item
+                continue;
+            }
+
+            switch (config_item->type) {
+                case C_STRING:
+                    sfree(config_item->u.string.sval); // free original value
+                    config_item->u.string.sval = dupstr(value.as<std::string>().c_str());
+                    break;
+                case C_BOOLEAN:
+                    config_item->u.boolean.bval = value.as<bool>();
+                    break;
+                case C_CHOICES:
+                    config_item->u.choices.selected = value.as<int>();
+                    break;
+                default:
+                    break;
             }
         }
 
-        auto result = midend_set_config(me(), which, items);
-        free_cfg(items);
+        auto result = midend_set_config(me(), which, config_items);
+        free_cfg(config_items);
         sfree(wintitle);
-
-        if (result == nullptr) {
-            // No error, so dispatch notifications.
-            // CFG_SEED, CFG_DESC: midend has invoked our notify_id_changes callback.
-            // CFG_PREFS: no notification necessary (?)
-            if (which == CFG_SETTINGS) {
-                this->notifyPresetIdChange();
-            }
-        }
         return result == nullptr ? std::nullopt : std::optional<std::string>(result);
+    }
+
+public:
+    [[nodiscard]] ConfigDescription getPreferencesConfig() const {
+        return this->build_config_description(CFG_PREFS);
+    }
+
+    [[nodiscard]] ConfigValues getPreferences() const {
+        return this->get_config_values(CFG_PREFS);
+    }
+
+    [[nodiscard]] std::optional<std::string> setPreferences(
+        const ConfigValuesIn &values
+    ) const {
+        return this->set_config_values(CFG_PREFS, values);
+    }
+
+    [[nodiscard]] ConfigDescription getCustomParamsConfig() const {
+        return this->build_config_description(CFG_SETTINGS);
+    }
+
+    [[nodiscard]] ConfigValues getCustomParams() const {
+        return this->get_config_values(CFG_SETTINGS);
+    }
+
+    [[nodiscard]] std::optional<std::string> setCustomParams(
+        const ConfigValuesIn &values
+    ) const {
+        auto result = this->set_config_values(CFG_SETTINGS, values);
+        if (result == std::nullopt) {
+            this->notifyPresetIdChange();
+        }
+        return result;
     }
 
     // Returns undefined if successful, else error message.
@@ -1079,12 +1167,17 @@ EMSCRIPTEN_BINDINGS(frontend) {
     register_type<PresetMenuEntryList>("PresetMenuEntry[]");
     register_optional<PresetMenuEntryList>();
 
-    register_type<ConfigItemList>(R"((
-        | { type: "title", label: string }
-        | { type: "text", label: string, value: string }
-        | { type: "checkbox", label: string, value: boolean }
-        | { type: "select", label: string, value: number, options: string[] }
-    )[])");
+    register_type<ConfigDescription>(R"({
+        title: string;
+        items: {
+            [id: string]:
+                | { type: "string"; name: string; }
+                | { type: "boolean", name: string; }
+                | { type: "choices", name: string, choicenames: string[]; }
+        };
+    })");
+    register_type<ConfigValues>("Record<string, string | boolean | number>");
+    register_type<ConfigValuesIn>("Record<string, string | boolean | number | undefined | null>");
 
     register_type<ActivateTimerFunc>("() => void");
     register_type<DeactivateTimerFunc>("() => void");
@@ -1120,8 +1213,12 @@ EMSCRIPTEN_BINDINGS(frontend) {
         .property("currentPreset", &frontend::getCurrentPreset)
         .function("setPreset(id)", &frontend::setPreset)
         .property("wantsStatusbar", &frontend::getWantsStatusbar)
-        .function("getConfigItems(which)", &frontend::getConfigItems)
-        .function("setConfigItems(which, items)", &frontend::setConfigItems)
+        .function("getPreferencesConfig", &frontend::getPreferencesConfig)
+        .function("getPreferences", &frontend::getPreferences)
+        .function("setPreferences(values)", &frontend::setPreferences)
+        .function("getCustomParamsConfig", &frontend::getCustomParamsConfig)
+        .function("getCustomParams", &frontend::getCustomParams)
+        .function("setCustomParams(values)", &frontend::setCustomParams)
         .function("setGameId(id)", &frontend::setGameId)
         .property("currentGameId", &frontend::getCurrentGameId)
         .property("randomSeed", &frontend::getRandomSeed)
@@ -1131,7 +1228,6 @@ EMSCRIPTEN_BINDINGS(frontend) {
         .function("undo", &frontend::undo)
         .function("redo", &frontend::redo)
         // TODO: serialisation
-        // TODO: preferences
         .function("getCursorLocation", &frontend::getCursorLocation);
 }
 

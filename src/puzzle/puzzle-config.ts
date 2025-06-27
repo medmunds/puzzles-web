@@ -7,7 +7,7 @@ import { query } from "lit/decorators/query.js";
 import { when } from "lit/directives/when.js";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
-import type { ConfigItem, ConfigItems } from "./types.ts";
+import type { ConfigDescription, ConfigItem, ConfigValues } from "./types.ts";
 
 // Register components
 import "@shoelace-style/shoelace/dist/components/button/button.js";
@@ -20,7 +20,8 @@ import "@shoelace-style/shoelace/dist/components/select/select.js";
 import "@shoelace-style/shoelace/dist/components/radio-button/radio-button.js";
 import "@shoelace-style/shoelace/dist/components/radio-group/radio-group.js";
 
-const isNumeric = (s: string) => /[0-9]+/.test(s);
+const isNumeric = (value: unknown) =>
+  typeof value === "number" || (typeof value === "string" && /[0-9]+/.test(value));
 
 /**
  * The `<puzzle-config>` component renders a configuration dialog for a puzzle.
@@ -33,7 +34,7 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
   private puzzle?: Puzzle;
 
   /**
-   * Which configuration to display (0 for game preferences, 1 for custom params)
+   * Which configuration to display (3 for game preferences, 0 for custom params)
    */
   @property({ type: Number })
   which = 0;
@@ -72,7 +73,10 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
   private dialog?: SlDialog;
 
   @state()
-  private configItems: ConfigItems = [];
+  private config?: ConfigDescription;
+
+  @state()
+  private values: ConfigValues = {};
 
   @state()
   private error?: string;
@@ -89,23 +93,25 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
   }
 
   private async loadConfigItems() {
-    if (!this.puzzle) return;
-
-    try {
-      this.configItems = await this.puzzle.getConfigItems(this.which);
-      this.error = undefined;
-
-      // Find the first title item to use as dialog title if not explicitly set
-      if (!this.hasAttribute("dialogTitle")) {
-        const titleItem = this.configItems.find((item) => item.type === "title");
-        if (titleItem) {
-          this.dialogTitle = titleItem.label;
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load config items:", err);
-      this.error = err instanceof Error ? err.message : String(err);
+    if (!this.puzzle) {
+      return;
     }
+
+    switch (this.which) {
+      case 0:
+        this.config = await this.puzzle.getCustomParamsConfig();
+        this.values = await this.puzzle.getCustomParams();
+        break;
+      case 3:
+        this.config = await this.puzzle.getPreferencesConfig();
+        this.values = await this.puzzle.getPreferences();
+        break;
+      default:
+        throw new Error(`Unknown which=${this.which} in puzzle-config`);
+    }
+
+    this.error = undefined;
+    this.dialogTitle = this.config?.title;
   }
 
   override render() {
@@ -118,7 +124,7 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
         ${when(this.error, () => html`<div part="error">${this.error}</div>`)}
 
         <form part="form" @submit=${this.handleSubmit}>
-          ${this.configItems.map((item, index) => this.renderConfigItem(item, index))}
+          ${Object.entries(this.config?.items ?? {}).map(([id, config]) => this.renderConfigItem(id, config))}
         </form>
 
         <div slot="footer" part="footer">
@@ -129,60 +135,57 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
     `;
   }
 
-  private renderConfigItem(item: ConfigItem, index: number) {
-    switch (item.type) {
-      case "title":
-        // Title was rendered as the dialog title
-        break;
-
-      case "text":
+  private renderConfigItem(id: string, config: ConfigItem) {
+    const value = this.values?.[id];
+    switch (config.type) {
+      case "string":
         return html`
           <sl-input
-            data-index=${index}
-            inputmode=${isNumeric(item.value) ? "decimal" : "text"}
-            label=${item.label}
-            value=${item.value}
+            id=${id}
+            inputmode=${isNumeric(value) ? "decimal" : "text"}
+            label=${config.name}
+            value=${value}
             @sl-focus=${this.autoSelectInput}
             @sl-input=${this.updateTextValue}
           ></sl-input>
         `;
 
-      case "checkbox":
+      case "boolean":
         return html`
-          <sl-checkbox
-            data-index=${index}
-            ?checked=${item.value}
+          <sl-checkbox 
+            id=${id}
+            ?checked=${value}
             @sl-change=${this.updateCheckboxValue}
-          >${item.label}</sl-checkbox>
+          >${config.name}</sl-checkbox>
         `;
 
-      case "select":
-        if (item.options.length <= 3) {
+      case "choices":
+        if (config.choicenames.length <= 3) {
           // Render small option sets as a radio button group rather than a select popup
           return html`
             <sl-radio-group
-              data-index=${index}
-              label=${item.label}
-              value=${item.value}
+              id=${id}
+              label=${config.name}
+              value=${value}
               @sl-change=${this.updateSelectValue}
             >
-              ${item.options.map(
-                (option, index) => html`
-                <sl-radio-button value=${index}>${option}</sl-radio-button>`,
+              ${config.choicenames.map(
+                (choice, value) => html`
+                <sl-radio-button value=${value}>${choice}</sl-radio-button>`,
               )}
             </sl-radio-group>
           `;
         }
         return html`
           <sl-select
-            data-index=${index}
-            label=${item.label}
-            value=${item.value}
+            id=${id}
+            label=${config.name}
+            value=${value}
             @sl-change=${this.updateSelectValue}
           >
-            ${item.options.map(
-              (option, index) => html`
-              <sl-option value=${index}>${option}</sl-option>
+            ${config.choicenames.map(
+              (choice, value) => html`
+              <sl-option value=${value}>${choice}</sl-option>
             `,
             )}
           </sl-select>
@@ -194,16 +197,6 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
     }
   }
 
-  // Form controls edit the configItems' values in place
-  private getFormConfigItem(element: HTMLElement): ConfigItem {
-    const dataIndex = element.getAttribute("data-index");
-    if (!dataIndex) {
-      throw new Error("Element does not have a data-index attribute");
-    }
-    const index = Number.parseInt(dataIndex, 10);
-    return this.configItems[index];
-  }
-
   private autoSelectInput(event: FocusEvent) {
     const target = event.target as HTMLInputElement;
     target.select();
@@ -211,45 +204,32 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
 
   private updateTextValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    const configItem = this.getFormConfigItem(target);
-    if (configItem.type !== "text") {
-      throw new Error(
-        `updateTextValue() can't handle type ${configItem.type} for ${configItem.label}`,
-      );
-    }
-    configItem.value = target.value;
+    this.values[target.id] = target.value;
   }
 
   private updateCheckboxValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    const configItem = this.getFormConfigItem(target);
-    if (configItem.type !== "checkbox") {
-      throw new Error(
-        `updateCheckboxValue() can't handle type ${configItem.type} for ${configItem.label}`,
-      );
-    }
-    configItem.value = target.checked;
+    this.values[target.id] = target.checked;
   }
 
   private updateSelectValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    const configItem = this.getFormConfigItem(target);
-    if (configItem.type !== "select") {
-      throw new Error(
-        `updateSelectValue() can't handle type ${configItem.type} for ${configItem.label}`,
-      );
-    }
-    configItem.value = Number.parseInt(target.value);
+    this.values[target.id] = Number.parseInt(target.value);
   }
 
   private async handleSubmit(e: Event) {
     e.preventDefault();
 
-    if (!this.puzzle) return;
+    if (!this.puzzle) {
+      return;
+    }
 
     try {
       // Submit updated config
-      const result = await this.puzzle.setConfigItems(this.which, this.configItems);
+      const result =
+        this.which === 0
+          ? await this.puzzle.setCustomParams(this.values)
+          : await this.puzzle.setPreferences(this.values);
 
       if (result) {
         // If there's a result string, it's an error message

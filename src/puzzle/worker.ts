@@ -5,7 +5,8 @@ import { Drawing } from "./drawing.ts";
 import type {
   ChangeNotification,
   Colour,
-  ConfigItems,
+  ConfigDescription,
+  ConfigValues,
   Drawing as DrawingHandle,
   FontInfo,
   Frontend,
@@ -128,12 +129,28 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
     return this.frontend.getPresets();
   }
 
-  getConfigItems(which: number): ConfigItems {
-    return this.frontend.getConfigItems(which);
+  getCustomParamsConfig(): ConfigDescription {
+    return this.frontend.getCustomParamsConfig();
   }
 
-  setConfigItems(which: number, items: ConfigItems): string | undefined {
-    return this.frontend.setConfigItems(which, items);
+  getCustomParams(): ConfigValues {
+    return this.frontend.getCustomParams();
+  }
+
+  setCustomParams(values: ConfigValues): string | undefined {
+    return this.frontend.setCustomParams(values);
+  }
+
+  getPreferencesConfig(): ConfigDescription {
+    return this.frontend.getPreferencesConfig();
+  }
+
+  getPreferences(): ConfigValues {
+    return this.frontend.getPreferences();
+  }
+
+  setPreferences(values: ConfigValues): string | undefined {
+    return this.frontend.setPreferences(values);
   }
 
   redraw(): void {

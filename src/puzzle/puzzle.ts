@@ -7,7 +7,8 @@ import {
 import type {
   ChangeNotification,
   Colour,
-  ConfigItems,
+  ConfigDescription,
+  ConfigValues,
   FontInfo,
   KeyLabel,
   Point,
@@ -213,15 +214,28 @@ export class Puzzle {
     return await this.workerPuzzle.getPresets();
   }
 
-  public async getConfigItems(which: number): Promise<ConfigItems> {
-    return await this.workerPuzzle.getConfigItems(which);
+  public async getCustomParamsConfig(): Promise<ConfigDescription> {
+    return await this.workerPuzzle.getCustomParamsConfig();
   }
 
-  public async setConfigItems(
-    which: number,
-    items: ConfigItems,
-  ): Promise<string | undefined> {
-    return await this.workerPuzzle.setConfigItems(which, items);
+  public async getCustomParams(): Promise<ConfigValues> {
+    return await this.workerPuzzle.getCustomParams();
+  }
+
+  public async setCustomParams(values: ConfigValues): Promise<string | undefined> {
+    return await this.workerPuzzle.setCustomParams(values);
+  }
+
+  public async getPreferencesConfig(): Promise<ConfigDescription> {
+    return await this.workerPuzzle.getPreferencesConfig();
+  }
+
+  public async getPreferences(): Promise<ConfigValues> {
+    return await this.workerPuzzle.getPreferences();
+  }
+
+  public async setPreferences(values: ConfigValues): Promise<string | undefined> {
+    return await this.workerPuzzle.setPreferences(values);
   }
 
   public async redraw(): Promise<void> {
