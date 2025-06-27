@@ -327,9 +327,9 @@ static grid *loopy_generate_grid(const game_params *params,
 
 /* General constants */
 #define PREFERRED_TILE_SIZE 32
-#define DOT_RADIUS(tilesize) ((tilesize)*2.5/32.0)
-#define LINE_THICKNESS(tilesize) ((tilesize)*3/32.0)
-#define FAINT_LINE_THICKNESS(tilesize) ((tilesize)/24.0)
+#define DOT_RADIUS(tilesize) (max(1, (tilesize)*2.5/32.0))
+#define LINE_THICKNESS(tilesize) (max(1.0F, (tilesize)*3/32.0))
+#define FAINT_LINE_THICKNESS(tilesize) (max(0.5F, (tilesize)/24.0))
 #ifdef NARROW_BORDERS
 #define BORDER(tilesize) (DOT_RADIUS(tilesize))
 #else
