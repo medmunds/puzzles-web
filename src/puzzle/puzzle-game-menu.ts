@@ -4,7 +4,7 @@ import { LitElement, type TemplateResult, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { puzzleContext } from "./contexts.ts";
-import type { PuzzleConfig } from "./puzzle-config.ts";
+import type { PuzzlePreferences } from "./puzzle-config.ts";
 import type { Puzzle } from "./puzzle.ts";
 
 // Component registration
@@ -23,7 +23,7 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
   @state()
   private puzzle?: Puzzle;
 
-  private preferencesDialog?: PuzzleConfig;
+  private preferencesDialog?: PuzzlePreferences;
 
   disconnectedCallback() {
     super.disconnectedCallback();
@@ -98,13 +98,12 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
       if (!container) {
         throw new Error("launchCustomDialog() can't find puzzle-context container");
       }
-      this.preferencesDialog = document.createElement("puzzle-config");
-      this.preferencesDialog.which = 3; // Preferences
+      this.preferencesDialog = document.createElement("puzzle-preferences");
       container.appendChild(this.preferencesDialog);
       await this.preferencesDialog.updateComplete;
     } else if (!this.preferencesDialog.open) {
       // Refresh the items for the current puzzle
-      await this.preferencesDialog.reloadConfigItems();
+      await this.preferencesDialog.reloadValues();
     }
 
     this.preferencesDialog.show();

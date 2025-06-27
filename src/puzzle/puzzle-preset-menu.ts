@@ -5,7 +5,7 @@ import { LitElement, type TemplateResult, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { puzzleContext } from "./contexts.ts";
-import type { PuzzleConfig } from "./puzzle-config.ts";
+import type { PuzzleCustomParams } from "./puzzle-config.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { PresetMenuEntry } from "./types.ts";
 
@@ -50,7 +50,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
     return menuEntry?.title ?? "Custom type";
   }
 
-  private customDialog?: PuzzleConfig;
+  private customDialog?: PuzzleCustomParams;
 
   override disconnectedCallback() {
     super.disconnectedCallback();
@@ -191,13 +191,12 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
       if (!container) {
         throw new Error("launchCustomDialog() can't find puzzle-context container");
       }
-      this.customDialog = document.createElement("puzzle-config");
-      this.customDialog.which = 0; // Game configuration
+      this.customDialog = document.createElement("puzzle-custom-params");
       container.appendChild(this.customDialog);
       await this.customDialog.updateComplete;
     } else if (!this.customDialog.open) {
-      // Refresh the items for the current puzzle config
-      await this.customDialog.reloadConfigItems();
+      // Refresh the items for the current params
+      await this.customDialog.reloadValues();
     }
 
     return this.customDialog.show();

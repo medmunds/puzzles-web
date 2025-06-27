@@ -24,20 +24,13 @@ const isNumeric = (value: unknown) =>
   typeof value === "number" || (typeof value === "string" && /[0-9]+/.test(value));
 
 /**
- * The `<puzzle-config>` component renders a configuration dialog for a puzzle.
- * It must be used within a puzzle-context component.
+ * Common code for configuration dialogs.
+ * Must be used within a puzzle-context component.
  */
-@customElement("puzzle-config")
-export class PuzzleConfig extends SignalWatcher(LitElement) {
+abstract class PuzzleConfig extends SignalWatcher(LitElement) {
   @consume({ context: puzzleContext, subscribe: true })
   @state()
-  private puzzle?: Puzzle;
-
-  /**
-   * Which configuration to display (3 for game preferences, 0 for custom params)
-   */
-  @property({ type: Number })
-  which = 0;
+  protected puzzle?: Puzzle;
 
   /**
    * The label for the submit button
@@ -52,7 +45,7 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
   cancelLabel = "Cancel";
 
   /**
-   * The title for the dialog; taken from the configItems title by default
+   * The title for the dialog; taken from the config title by default
    */
   @property({ type: String })
   dialogTitle = "Configure puzzle";
@@ -70,48 +63,40 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
   }
 
   @query("sl-dialog")
-  private dialog?: SlDialog;
+  protected dialog?: SlDialog;
 
   @state()
-  private config?: ConfigDescription;
+  protected config?: ConfigDescription;
 
   @state()
-  private values: ConfigValues = {};
+  protected values: ConfigValues = {};
 
   @state()
-  private error?: string;
+  protected error?: string;
 
-  override async connectedCallback() {
-    super.connectedCallback();
-    await this.loadConfigItems();
+  protected abstract getConfig(): Promise<ConfigDescription | undefined>;
+  protected abstract getValues(): Promise<ConfigValues>;
+  protected abstract setValues(values: ConfigValues): Promise<string | undefined>;
+
+  protected async loadConfig(): Promise<void> {
+    this.config = await this.getConfig();
+    this.dialogTitle = this.config?.title || "";
+    await this.loadValues();
   }
 
-  override async willUpdate(changedProperties: Map<string, unknown>) {
-    if (changedProperties.has("puzzle") || changedProperties.has("which")) {
-      await this.loadConfigItems();
-    }
-  }
-
-  private async loadConfigItems() {
-    if (!this.puzzle) {
-      return;
-    }
-
-    switch (this.which) {
-      case 0:
-        this.config = await this.puzzle.getCustomParamsConfig();
-        this.values = await this.puzzle.getCustomParams();
-        break;
-      case 3:
-        this.config = await this.puzzle.getPreferencesConfig();
-        this.values = await this.puzzle.getPreferences();
-        break;
-      default:
-        throw new Error(`Unknown which=${this.which} in puzzle-config`);
-    }
-
+  protected async loadValues() {
+    this.values = await this.getValues();
     this.error = undefined;
-    this.dialogTitle = this.config?.title;
+  }
+
+  protected async afterSubmit(_applied: boolean): Promise<void> {
+    await this.puzzle?.redraw();
+  }
+
+  protected override async willUpdate(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has("puzzle") && this.puzzle) {
+      await this.loadConfig();
+    }
   }
 
   override render() {
@@ -146,7 +131,7 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
             label=${config.name}
             value=${value}
             @sl-focus=${this.autoSelectInput}
-            @sl-input=${this.updateTextValue}
+            @sl-change=${this.updateTextValue}
           ></sl-input>
         `;
 
@@ -226,32 +211,15 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
 
     try {
       // Submit updated config
-      const result =
-        this.which === 0
-          ? await this.puzzle.setCustomParams(this.values)
-          : await this.puzzle.setPreferences(this.values);
+      const result = await this.setValues(this.values);
 
       if (result) {
         // If there's a result string, it's an error message
         this.error = result;
       } else {
-        // Success - dispatch event and hide dialog
-        const event = new CustomEvent("puzzle-config-applied", {
-          bubbles: true,
-          composed: true,
-          detail: { which: this.which },
-        });
-
-        this.dispatchEvent(event);
+        // Success
         this.hide();
-        if (!event.defaultPrevented) {
-          if (this.which === 0) {
-            // By default, start a new game with the updated config
-            await this.puzzle.newGame();
-          } else {
-            await this.puzzle.redraw();
-          }
-        }
+        await this.afterSubmit(true);
       }
     } catch (err) {
       console.error("Failed to apply config:", err);
@@ -259,15 +227,9 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
     }
   }
 
-  private handleCancel() {
-    this.dispatchEvent(
-      new CustomEvent("puzzle-config-cancelled", {
-        bubbles: true,
-        composed: true,
-        detail: { which: this.which },
-      }),
-    );
+  private async handleCancel() {
     this.hide();
+    await this.afterSubmit(false);
   }
 
   private handleDialogHide() {
@@ -301,8 +263,8 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
     this.dialog?.hide();
   }
 
-  public async reloadConfigItems() {
-    await this.loadConfigItems();
+  public async reloadValues() {
+    await this.loadValues();
     await this.updateComplete;
   }
 
@@ -330,8 +292,52 @@ export class PuzzleConfig extends SignalWatcher(LitElement) {
   `;
 }
 
+/**
+ * Dialog for editing custom game params (custom type)
+ */
+@customElement("puzzle-custom-params")
+export class PuzzleCustomParams extends PuzzleConfig {
+  protected override async getConfig() {
+    return this.puzzle?.getCustomParamsConfig();
+  }
+
+  protected override async getValues() {
+    return this.puzzle?.getCustomParams() ?? {};
+  }
+
+  protected override async setValues(values: ConfigValues) {
+    return this.puzzle?.setCustomParams(values);
+  }
+
+  protected override async afterSubmit(applied: boolean) {
+    if (applied) {
+      // Start a new game with the new params
+      await this.puzzle?.newGame();
+    }
+  }
+}
+
+/**
+ * Dialog for editing puzzle preferences
+ */
+@customElement("puzzle-preferences")
+export class PuzzlePreferences extends PuzzleConfig {
+  protected override async getConfig() {
+    return this.puzzle?.getPreferencesConfig();
+  }
+
+  protected override async getValues() {
+    return this.puzzle?.getPreferences() ?? {};
+  }
+
+  protected override async setValues(values: ConfigValues) {
+    return this.puzzle?.setPreferences(values);
+  }
+}
+
 declare global {
   interface HTMLElementTagNameMap {
-    "puzzle-config": PuzzleConfig;
+    "puzzle-custom-params": PuzzleCustomParams;
+    "puzzle-preferences": PuzzlePreferences;
   }
 }
