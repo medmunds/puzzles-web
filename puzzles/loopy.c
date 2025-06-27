@@ -328,6 +328,8 @@ static grid *loopy_generate_grid(const game_params *params,
 /* General constants */
 #define PREFERRED_TILE_SIZE 32
 #define DOT_RADIUS(tilesize) ((tilesize)*2.5/32.0)
+#define LINE_THICKNESS(tilesize) ((tilesize)*3/32.0)
+#define FAINT_LINE_THICKNESS(tilesize) ((tilesize)/24.0)
 #ifdef NARROW_BORDERS
 #define BORDER(tilesize) (DOT_RADIUS(tilesize))
 #else
@@ -3376,12 +3378,12 @@ static void game_redraw_line(drawing *dr, game_drawstate *ds,const game_ui *ui,
 
     if (line_colour == COL_FAINT) {
 	if (ui->draw_faint_lines)
-            draw_thick_line(dr, ds->tilesize/24.0,
+            draw_thick_line(dr, FAINT_LINE_THICKNESS(ds->tilesize),
                             x1 + 0.5, y1 + 0.5,
                             x2 + 0.5, y2 + 0.5,
                             line_colour);
     } else {
-	draw_thick_line(dr, ds->tilesize*3/32.0,
+	draw_thick_line(dr, LINE_THICKNESS(ds->tilesize),
 			x1 + 0.5, y1 + 0.5,
 			x2 + 0.5, y2 + 0.5,
 			line_colour);
