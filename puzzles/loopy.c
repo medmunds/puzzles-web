@@ -325,11 +325,13 @@ static grid *loopy_generate_grid(const game_params *params,
  * Preprocessor magic
  */
 
+#define clamp(l, v, h) (min(max((l), (v)), (h)))
+
 /* General constants */
 #define PREFERRED_TILE_SIZE 32
-#define DOT_RADIUS(tilesize) (max(1, (tilesize)*2.5/32.0))
-#define LINE_THICKNESS(tilesize) (max(1.0F, (tilesize)*3/32.0))
-#define FAINT_LINE_THICKNESS(tilesize) (max(0.5F, (tilesize)/24.0))
+#define DOT_RADIUS(tilesize) (clamp(1, (tilesize)*2.5/32.0, 3))
+#define LINE_THICKNESS(tilesize) (clamp(1.0F, (tilesize)*3/32.0, 3.0F))
+#define FAINT_LINE_THICKNESS(tilesize) (clamp(0.5F, (tilesize)/24.0, 1.5F))
 #ifdef NARROW_BORDERS
 #define BORDER(tilesize) (DOT_RADIUS(tilesize))
 #else
