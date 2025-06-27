@@ -730,8 +730,6 @@ public:
         this->notifyGameStateChange();
     }
 
-    void stopAnimation() const { midend_stop_anim(me()); }
-
     /**
      * Returns true if the puzzle wanted the button (regardless of whether
      * the button had any effect in the current context), false if the puzzle
@@ -985,14 +983,6 @@ public:
                    : std::optional(std::string(error));
     }
 
-    [[nodiscard]] bool getIsSolved() const { return midend_status(me()) > 0; }
-
-    [[nodiscard]] bool getIsLost() const { return midend_status(me()) < 0; }
-
-    [[nodiscard]] bool getCanUndo() const { return midend_can_undo(me()); }
-
-    [[nodiscard]] bool getCanRedo() const { return midend_can_redo(me()); }
-
     void undo() const {
         if (midend_process_key(me(), 0, 0, UI_UNDO) == PKR_SOME_EFFECT) {
             this->notifyGameStateChange();
@@ -1117,7 +1107,6 @@ EMSCRIPTEN_BINDINGS(frontend) {
         .function("resetTileSize", &frontend::resetTileSize)
         .function("newGame", &frontend::newGame)
         .function("restartGame", &frontend::restartGame)
-        .function("stopAnimation", &frontend::stopAnimation)
         .function("processKey(x, y, button)", &frontend::processKey)
         .property("statusbarText", &frontend::getStatusbarText)
         .function("requestKeys", &frontend::requestKeys)
@@ -1139,10 +1128,6 @@ EMSCRIPTEN_BINDINGS(frontend) {
         .property("canFormatAsText", &frontend::getCanFormatAsText)
         .function("formatAsText", &frontend::formatAsText)
         .function("solve", &frontend::solve)
-        .property("isSolved", &frontend::getIsSolved)
-        .property("isLost", &frontend::getIsLost)
-        .property("canUndo", &frontend::getCanUndo)
-        .property("canRedo", &frontend::getCanRedo)
         .function("undo", &frontend::undo)
         .function("redo", &frontend::redo)
         // TODO: serialisation
