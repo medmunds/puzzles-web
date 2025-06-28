@@ -6,6 +6,7 @@ import { setAnimation } from "@shoelace-style/shoelace/dist/utilities/animation-
 import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
+import { sleep } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 
@@ -98,6 +99,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
         setAnimation(this.dialog, name, animation);
       }
       // Wait for any game animations/flashes to finish before showing dialog
+      await sleep(10); // ensure timer start notification arrives from worker
       await Promise.all([this.updateComplete, this.puzzle?.timerComplete]);
       await this.dialog.show();
     }
