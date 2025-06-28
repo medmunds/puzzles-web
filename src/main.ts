@@ -2,6 +2,7 @@
 import { registerSW } from "virtual:pwa-register";
 import { installErrorHandlers } from "./utils/errors.ts";
 import { escapeHtml } from "./utils/html.ts";
+import { removeHoverStylesFromSlButton } from "./utils/shoelacehacks.ts";
 
 if (new URL(window.location.href).searchParams.has("console")) {
   // Inject an in-document emulated console
@@ -27,6 +28,8 @@ if (new URL(window.location.href).searchParams.has("console")) {
 } else {
   installErrorHandlers();
 }
+
+removeHoverStylesFromSlButton();
 
 // Register components (that are used here or directly by index.html)
 import "@shoelace-style/shoelace/dist/components/alert/alert.js";
