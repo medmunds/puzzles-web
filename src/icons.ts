@@ -4,6 +4,7 @@ import arrowLeftIcon from "lucide-static/icons/arrow-left.svg";
 import arrowRightIcon from "lucide-static/icons/arrow-right.svg";
 import awardIcon from "lucide-static/icons/award.svg";
 import badgeQuestionMarkIcon from "lucide-static/icons/badge-question-mark.svg";
+import boxIcon from "lucide-static/icons/box.svg";
 import circleQuestionMarkIcon from "lucide-static/icons/circle-question-mark.svg";
 import crownIcon from "lucide-static/icons/crown.svg";
 import deleteIcon from "lucide-static/icons/delete.svg";
@@ -37,7 +38,7 @@ import wandIcon from "lucide-static/icons/wand.svg";
 // biome-ignore format: leave all keys as strings
 const icons: Record<string, string> = {
   // general
-  "back-to-catalog": arrowLeftIcon,
+  "back-to-catalog": boxIcon,
   "help": circleQuestionMarkIcon,
   "new-game": plusIcon,
   "puzzle-type": swatchBookIcon,
