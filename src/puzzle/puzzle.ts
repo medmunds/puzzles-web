@@ -10,6 +10,7 @@ import type {
   ConfigDescription,
   ConfigValues,
   FontInfo,
+  GameStatus,
   KeyLabel,
   Point,
   PresetMenuEntry,
@@ -90,12 +91,9 @@ export class Puzzle {
         break;
       }
       case "game-state-change":
+        update(this._status, message.status);
         update(this._canUndo, message.canUndo);
         update(this._canRedo, message.canRedo);
-        update(this._isSolved, message.isSolved);
-        update(this._isLost, message.isLost);
-        // TODO: usedSolveCommand
-        // TODO: canFormatAsText
         break;
       case "preset-id-change":
         update(this._currentPresetId, message.presetId);
@@ -117,10 +115,9 @@ export class Puzzle {
   public readonly wantsStatusbar: boolean;
 
   // Reactive properties
+  private _status = signal<GameStatus>("ongoing");
   private _canUndo = signal(false);
   private _canRedo = signal(false);
-  private _isSolved = signal(false);
-  private _isLost = signal(false);
   private _currentPresetId = signal<number | undefined>(undefined);
   private _currentParams = computed<string | undefined>(
     () =>
@@ -133,20 +130,16 @@ export class Puzzle {
   private _canFormatAsText = signal(false);
   private _statusbarText = signal<string>("");
 
+  public get status(): GameStatus {
+    return this._status.get();
+  }
+
   public get canUndo(): boolean {
     return this._canUndo.get();
   }
 
   public get canRedo(): boolean {
     return this._canRedo.get();
-  }
-
-  public get isSolved(): boolean {
-    return this._isSolved.get();
-  }
-
-  public get isLost(): boolean {
-    return this._isLost.get();
   }
 
   public get currentPresetId(): number | undefined {

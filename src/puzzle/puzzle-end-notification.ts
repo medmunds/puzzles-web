@@ -6,6 +6,7 @@ import { setAnimation } from "@shoelace-style/shoelace/dist/utilities/animation-
 import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
+import { when } from "lit/directives/when.js";
 import { sleep } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
@@ -28,19 +29,13 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   @query("sl-dialog")
   private dialog?: SlDialog;
 
-  override render() {
-    if (!this.puzzle?.isSolved && !this.puzzle?.isLost) {
+  protected override render() {
+    if (!this.puzzle || this.puzzle.status === "ongoing") {
       return;
     }
-    const solved = !this.puzzle.isLost;
-    // TODO: don't show a solvedMessage or solvedIcon if player used the "Solve" command
-    const message = solved
-      ? randomItem(PuzzleEndNotification.solvedMessages)
-      : randomItem(PuzzleEndNotification.lostMessages);
-    const icon = solved
-      ? randomItem(PuzzleEndNotification.solvedIcons)
-      : randomItem(PuzzleEndNotification.lostIcons);
 
+    let message: string;
+    let icon: string | undefined;
     const actions = [
       html`
         <sl-button variant="primary" @click=${this.newGame}>
@@ -49,46 +44,68 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
         </sl-button>
       `,
     ];
-    if (this.puzzle.isLost) {
-      actions.push(html`
-        <sl-button @click=${this.restartGame}>
-          <sl-icon slot="prefix" name="restart-game"></sl-icon>
-          Restart
-        </sl-button>
-      `);
-      if (this.puzzle.canUndo) {
-        actions.push(html`
-          <sl-button @click=${this.undo}>
-            <sl-icon slot="prefix" name="undo"></sl-icon>
-            Undo
-          </sl-button>
-        `);
-      }
-      if (this.puzzle.canSolve) {
-        // TODO: && !usedSolveButton
-        actions.push(html`
-          <sl-button @click=${this.showSolution}>
-            <sl-icon slot="prefix" name="show-solution"></sl-icon>
-            Show solution
-          </sl-button>
-        `);
-      }
-      actions.push(html`<slot name="extra-actions-lost"></slot>`);
-    } else {
-      actions.push(html`<slot name="extra-actions-solved"></slot>`);
+
+    switch (this.puzzle.status) {
+      case "solved":
+        message = randomItem(PuzzleEndNotification.solvedMessages);
+        icon = randomItem(PuzzleEndNotification.solvedIcons);
+        actions.push(html`<slot name="extra-actions-solved"></slot>`);
+        break;
+
+      case "solved-with-help":
+        message = "What’s next?";
+        actions.push(html`<slot name="extra-actions-solved"></slot>`);
+        break;
+
+      case "lost":
+        message = randomItem(PuzzleEndNotification.lostMessages);
+        icon = randomItem(PuzzleEndNotification.lostIcons);
+        actions.push(...this.renderLostActions());
+        actions.push(html`<slot name="extra-actions-lost"></slot>`);
+        break;
     }
+
     actions.push(html`<slot name="extra-actions"></slot>`);
 
     return html`
-      <sl-dialog class=${solved ? "solved" : ""}>
-        <sl-icon slot="label" name=${icon}></sl-icon>
+      <sl-dialog class=${this.puzzle.status}>
+        ${when(icon, () => html`<sl-icon slot="label" name=${icon}></sl-icon>`)}
         <div slot="label">${message}</div>
         <div slot="footer">${actions}</div>
       </sl-dialog>
     `;
   }
 
-  override async updated() {
+  private renderLostActions() {
+    const actions = [
+      html`
+        <sl-button @click=${this.restartGame}>
+          <sl-icon slot="prefix" name="restart-game"></sl-icon>
+          Restart
+        </sl-button>
+      `,
+    ];
+    if (this.puzzle?.canUndo) {
+      actions.push(html`
+        <sl-button @click=${this.undo}>
+          <sl-icon slot="prefix" name="undo"></sl-icon>
+          Undo
+        </sl-button>
+      `);
+    }
+    if (this.puzzle?.canSolve) {
+      // TODO: && !usedSolveButton
+      actions.push(html`
+        <sl-button @click=${this.showSolution}>
+          <sl-icon slot="prefix" name="show-solution"></sl-icon>
+          Show solution
+        </sl-button>
+      `);
+    }
+    return actions;
+  }
+
+  protected override async updated() {
     // Run the sl-dialog's "show" animation after it's in the DOM.
     // (Including the "open" attribute at render time skips the animation.)
     if (this.dialog) {

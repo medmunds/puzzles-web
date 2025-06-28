@@ -485,6 +485,12 @@ void js_draw_thick_line(
 //    type NotifyCallbackFunc = (message: Notification) => void;
 // with `ChangeNotification` being a discriminated union of all the Notify types.
 
+#define VAL_CONSTANT(type, name, value) \
+    inline type name() { \
+        static const auto constant = val::u8string(value).as<type>(); \
+        return constant; \
+    }
+
 EMSCRIPTEN_DECLARE_VAL_TYPE(NotifyGameIdChangeType);
 struct NotifyGameIdChange {
     NotifyGameIdChangeType type = val::u8string("game-id-change").as<NotifyGameIdChangeType>();
@@ -507,15 +513,19 @@ struct NotifyGameIdChange {
     }
 };
 
+EMSCRIPTEN_DECLARE_VAL_TYPE(GameStatus);
+VAL_CONSTANT(GameStatus, STATUS_ONGOING, "ongoing")
+VAL_CONSTANT(GameStatus, STATUS_SOLVED, "solved")
+// VAL_CONSTANT(GameStatus, STATUS_SOLVED_WITH_HELP, "solved-with-help")
+VAL_CONSTANT(GameStatus, STATUS_LOST, "lost")
+
 EMSCRIPTEN_DECLARE_VAL_TYPE(NotifyGameStateChangeType);
 struct NotifyGameStateChange {
     NotifyGameStateChangeType type = val::u8string("game-state-change").as<NotifyGameStateChangeType>();
 
+    GameStatus status = STATUS_ONGOING();
     bool canUndo = false;
     bool canRedo = false;
-    bool isSolved = false;
-    bool isLost = false;
-    bool usedSolveCommand = false; // "cheated"
 
     NotifyGameStateChange() = default;
 
@@ -523,9 +533,14 @@ struct NotifyGameStateChange {
         : canUndo(midend_can_undo(me)),
           canRedo(midend_can_redo(me)) {
         auto const status = midend_status(me);
-        this->isLost = status < 0;
-        this->isSolved = status > 0;
-        // TODO: usedSolveCommand -- is there a way to ask the midend?
+        if (status < 0) {
+            this->status = STATUS_LOST();
+        } else if (status > 0) {
+            // TODO: separate midend status for STATUS_SOLVED_WITH_HELP()
+            this->status = STATUS_SOLVED();
+        } else {
+            this->status = STATUS_ONGOING();
+        }
     }
 };
 
@@ -562,14 +577,13 @@ EMSCRIPTEN_BINDINGS(notifiations) {
         .field("currentGameId", &NotifyGameIdChange::currentGameId)
         .field("randomSeed", &NotifyGameIdChange::randomSeed);
 
+    register_type<GameStatus>(R"("ongoing" | "solved" | "solved-with-help" | "lost")");
     register_type<NotifyGameStateChangeType>("\"game-state-change\"");
     value_object<NotifyGameStateChange>("NotifyGameStateChange")
         .field("type", &NotifyGameStateChange::type)
+        .field("status", &NotifyGameStateChange::status)
         .field("canUndo", &NotifyGameStateChange::canUndo)
-        .field("canRedo", &NotifyGameStateChange::canRedo)
-        .field("isSolved", &NotifyGameStateChange::isSolved)
-        .field("isLost", &NotifyGameStateChange::isLost)
-        .field("usedSolveCommand", &NotifyGameStateChange::usedSolveCommand);
+        .field("canRedo", &NotifyGameStateChange::canRedo);
 
     register_type<NotifyPresetIdChangeType>("\"preset-id-change\"");
     value_object<NotifyPresetIdChange>("NotifyPresetIdChange")

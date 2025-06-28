@@ -50,7 +50,7 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
             this.puzzle?.canSolve,
             () =>
               html`
-                <sl-menu-item value="solve" ?disabled=${this.puzzle?.isSolved}>
+                <sl-menu-item value="solve" ?disabled=${this.puzzle?.status === "solved"}>
                   <sl-icon slot="prefix" name="show-solution"></sl-icon>
                   Solve
                 </sl-menu-item>

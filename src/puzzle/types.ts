@@ -44,6 +44,8 @@ export type ChangeNotification =
   | NotifyPresetIdChange
   | NotifyStatusBarChange;
 
+export type GameStatus = NotifyGameStateChange["status"];
+
 // biome-ignore lint/style/useEnumInitializers: verbatim from puzzles.h
 export enum PuzzleButton {
   LEFT_BUTTON = 0x0200,
