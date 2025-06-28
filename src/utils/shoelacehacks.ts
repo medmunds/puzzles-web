@@ -1,5 +1,6 @@
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.js";
-import { CSSResult, unsafeCSS } from "lit";
+import SlMenuItem from "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
+import { CSSResult, css, unsafeCSS } from "lit";
 
 const isHoverDevice = () => window.matchMedia("(hover: hover)").matches;
 
@@ -13,7 +14,7 @@ const isHoverDevice = () => window.matchMedia("(hover: hover)").matches;
  * (This is very hacky, but works for now.)
  * https://github.com/shoelace-style/shoelace/blob/next/src/components/button/button.styles.ts
  */
-export function removeHoverStylesFromSlButton() {
+function removeHoverStylesFromSlButton() {
   const elementStyles = SlButton.elementStyles;
   if (
     !elementStyles ||
@@ -37,4 +38,29 @@ function stripHoverRules(cssResult: CSSResult): CSSResult {
   // Fortunately SlButton doesn't use those.
   const modifiedCSS = cssResult.cssText.replace(/[^{}]*:hover[^{}]*\{[^{}]*\}/g, "");
   return unsafeCSS(modifiedCSS);
+}
+
+/**
+ * sl-menu-item uses --sl-spacing-x-small (0.5rem) between prefix and label,
+ * but uses 1em before/after content (space for checkmark and submenu arrow).
+ * Increase the prefix spacing to balance it. Same for suffix.
+ *
+ * https://github.com/shoelace-style/shoelace/blob/next/src/components/menu-item/menu-item.styles.ts#
+ */
+function increaseSlMenuItemPrefixSpacing() {
+  SlMenuItem.elementStyles.push(
+    css`
+      .menu-item .menu-item__prefix::slotted(*) {
+        margin-inline-end: var(--sl-spacing-medium);
+      }
+      .menu-item .menu-item__suffix::slotted(*) {
+        margin-inline-start: var(--sl-spacing-medium);
+      }
+    `,
+  );
+}
+
+export function installShoelaceHacks() {
+  removeHoverStylesFromSlButton();
+  increaseSlMenuItemPrefixSpacing();
 }
