@@ -68,6 +68,14 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
       await this._puzzle.newGame();
     }
 
+    // Set up some preferences I prefer
+    // TODO: don't hard code this
+    await this._puzzle.setPreferences({
+      "pencil-keep-highlight": true, // latin square puzzles
+      "clear-complete-regions": true, // Palisade
+      "left-mouse-button": 1, // Range
+    });
+
     // Dispatch event to indicate the puzzle is loaded
     this.dispatchEvent(
       new CustomEvent("puzzle-loaded", {
