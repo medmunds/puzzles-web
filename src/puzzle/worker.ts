@@ -48,8 +48,8 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
   }
 
   delete(): void {
-    this.detachCanvas();
     this.frontend.delete();
+    this.deleteDrawing();
   }
 
   //
@@ -182,20 +182,29 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
 
   attachCanvas(canvas: OffscreenCanvas, fontInfo: FontInfo): void {
     if (this.drawing) {
-      throw new Error("attachCanvas called with another canvas already attached");
+      this.deleteDrawing();
     }
     this.drawing = new Drawing(canvas, fontInfo);
     this.drawingHandle = this.drawing.bind(this.module);
     this.frontend.setDrawing(this.drawingHandle);
   }
 
-  detachCanvas(): void {
+  deleteDrawing(): void {
     if (this.drawing) {
-      this.frontend.setDrawing(null);
+      // Frontend may already be deleted, so don't do:
+      //   this.frontend.setDrawing(null);
       this.drawingHandle?.delete();
       this.drawingHandle = undefined;
       this.drawing = undefined;
     }
+  }
+
+  detachCanvas(): void {
+    // Do nothing. Leave the existing Drawing in place, because the Frontend
+    // might call into it during Frontend.delete(). (E.g., midend_free
+    // will call blitter_free in puzzles like Galaxies and Signpost.)
+    // The resources are released either when some other canvas is ready
+    // to be attached or in WorkerPuzzle.delete() after Frontend.delete().
   }
 
   resizeDrawing({ w, h }: Size, dpr: number): void {
