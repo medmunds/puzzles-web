@@ -608,6 +608,100 @@ EMSCRIPTEN_BINDINGS(notifiations) {
 };
 
 
+
+/*
+ * Serialization and deserialization buffers
+ */
+
+EMSCRIPTEN_DECLARE_VAL_TYPE(Uint8Array);
+
+class WriteBuffer {
+    val buffer;
+    size_t position = 0;
+
+public:
+    explicit WriteBuffer(size_t initial_size = 4096) {
+        buffer = val::global("Uint8Array").new_(initial_size);
+    }
+
+    void append(const void *data, size_t len) {
+        const size_t new_position = position + len;
+        const auto current_size = buffer["length"].as<size_t>();
+
+        // Grow if needed
+        if (new_position > current_size) {
+            size_t new_size = (std::max)(current_size * 2, new_position);
+            const auto new_buffer = val::global("Uint8Array").new_(new_size);
+            new_buffer.call<void>("set", buffer);
+            buffer = new_buffer;
+        }
+
+        // Copy data directly
+        const auto view = val::global("Uint8Array").new_(
+            buffer["buffer"], position, len
+        );
+        view.call<void>(
+            "set", typed_memory_view(len, static_cast<const uint8_t *>(data))
+        );
+        position = new_position;
+    }
+
+    Uint8Array finalize() {
+        // Return exactly-sized buffer
+        return val::global("Uint8Array").new_(buffer["buffer"], 0, position).as<
+            Uint8Array>();
+    }
+
+    static void write_callback(void *ctx, const void *buf, int len) {
+        static_cast<WriteBuffer *>(ctx)->append(buf, len);
+    }
+};
+
+// JS-side helper for copying from (non-heap) ArrayBuffer into heap buffer
+EM_JS(void, copy_from_js_buffer, (
+    EM_VAL js_buffer,
+    size_t js_position,
+    size_t length,
+    uint8_t* dest_ptr
+), {
+    const sourceBuffer = Emval.toValue(js_buffer);
+    const sourceView = new Uint8Array(
+        sourceBuffer.buffer,
+        sourceBuffer.byteOffset + js_position,
+        length
+    );
+    const destView = new Uint8Array(HEAPU8.buffer, dest_ptr, length);
+    destView.set(sourceView);
+});
+
+class ReadBuffer {
+    Uint8Array buffer;
+    size_t position = 0;
+    size_t total_size;
+
+public:
+    explicit ReadBuffer(const Uint8Array &uint8_array)
+        : buffer(uint8_array), total_size(uint8_array["length"].as<size_t>()) {}
+
+    bool read(void *buf, size_t len) {
+        if (position + len > total_size) {
+            return false; // Not enough data
+        }
+        copy_from_js_buffer(
+            buffer.as_handle(),
+            position,
+            len,
+            static_cast<uint8_t *>(buf)
+        );
+        position += len;
+        return true;
+    }
+
+    static bool read_callback(void *ctx, void *buf, int len) {
+        return static_cast<ReadBuffer *>(ctx)->read(buf, len);
+    }
+};
+
 /*
  * frontend -- exported to JS as Frontend.
  * Wraps midend functions for use by JS.
@@ -1015,6 +1109,22 @@ public:
         return this->set_config_values(CFG_PREFS, values);
     }
 
+    [[nodiscard]] Uint8Array savePreferences() const {
+        WriteBuffer buffer;
+        midend_save_prefs(me(), WriteBuffer::write_callback, &buffer);
+        return buffer.finalize();
+    }
+
+    [[nodiscard]] std::optional<std::string> loadPreferences(const Uint8Array &data) const {
+        ReadBuffer buffer(data);
+        const auto error = midend_load_prefs(me(), ReadBuffer::read_callback, &buffer);
+        if (error) {
+            // midend_load_prefs returns a static string on error
+            return std::string(error);
+        }
+        return std::nullopt;
+    }
+
     [[nodiscard]] ConfigDescription getCustomParamsConfig() const {
         return this->build_config_description(CFG_SETTINGS);
     }
@@ -1103,21 +1213,24 @@ public:
     //                                 const char *privdesc);
     // char *midend_rewrite_statusbar(midend *me, const char *text);
 
-    // TODO: implement serialisation and preferences
-    // void midend_serialise(midend *me,
-    //                       void (*write)(void *ctx, const void *buf, int len),
-    //                       void *wctx);
-    // const char *midend_deserialise(midend *me,
-    //                                bool (*read)(void *ctx, void *buf, int len),
-    //                                void *rctx);
-    // const char *midend_load_prefs(
-    //     midend *me, bool (*read)(void *ctx, void *buf, int len), void *rctx);
-    // void midend_save_prefs(midend *me,
-    //                        void (*write)(void *ctx, const void *buf, int len),
-    //                        void *wctx);
+    [[nodiscard]] Uint8Array saveGame() const {
+        WriteBuffer buffer;
+        midend_serialise(me(), WriteBuffer::write_callback, &buffer);
+        return buffer.finalize();
+    }
 
-    // TODO: implement id change callbacks
-    //   void midend_request_id_changes(midend *me, void (*notify)(void *), void *ctx);
+    [[nodiscard]] std::optional<std::string> loadGame(const Uint8Array &data) const {
+        ReadBuffer buffer(data);
+        const auto error = midend_deserialise(me(), ReadBuffer::read_callback, &buffer);
+        if (error) {
+            // midend_deserialise returns a static string on error
+            return std::string(error);
+        }
+        // Successful load; midend has already called notify_id_changes
+        notifyPresetIdChange(); // (may have changed; doesn't hurt to notify either way)
+        notifyGameStateChange();
+        return std::nullopt;
+    }
 
     [[nodiscard]] OptionalRect getCursorLocation() const {
         int x, y, w, h;
@@ -1174,6 +1287,8 @@ public:
 };
 
 EMSCRIPTEN_BINDINGS(frontend) {
+    register_type<Uint8Array>("Uint8Array");
+
     value_object<PresetMenuEntry>("PresetMenuEntry")
         .field("id", &PresetMenuEntry::id)
         .field("title", &PresetMenuEntry::title)
@@ -1231,6 +1346,8 @@ EMSCRIPTEN_BINDINGS(frontend) {
         .function("getPreferencesConfig", &frontend::getPreferencesConfig)
         .function("getPreferences", &frontend::getPreferences)
         .function("setPreferences(values)", &frontend::setPreferences)
+        .function("savePreferences", &frontend::savePreferences)
+        .function("loadPreferences(data)", &frontend::loadPreferences)
         .function("getCustomParamsConfig", &frontend::getCustomParamsConfig)
         .function("getCustomParams", &frontend::getCustomParams)
         .function("setCustomParams(values)", &frontend::setCustomParams)
@@ -1242,7 +1359,8 @@ EMSCRIPTEN_BINDINGS(frontend) {
         .function("solve", &frontend::solve)
         .function("undo", &frontend::undo)
         .function("redo", &frontend::redo)
-        // TODO: serialisation
+        .function("saveGame", &frontend::saveGame)
+        .function("loadGame(data)", &frontend::loadGame)
         .function("getCursorLocation", &frontend::getCursorLocation);
 }
 

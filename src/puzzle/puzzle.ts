@@ -1,5 +1,6 @@
 import { type Signal, computed, signal } from "@lit-labs/signals";
 import * as Comlink from "comlink";
+import { transfer } from "comlink";
 import {
   installWorkerErrorReceivers,
   uninstallWorkerErrorReceivers,
@@ -227,6 +228,14 @@ export class Puzzle {
     return await this.workerPuzzle.getPreferences();
   }
 
+  public async savePreferences(): Promise<Uint8Array> {
+    return await this.workerPuzzle.savePreferences();
+  }
+
+  public async loadPreferences(data: Uint8Array): Promise<string | undefined> {
+    return await this.workerPuzzle.loadPreferences(transfer(data, [data.buffer]));
+  }
+
   public async setPreferences(values: ConfigValues): Promise<string | undefined> {
     return await this.workerPuzzle.setPreferences(values);
   }
@@ -253,6 +262,14 @@ export class Puzzle {
 
   public async setGameId(id: string): Promise<string | undefined> {
     return await this.workerPuzzle.setGameId(id);
+  }
+
+  public async loadGame(data: Uint8Array): Promise<string | undefined> {
+    return await this.workerPuzzle.loadGame(transfer(data, [data.buffer]));
+  }
+
+  public async saveGame(): Promise<Uint8Array> {
+    return await this.workerPuzzle.saveGame();
   }
 
   //

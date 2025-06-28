@@ -88,19 +88,6 @@ export class PuzzleScreen extends LitElement {
           <div class="toolbar">
             <puzzle-game-menu @sl-select=${this.handleGameMenuCommand}>
               <sl-divider></sl-divider>
-              <sl-menu-item value="share" disabled>
-                <sl-icon slot="prefix" name="share"></sl-icon>
-                Share…
-              </sl-menu-item>
-              <sl-menu-item value="save" disabled>
-                <sl-icon slot="prefix" name="save-game"></sl-icon>
-                Save…
-              </sl-menu-item>
-              <sl-menu-item value="load" disabled>
-                <sl-icon slot="prefix" name="load-game"></sl-icon>
-                Load…
-              </sl-menu-item>
-              <sl-divider></sl-divider>
               <sl-menu-item value="catalog">
                 <sl-icon slot="prefix" name="back-to-catalog"></sl-icon>
                 Other puzzles

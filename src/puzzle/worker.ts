@@ -1,4 +1,5 @@
 import * as Comlink from "comlink";
+import { transfer } from "comlink";
 import createModule from "../assets/puzzles/emcc-runtime";
 import { installErrorHandlersInWorker } from "../utils/errors.ts";
 import { Drawing } from "./drawing.ts";
@@ -153,6 +154,15 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
     return this.frontend.setPreferences(values);
   }
 
+  savePreferences(): Uint8Array {
+    const data = this.frontend.savePreferences();
+    return transfer(data, [data.buffer]);
+  }
+
+  loadPreferences(data: Uint8Array): string | undefined {
+    return this.frontend.loadPreferences(data);
+  }
+
   redraw(): void {
     this.frontend.redraw();
   }
@@ -171,6 +181,15 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
 
   setGameId(id: string): string | undefined {
     return this.frontend.setGameId(id);
+  }
+
+  loadGame(data: Uint8Array): string | undefined {
+    return this.frontend.loadGame(data);
+  }
+
+  saveGame(): Uint8Array {
+    const data = this.frontend.saveGame();
+    return transfer(data, [data.buffer]);
   }
 
   //
