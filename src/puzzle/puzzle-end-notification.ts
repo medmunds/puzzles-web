@@ -68,7 +68,11 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     actions.push(html`<slot name="extra-actions"></slot>`);
 
     return html`
-      <sl-dialog class=${this.puzzle.status}>
+      <sl-dialog 
+          class=${this.puzzle.status}
+          @sl-show=${() => this.dialog?.classList.add("showing")}
+          @sl-after-show=${() => this.dialog?.classList.remove("showing")}
+      >
         ${when(icon, () => html`<sl-icon slot="label" name=${icon}></sl-icon>`)}
         <div slot="label">${message}</div>
         <div slot="footer">${actions}</div>
@@ -203,6 +207,11 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   } as const;
 
   static styles = css`
+    sl-dialog.showing::part(overlay) {
+      /* Don't dismiss the dialog before it's fully animated in */
+      pointer-events: none;
+    }
+    
     sl-dialog::part(title) {
       display: flex;
       align-items: center;
