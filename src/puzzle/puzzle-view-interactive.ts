@@ -1,6 +1,12 @@
 import { css, html } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import { DOMMouseButton, hasCtrlKey, swapButtons } from "../utils/events.ts";
+import { customElement, eventOptions, property } from "lit/decorators.js";
+import { when } from "lit/directives/when.js";
+import {
+  DOMMouseButton,
+  hasCtrlKey,
+  isAppleDevice,
+  swapButtons,
+} from "../utils/events.ts";
 import { detectSecondaryButton } from "../utils/touch.ts";
 import { PuzzleView } from "./puzzle-view.ts";
 import { type Point, PuzzleButton } from "./types.ts";
@@ -64,6 +70,8 @@ export class PuzzleViewInteractive extends PuzzleView {
     // padding around it, so pointer events slightly outside the puzzle are
     // delivered to the puzzle. (Key events are handled on host to simplify
     // focus and tab order management in the container.)
+    // The click and touchstart handlers are necessary only on iOS to disable
+    // an intrusive magnifier bubble triggered by ordinary gameplay gestures.
     return html`
       <div part="puzzle"
         @contextmenu=${this.handleContextMenu}
@@ -71,7 +79,8 @@ export class PuzzleViewInteractive extends PuzzleView {
         @pointermove=${this.handlePointerMove}
         @pointerup=${this.handlePointerUp}
         @pointercancel=${this.handlePointerCancel}
-        @click=${this.handleClick}
+        @click=${when(isAppleDevice, () => this.handleClick)}
+        @touchstart=${when(isAppleDevice, () => this.handleTouchStart)}
       ><canvas style=${this.renderCanvasStyle()}></canvas></div>
     `;
   }
@@ -354,10 +363,35 @@ export class PuzzleViewInteractive extends PuzzleView {
     event.preventDefault();
   }
 
+  // Disable iOS Safari magnifier bubble popup: it gets mistakenly triggered
+  // by several gestures that occur in ordinary gameplay. (And Apple does not
+  // respect CSS touch-action or user-select for controlling this behavior.)
+  //
+  // We want to disable the popup but still allow pinch-zoom. That requires
+  // preventDefault on two events:
+  //   - click (disables bubble on long-press)
+  //   - the _second_ touchstart in a double tap (disables bubble on double-tap-hold)
+  // https://discourse.threejs.org/t/iphone-how-to-remove-text-selection-magnifier/47812/11
+  //
+  // (Using preventDefault unconditionally in touchstart alone--without click--would
+  // be sufficient to block the bubble, but would also block pinch-zoom.)
+  //
+  // Because other browsers handle CSS touch-action properly, these handlers
+  // are only installed on Apple devices.
   private handleClick(event: MouseEvent) {
-    // This is necessary to prevent double-tap-zoom on iOS Safari.
-    // (The CSS `touch-action: ...` in insufficient for Safari.)
     event.preventDefault();
+  }
+
+  private lastTouchStart = 0; // timestamp milliseconds
+  private doubleTapTime = 500; // milliseconds
+
+  @eventOptions({ passive: false })
+  private handleTouchStart(event: MouseEvent) {
+    const now = Date.now();
+    if (now - this.lastTouchStart < this.doubleTapTime) {
+      event.preventDefault();
+    }
+    this.lastTouchStart = now;
   }
 
   //
@@ -396,7 +430,7 @@ export class PuzzleViewInteractive extends PuzzleView {
         /* Disable double-tap to zoom (puzzles want rapid taps) 
          * and single-finger panning (puzzles want dragging).
          * Allow zooming and multi-finger panning for accessibility.
-         * (Insufficient on iOS Safari; see @click handler.) 
+         * (Insufficient on iOS Safari; see @click and @touchstart handlers.) 
          */
         touch-action: pinch-zoom;
 
