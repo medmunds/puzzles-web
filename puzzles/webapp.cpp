@@ -492,9 +492,9 @@ void js_draw_thick_line(
     }
 
 EMSCRIPTEN_DECLARE_VAL_TYPE(NotifyGameIdChangeType);
+VAL_CONSTANT(NotifyGameIdChangeType, GAME_ID_CHANGE, "game-id-change")
 struct NotifyGameIdChange {
-    NotifyGameIdChangeType type = val::u8string("game-id-change").as<NotifyGameIdChangeType>();
-
+    NotifyGameIdChangeType type = GAME_ID_CHANGE();
     std::string currentGameId;
     std::optional<std::string> randomSeed = std::nullopt;
 
@@ -520,9 +520,9 @@ VAL_CONSTANT(GameStatus, STATUS_SOLVED, "solved")
 VAL_CONSTANT(GameStatus, STATUS_LOST, "lost")
 
 EMSCRIPTEN_DECLARE_VAL_TYPE(NotifyGameStateChangeType);
+VAL_CONSTANT(NotifyGameStateChangeType, GAME_STATE_CHANGE, "game-state-change")
 struct NotifyGameStateChange {
-    NotifyGameStateChangeType type = val::u8string("game-state-change").as<NotifyGameStateChangeType>();
-
+    NotifyGameStateChangeType type = GAME_STATE_CHANGE();
     GameStatus status = STATUS_ONGOING();
     bool canUndo = false;
     bool canRedo = false;
@@ -545,9 +545,9 @@ struct NotifyGameStateChange {
 };
 
 EMSCRIPTEN_DECLARE_VAL_TYPE(NotifyPresetIdChangeType);
+VAL_CONSTANT(NotifyPresetIdChangeType, PRESET_ID_CHANGE, "preset-id-change")
 struct NotifyPresetIdChange {
-    NotifyPresetIdChangeType type = val::u8string("preset-id-change").as<NotifyPresetIdChangeType>();
-
+    NotifyPresetIdChangeType type = PRESET_ID_CHANGE();
     std::optional<int> presetId = std::nullopt;
 
     NotifyPresetIdChange() = default;
@@ -559,8 +559,9 @@ struct NotifyPresetIdChange {
 };
 
 EMSCRIPTEN_DECLARE_VAL_TYPE(NotifyStatusBarChangeType);
+VAL_CONSTANT(NotifyStatusBarChangeType, STATUS_BAR_CHANGE, "status-bar-change")
 struct NotifyStatusBarChange {
-    NotifyStatusBarChangeType type = val::u8string("status-bar-change").as<NotifyStatusBarChangeType>();
+    NotifyStatusBarChangeType type = STATUS_BAR_CHANGE();
     std::string statusBarText;
 
     NotifyStatusBarChange() = default;
