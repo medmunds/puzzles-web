@@ -1,6 +1,6 @@
 import { SignalWatcher } from "@lit-labs/signals";
 import { provide } from "@lit/context";
-import { LitElement, html } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { puzzleContext } from "./contexts.ts";
 import { Puzzle } from "./puzzle.ts";
@@ -70,6 +70,12 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
       }),
     );
   }
+
+  static styles = css`
+    :host {
+      display: contents;
+    }
+  `;
 }
 
 declare global {
