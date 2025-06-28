@@ -20,22 +20,29 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
   @state()
   private _puzzle?: Puzzle;
 
-  // Expose the puzzle instance as a property
   get puzzle(): Puzzle | undefined {
     return this._puzzle;
   }
 
   override async connectedCallback() {
     super.connectedCallback();
-    await this._loadPuzzle();
+    if (!this._puzzle) {
+      await this._loadPuzzle();
+    }
   }
 
-  override render() {
+  override async disconnectedCallback() {
+    super.disconnectedCallback();
+    this._puzzle?.delete();
+    this._puzzle = undefined;
+  }
+
+  protected override render() {
     // Render the default slot for child components
     return html`<slot></slot>`;
   }
 
-  async _loadPuzzle() {
+  private async _loadPuzzle() {
     if (!this.type) {
       console.error("puzzle-context requires either type or src attribute");
       return;
