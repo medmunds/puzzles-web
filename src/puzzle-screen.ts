@@ -4,6 +4,9 @@ import { query } from "lit/decorators/query.js";
 import type { AppRouter } from "./app-router.ts";
 import { type PuzzleData, puzzleDataMap, version } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
+import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
+import type { ConfigValues } from "./puzzle/types.ts";
+import { store } from "./store.ts";
 
 // Register components
 import "@shoelace-style/shoelace/dist/components/button/button.js";
@@ -35,16 +38,20 @@ export class PuzzleScreen extends LitElement {
   @state()
   private puzzleData?: PuzzleData;
 
+  @state()
+  private puzzlePreferences: ConfigValues = {};
+
   @query("help-viewer")
   private helpPanel?: HelpViewer;
 
-  willUpdate(changedProperties: Map<string, unknown>) {
+  protected override async willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("puzzleType") && this.puzzleType) {
       const data = puzzleDataMap[this.puzzleType];
       if (!data) {
         throw new Error(`Unknown puzzle type ${this.puzzleType}`);
       }
       this.puzzleData = data;
+      this.puzzlePreferences = await store.getPuzzlePreferences(this.puzzleType);
     }
   }
 
@@ -65,7 +72,12 @@ export class PuzzleScreen extends LitElement {
     const otherPuzzlesUrl = this.router?.reverse(this.router.defaultRoute)?.href;
 
     return html`
-      <puzzle-context type=${this.puzzleType} params=${this.puzzleParams}>
+      <puzzle-context 
+          type=${this.puzzleType} 
+          params=${this.puzzleParams} 
+          .preferences=${this.puzzlePreferences}
+          @puzzle-preferences-change=${this.handlePreferencesChange}
+      >
         <head-matter>
           <title>
             ${this.puzzleData.name}&thinsp;&ndash;&thinsp;${this.puzzleData.description}&thinsp;&ndash;&thinsp;from 
@@ -162,6 +174,13 @@ export class PuzzleScreen extends LitElement {
     // Show the Type menu, from the button in the puzzle-end-notification
     await this.shadowRoot?.querySelector("puzzle-end-notification")?.hide();
     this.shadowRoot?.querySelector("puzzle-preset-menu")?.show();
+  }
+
+  private async handlePreferencesChange(event: PuzzleConfigChangeEvent) {
+    // Merge changes into local property in case of later rerender
+    Object.assign(this.puzzlePreferences, event.detail.changes);
+    // Persist only the changed preferences to the DB
+    await store.setPuzzlePreferences(this.puzzleType, event.detail.changes);
   }
 
   //

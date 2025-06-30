@@ -20,6 +20,7 @@
     "@shoelace-style/shoelace": "^2.20.1",
     "colorjs.io": "^0.5.2",
     "comlink": "^4.4.2",
+    "dexie": "^4.0.11",
     "lit": "^3.3.0",
     "lucide-static": "^0.522.0"
   },

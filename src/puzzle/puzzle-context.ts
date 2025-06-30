@@ -4,6 +4,7 @@ import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { puzzleContext } from "./contexts.ts";
 import { Puzzle } from "./puzzle.ts";
+import type { ConfigValues } from "./types.ts";
 
 @customElement("puzzle-context")
 export class PuzzleContext extends SignalWatcher(LitElement) {
@@ -15,6 +16,9 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
 
   @property({ type: String })
   params?: string;
+
+  @property({ type: Object })
+  preferences?: ConfigValues;
 
   @provide({ context: puzzleContext })
   @state()
@@ -33,8 +37,7 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
 
   override async disconnectedCallback() {
     super.disconnectedCallback();
-    this._puzzle?.delete();
-    this._puzzle = undefined;
+    await this._unloadPuzzle();
   }
 
   protected override render() {
@@ -42,12 +45,27 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
     return html`<slot></slot>`;
   }
 
+  protected override async willUpdate(changedProps: Map<string, unknown>) {
+    if (
+      changedProps.has("type") &&
+      this._puzzle &&
+      this._puzzle.puzzleId !== this.type
+    ) {
+      await this._unloadPuzzle();
+      await this._loadPuzzle();
+    }
+  }
+
+  protected override async updated(changedProps: Map<string, unknown>) {
+    if (changedProps.has("preferences") && this.preferences) {
+      await this._puzzle?.setPreferences(this.preferences);
+    }
+  }
+
   private async _loadPuzzle() {
     if (!this.type) {
-      console.error("puzzle-context requires either type or src attribute");
-      return;
+      throw new Error("puzzle-context requires type");
     }
-
     this._puzzle = await Puzzle.create(this.type);
 
     // Set up the game based on attributes
@@ -68,13 +86,9 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
       await this._puzzle.newGame();
     }
 
-    // Set up some preferences I prefer
-    // TODO: don't hard code this
-    await this._puzzle.setPreferences({
-      "pencil-keep-highlight": true, // latin square puzzles
-      "clear-complete-regions": true, // Palisade
-      "left-mouse-button": 1, // Range
-    });
+    if (this.preferences) {
+      await this._puzzle.setPreferences(this.preferences);
+    }
 
     // Dispatch event to indicate the puzzle is loaded
     this.dispatchEvent(
@@ -84,6 +98,11 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
         detail: { puzzle: this._puzzle },
       }),
     );
+  }
+
+  private async _unloadPuzzle() {
+    this._puzzle?.delete();
+    this._puzzle = undefined;
   }
 
   static styles = css`
