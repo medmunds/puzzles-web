@@ -192,6 +192,11 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
         throw new Error("launchCustomDialog() can't find puzzle-context container");
       }
       this.customDialog = document.createElement("puzzle-custom-params");
+      this.customDialog.addEventListener("puzzle-custom-params-change", (event) => {
+        if (Object.keys(event.detail.changes).length > 0) {
+          this.puzzle?.newGame();
+        }
+      });
       container.appendChild(this.customDialog);
       await this.customDialog.updateComplete;
     } else if (!this.customDialog.open) {

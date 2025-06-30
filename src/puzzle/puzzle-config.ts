@@ -23,6 +23,13 @@ import "@shoelace-style/shoelace/dist/components/radio-group/radio-group.js";
 const isNumeric = (value: unknown) =>
   typeof value === "number" || (typeof value === "string" && /[0-9]+/.test(value));
 
+interface PuzzleConfigChangeDetail {
+  puzzle: Puzzle;
+  changes: ConfigValues;
+  value: ConfigValues;
+}
+export type PuzzleConfigChangeEvent = CustomEvent<PuzzleConfigChangeDetail>;
+
 /**
  * Common code for configuration dialogs.
  * Must be used within a puzzle-context component.
@@ -72,8 +79,12 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
   protected values: ConfigValues = {};
 
   @state()
+  protected changes: ConfigValues = {};
+
+  @state()
   protected error?: string;
 
+  protected abstract submitEventType: string;
   protected abstract getConfig(): Promise<ConfigDescription | undefined>;
   protected abstract getValues(): Promise<ConfigValues>;
   protected abstract setValues(values: ConfigValues): Promise<string | undefined>;
@@ -86,11 +97,8 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
 
   protected async loadValues() {
     this.values = await this.getValues();
+    this.changes = {};
     this.error = undefined;
-  }
-
-  protected async afterSubmit(_applied: boolean): Promise<void> {
-    await this.puzzle?.redraw();
   }
 
   protected override async willUpdate(changedProperties: Map<string, unknown>) {
@@ -103,7 +111,6 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
     return html`
       <sl-dialog 
           label=${this.dialogTitle} 
-          @sl-after-hide=${this.handleDialogHide}
           @sl-request-close=${this.handleDialogRequestClose}
       >
         ${when(this.error, () => html`<div part="error">${this.error}</div>`)}
@@ -121,7 +128,7 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
   }
 
   private renderConfigItem(id: string, config: ConfigItem) {
-    const value = this.values?.[id];
+    const value = this.changes[id] ?? this.values[id];
     switch (config.type) {
       case "string":
         return html`
@@ -182,6 +189,22 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
     }
   }
 
+  private resetFormItemValues() {
+    // If the form has already been rendered, re-rendering with new value attributes
+    // won't update input element state. Flush current values into item properties.
+    for (const [id, { type }] of Object.entries(this.config?.items ?? [])) {
+      const value = this.changes[id] ?? this.values[id];
+      const element = this.shadowRoot?.querySelector<HTMLInputElement>(`#${id}`);
+      if (element && value !== undefined) {
+        if (type === "boolean") {
+          element.checked = Boolean(value);
+        } else {
+          element.value = String(value);
+        }
+      }
+    }
+  }
+
   private autoSelectInput(event: FocusEvent) {
     const target = event.target as HTMLInputElement;
     target.select();
@@ -189,57 +212,52 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
 
   private updateTextValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    this.values[target.id] = target.value;
+    this.changes[target.id] = target.value; // doesn't force redraw
   }
 
   private updateCheckboxValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    this.values[target.id] = target.checked;
+    this.changes[target.id] = target.checked; // doesn't force redraw
   }
 
   private updateSelectValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    this.values[target.id] = Number.parseInt(target.value);
+    this.changes[target.id] = Number.parseInt(target.value); // doesn't force redraw
   }
 
-  private async handleSubmit(e: Event) {
-    e.preventDefault();
+  private async handleSubmit(event: Event) {
+    event.preventDefault();
 
-    if (!this.puzzle) {
-      return;
-    }
+    const result = await this.setValues(this.changes);
+    if (result) {
+      // If there's a result string, it's an error message
+      this.error = result;
+    } else {
+      // Success
+      this.hide();
 
-    try {
-      // Submit updated config
-      const result = await this.setValues(this.values);
-
-      if (result) {
-        // If there's a result string, it's an error message
-        this.error = result;
-      } else {
-        // Success
-        this.hide();
-        await this.afterSubmit(true);
+      if (this.puzzle) {
+        this.dispatchEvent(
+          new CustomEvent<PuzzleConfigChangeDetail>(this.submitEventType, {
+            bubbles: true,
+            composed: true,
+            detail: {
+              puzzle: this.puzzle,
+              changes: this.changes,
+              value: this.values,
+            },
+          }),
+        );
       }
-    } catch (err) {
-      console.error("Failed to apply config:", err);
-      this.error = err instanceof Error ? err.message : String(err);
+
+      this.values = { ...this.values, ...this.changes };
+      this.changes = {};
     }
   }
 
   private async handleCancel() {
     this.hide();
-    await this.afterSubmit(false);
-  }
-
-  private handleDialogHide() {
-    // Notify parent that dialog was closed
-    this.dispatchEvent(
-      new CustomEvent("puzzle-config-closed", {
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    this.changes = {};
   }
 
   private handleDialogRequestClose(event: CustomEvent<{ source: string }>) {
@@ -266,6 +284,7 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
   public async reloadValues() {
     await this.loadValues();
     await this.updateComplete;
+    this.resetFormItemValues();
   }
 
   static styles = css`
@@ -297,6 +316,8 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
  */
 @customElement("puzzle-custom-params")
 export class PuzzleCustomParams extends PuzzleConfig {
+  protected override submitEventType = "puzzle-custom-params-change";
+
   protected override async getConfig() {
     return this.puzzle?.getCustomParamsConfig();
   }
@@ -308,13 +329,6 @@ export class PuzzleCustomParams extends PuzzleConfig {
   protected override async setValues(values: ConfigValues) {
     return this.puzzle?.setCustomParams(values);
   }
-
-  protected override async afterSubmit(applied: boolean) {
-    if (applied) {
-      // Start a new game with the new params
-      await this.puzzle?.newGame();
-    }
-  }
 }
 
 /**
@@ -322,6 +336,8 @@ export class PuzzleCustomParams extends PuzzleConfig {
  */
 @customElement("puzzle-preferences")
 export class PuzzlePreferences extends PuzzleConfig {
+  protected override submitEventType = "puzzle-preferences-change";
+
   protected override async getConfig() {
     return this.puzzle?.getPreferencesConfig();
   }
@@ -331,7 +347,11 @@ export class PuzzlePreferences extends PuzzleConfig {
   }
 
   protected override async setValues(values: ConfigValues) {
-    return this.puzzle?.setPreferences(values);
+    const result = await this.puzzle?.setPreferences(values);
+    if (!result) {
+      await this.puzzle?.redraw();
+    }
+    return result;
   }
 }
 
@@ -339,5 +359,10 @@ declare global {
   interface HTMLElementTagNameMap {
     "puzzle-custom-params": PuzzleCustomParams;
     "puzzle-preferences": PuzzlePreferences;
+  }
+
+  interface HTMLElementEventMap {
+    "puzzle-custom-params-change": PuzzleConfigChangeEvent;
+    "puzzle-preferences-change": PuzzleConfigChangeEvent;
   }
 }
