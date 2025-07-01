@@ -383,7 +383,7 @@ export class PuzzleViewInteractive extends PuzzleView {
   }
 
   private lastTouchStart = 0; // timestamp milliseconds
-  private doubleTapTime = 500; // milliseconds
+  private doubleTapTime = 750; // milliseconds
 
   @eventOptions({ passive: false })
   private handleTouchStart(event: MouseEvent) {
