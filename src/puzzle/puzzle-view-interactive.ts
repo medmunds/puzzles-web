@@ -65,7 +65,7 @@ export class PuzzleViewInteractive extends PuzzleView {
     this.removeEventListener("keydown", this.handleKeyEvent);
   }
 
-  override renderPuzzle() {
+  protected override renderPuzzle() {
     // Wrap the canvas with a div that handles pointer events and adds some
     // padding around it, so pointer events slightly outside the puzzle are
     // delivered to the puzzle. (Key events are handled on host to simplify

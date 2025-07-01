@@ -157,7 +157,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     }
   }
 
-  override render() {
+  protected override render() {
     const result = [this.renderPuzzle()];
     if (this.statusbar && this.puzzle?.wantsStatusbar) {
       result.push(this.renderStatusbar());
@@ -165,7 +165,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     return result;
   }
 
-  renderCanvasStyle() {
+  protected renderCanvasStyle() {
     const { w, h } = this.canvasSize;
     return styleMap({
       width: `${w}px`,
@@ -173,11 +173,11 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     });
   }
 
-  renderPuzzle() {
+  protected renderPuzzle() {
     return html`<canvas part="puzzle" style=${this.renderCanvasStyle()}></canvas>`;
   }
 
-  renderStatusbar() {
+  protected renderStatusbar() {
     return html`<div part="statusbar">${this.puzzle?.statusbarText}</div>`;
   }
 
