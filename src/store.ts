@@ -1,4 +1,4 @@
-import Dexie, { type Table } from "dexie";
+import Dexie, { type EntityTable, type Table } from "dexie";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { ConfigValues, GameStatus } from "./puzzle/types.ts";
 
@@ -45,7 +45,7 @@ const PUZZLE_ID_MIN = Dexie.minKey;
 const PUZZLE_ID_MAX = Dexie.maxKey;
 
 export interface SavedGameMetadata {
-  filename: string;
+  filename: string; // user filename or autoSaveId
   puzzleId: PuzzleId;
   timestamp: number;
   status: GameStatus;
@@ -53,14 +53,13 @@ export interface SavedGameMetadata {
 }
 
 export interface SavedGameRecord extends SavedGameMetadata {
-  id: string; // `${puzzleId}:${filename}`
   saveType: SaveType; // IndexedDB can't index boolean, so use a number
   data: Blob;
 }
 
 class Database extends Dexie {
-  settings!: Table<SettingsRecord>;
-  savedGames!: Table<SavedGameRecord>;
+  settings!: EntityTable<SettingsRecord, "id">;
+  savedGames!: Table<SavedGameRecord, [PuzzleId, SaveType, string]>;
 
   constructor() {
     super("PuzzleAppData");
@@ -68,9 +67,8 @@ class Database extends Dexie {
       settings: ["id", "type"].join(", "),
 
       savedGames: [
-        "id", // TODO: use a compound primaryKey on [puzzleId, filename] and drop id field?
-        "[puzzleId+saveType+timestamp]", // supports several common queries
-        "&[puzzleId+saveType+filename]", // ensure unique filenames per puzzle
+        "&[puzzleId+saveType+filename]", // compound primary key
+        "[puzzleId+saveType+timestamp]", // supports "most recent" query
       ].join(", "),
     });
   }
@@ -232,14 +230,12 @@ class Store {
    */
   async autoSaveGame(puzzle: Puzzle, autoSaveId: string) {
     const puzzleId = puzzle.puzzleId;
-    const id = `${puzzleId}:${autoSaveId}`;
     const timestamp = Date.now();
     const status = puzzle.status;
     const gameId = puzzle.currentGameId ?? "";
     const savedGame = await puzzle.saveGame();
     const data = new Blob([savedGame]);
     await this.db.savedGames.put({
-      id,
       puzzleId,
       filename: autoSaveId,
       saveType: SaveType.Auto,
@@ -252,27 +248,27 @@ class Store {
 
   async removeAutoSavedGame(puzzleOrId: Puzzle | PuzzleId, autoSaveId: string) {
     const puzzleId = typeof puzzleOrId === "string" ? puzzleOrId : puzzleOrId.puzzleId;
-    const id = `${puzzleId}:${autoSaveId}`;
-    await this.db.savedGames.delete(id); // (does nothing if id not in table)
+    // (Table.delete does nothing if primary key not in table.)
+    // (Unlike Table.get, compound primary key must be passed as array.)
+    await this.db.savedGames.delete([puzzleId, SaveType.Auto, autoSaveId]);
   }
 
   async restoreAutoSavedGame(puzzle: Puzzle, autoSaveId: string): Promise<boolean> {
-    const id = `${puzzle.puzzleId}:${autoSaveId}`;
-    const record = await this.db.savedGames.get(id);
+    const record = await this.db.savedGames.get({
+      puzzleId: puzzle.puzzleId,
+      saveType: SaveType.Auto,
+      filename: autoSaveId,
+    });
     if (!record) {
       return false;
-    }
-    if (record.saveType !== SaveType.Auto) {
-      throw new Error(`Error restoring autosave ${id}: not autosave`);
     }
 
     const buffer = await record.data.arrayBuffer();
     const data = new Uint8Array(buffer);
-    const result = await puzzle.loadGame(data);
-    if (result) {
-      throw new Error(`Error restoring autosave ${id}: ${result}`);
+    const errorMessage = await puzzle.loadGame(data);
+    if (errorMessage) {
+      throw new Error(`Error restoring autosave ${autoSaveId}: ${errorMessage}`);
     }
-
     return true;
   }
 }

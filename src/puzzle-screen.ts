@@ -226,9 +226,11 @@ export class PuzzleScreen extends LitElement implements HistoryStateProvider {
       this.autoSaveId = await store.findMostRecentAutoSave(puzzle.puzzleId);
     }
 
+    let restored = false;
     if (this.autoSaveId) {
-      await store.restoreAutoSavedGame(puzzle, this.autoSaveId);
-    } else {
+      restored = await store.restoreAutoSavedGame(puzzle, this.autoSaveId);
+    }
+    if (!restored) {
       await puzzle.newGame();
     }
     await this.shadowRoot?.querySelector("puzzle-context")?.updateComplete;
