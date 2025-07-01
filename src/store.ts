@@ -1,4 +1,4 @@
-import Dexie, { type EntityTable, type Table } from "dexie";
+import Dexie, { type EntityTable, liveQuery, type Observable, type Table } from "dexie";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { ConfigValues, GameStatus } from "./puzzle/types.ts";
 
@@ -192,7 +192,7 @@ class Store {
   /**
    * Return a set of each PuzzleId that has at least one autosaved game.
    */
-  async autoSavedPuzzles(): Promise<Set<PuzzleId>> {
+  autoSavedPuzzles = async (): Promise<Set<PuzzleId>> => {
     // Extract puzzleIds from the puzzleId+saveType index where SaveType.Auto
     const keys = (await this.db.savedGames
       .where("[puzzleId+saveType+timestamp]")
@@ -202,6 +202,14 @@ class Store {
       )
       .uniqueKeys()) as unknown as [PuzzleId, SaveType, number][];
     return new Set(keys.map((key) => key[0]));
+  };
+
+  private _autoSavedPuzzlesLiveQuery?: Observable<Set<PuzzleId>>;
+  get autoSavedPuzzlesLiveQuery() {
+    if (!this._autoSavedPuzzlesLiveQuery) {
+      this._autoSavedPuzzlesLiveQuery = liveQuery(this.autoSavedPuzzles);
+    }
+    return this._autoSavedPuzzlesLiveQuery;
   }
 
   /**

@@ -1,3 +1,4 @@
+import type { Subscription } from "dexie";
 import { LitElement, css, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import type { AppRouter, HistoryStateProvider } from "./app-router.ts";
@@ -63,20 +64,23 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
     restoreScrollPosition();
   };
 
+  private autoSavedPuzzlesSubscription?: Subscription;
+
   override connectedCallback() {
     super.connectedCallback();
     this.router?.registerStateProvider(this.stateKey, this);
+    this.autoSavedPuzzlesSubscription = store.autoSavedPuzzlesLiveQuery.subscribe({
+      next: (puzzlesInProgress) => {
+        this.puzzlesInProgress = puzzlesInProgress;
+      },
+    });
   }
 
   override disconnectedCallback() {
     super.connectedCallback();
     this.router?.unregisterStateProvider(this.stateKey);
-  }
-
-  protected override async willUpdate() {
-    // TODO: use Dexie.liveQuery (Observable)
-    // (Set.difference is baseline 2024. Just set unconditionally.)
-    this.puzzlesInProgress = await store.autoSavedPuzzles();
+    this.autoSavedPuzzlesSubscription?.unsubscribe();
+    this.autoSavedPuzzlesSubscription = undefined;
   }
 
   protected override render() {
