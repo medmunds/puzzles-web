@@ -1,7 +1,7 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
-import type { AppRouter, HistoryStateProvider } from "./app-router.ts";
+import type { AppRouter } from "./app-router.ts";
 import { type PuzzleData, puzzleDataMap, version } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
 import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
@@ -23,21 +23,8 @@ import "./puzzle/puzzle-preset-menu.ts";
 import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
 
-interface PuzzleScreenState {
-  puzzleId: string;
-  autoSaveId?: string;
-}
-
-const isPuzzleScreenState = (state: unknown): state is PuzzleScreenState =>
-  typeof state === "object" &&
-  state !== null &&
-  "puzzleId" in state &&
-  typeof state.puzzleId === "string" &&
-  "autoSaveId" in state &&
-  (typeof state.autoSaveId === "string" || state.autoSaveId === undefined);
-
 @customElement("puzzle-screen")
-export class PuzzleScreen extends LitElement implements HistoryStateProvider {
+export class PuzzleScreen extends LitElement {
   @property({ type: Object })
   router?: AppRouter;
 
@@ -54,30 +41,30 @@ export class PuzzleScreen extends LitElement implements HistoryStateProvider {
   @query("help-viewer") // TODO: cache?
   private helpPanel?: HelpViewer;
 
-  private stateKey = this.localName;
-
-  private autoSaveId?: string;
-
-  saveHistoryState = (): PuzzleScreenState => ({
-    puzzleId: this.puzzleType,
-    autoSaveId: this.autoSaveId,
-  });
-
-  restoreHistoryState = async (state: unknown) => {
-    if (isPuzzleScreenState(state) && state.puzzleId === this.puzzleType) {
-      this.autoSaveId = state.autoSaveId;
-      // TODO: there's maybe a race condition here with puzzle-loaded?
-    }
-  };
+  private _autoSaveId?: string;
+  private get autoSaveId(): string | undefined {
+    return this._autoSaveId;
+  }
+  private set autoSaveId(value: string | undefined) {
+    // Persist autoSaveId in history state; restored in connectedCallback
+    this._autoSaveId = value;
+    const newState = {
+      ...window.history.state,
+      puzzleAutoSaveType: this.puzzleType,
+      puzzleAutoSaveId: value,
+    };
+    window.history.replaceState(newState, "");
+  }
 
   override connectedCallback() {
     super.connectedCallback();
-    this.router?.registerStateProvider(this.stateKey, this);
-  }
-
-  override disconnectedCallback() {
-    super.connectedCallback();
-    this.router?.unregisterStateProvider(this.stateKey);
+    const { puzzleAutoSaveId, puzzleAutoSaveType } = window.history.state ?? {};
+    if (
+      typeof puzzleAutoSaveId === "string" &&
+      puzzleAutoSaveType === this.puzzleType
+    ) {
+      this._autoSaveId = puzzleAutoSaveId;
+    }
   }
 
   protected override async willUpdate(changedProperties: Map<string, unknown>) {

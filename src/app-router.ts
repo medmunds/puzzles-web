@@ -10,22 +10,16 @@ export interface Route {
   params: Record<string, string | boolean | null | undefined>;
 }
 
-export interface HistoryStateProvider {
-  saveHistoryState: () => unknown;
-  restoreHistoryState: (state: unknown) => void;
-}
-
 interface HistoryState {
   route: Route;
   previousRoute?: Route;
-  providerStates: Record<string, unknown>;
 }
 
+const isObject = (obj: unknown): obj is object =>
+  typeof obj === "object" && obj !== null;
+
 const isHistoryState = (obj: unknown): obj is HistoryState =>
-  typeof obj === "object" &&
-  obj !== null &&
-  "route" in obj &&
-  typeof obj.route === "object";
+  isObject(obj) && "route" in obj && isObject(obj.route);
 
 @customElement("app-router")
 export class AppRouter extends LitElement {
@@ -53,9 +47,10 @@ export class AppRouter extends LitElement {
     this.route = this.matchRoute(window.location.href);
     if (this.route && !this.currentHistoryState) {
       const canonicalUrl = this.reverse(this.route);
+      const other = isObject(window.history.state) ? window.history.state : undefined;
       const initialState: HistoryState = {
+        ...other,
         route: this.route,
-        providerStates: {},
       };
       window.history.replaceState(initialState, "", canonicalUrl);
     }
@@ -63,16 +58,12 @@ export class AppRouter extends LitElement {
 
   override connectedCallback() {
     super.connectedCallback();
-    document.addEventListener("visibilitychange", this.handleVisibilityChange);
-    window.addEventListener("pagehide", this.handlePageHide);
     window.addEventListener("popstate", this.handlePopState);
     this.addEventListener("click", this.interceptHrefClick);
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
-    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
-    window.removeEventListener("pagehide", this.handlePageHide);
     window.removeEventListener("popstate", this.handlePopState);
     this.removeEventListener("click", this.interceptHrefClick);
   }
@@ -192,9 +183,6 @@ export class AppRouter extends LitElement {
       return;
     }
 
-    // Capture current provider states before in-page navigation
-    this.saveAllProviderStates();
-
     // Special case: treat navigating to catalog as "back" if possible
     if (
       targetRoute.name === this.defaultRoute.name &&
@@ -204,19 +192,16 @@ export class AppRouter extends LitElement {
       return;
     }
 
-    const newState: HistoryState = {
-      route: { ...targetRoute },
-      previousRoute: this.route ? { ...this.route } : undefined,
-      providerStates: {},
-    };
+    const newState: HistoryState = { route: targetRoute };
+    if (this.route) {
+      newState.previousRoute = this.route;
+    }
     window.history.pushState(newState, "", resolvedUrl);
     this.route = targetRoute;
   }
 
-  private handlePopState = async () => {
+  private handlePopState = () => {
     this.route = this.matchRoute(window.location.href);
-    await this.updateComplete;
-    this.restoreAllProviderStates();
   };
 
   private interceptHrefClick = (event: MouseEvent) => {
@@ -239,64 +224,6 @@ export class AppRouter extends LitElement {
       }
     }
   };
-
-  /*
-   * State providers: other components that contribute to history state
-   */
-
-  private stateProviders = new Map<string, HistoryStateProvider>();
-
-  /**
-   * Register a component that wants to contribute to history state.
-   * Its restoreHistoryState() will be called immediately if there is current state
-   * available for the given key.
-   */
-  public registerStateProvider(key: string, provider: HistoryStateProvider) {
-    this.stateProviders.set(key, provider);
-  }
-
-  /**
-   * Unregister a state provider.
-   */
-  public unregisterStateProvider(key: string) {
-    this.stateProviders.delete(key);
-  }
-
-  private handlePageHide = () => {
-    this.saveAllProviderStates();
-  };
-
-  private handleVisibilityChange = () => {
-    if (document.visibilityState === "hidden") {
-      this.saveAllProviderStates();
-    }
-  };
-
-  private saveAllProviderStates() {
-    const currentState = this.currentHistoryState;
-    if (!currentState) {
-      throw new Error("Missing currentHistoryState in saveAllProviderStates");
-    }
-    const newState: HistoryState = {
-      ...currentState,
-      providerStates: {},
-    };
-    for (const [key, provider] of this.stateProviders) {
-      newState.providerStates[key] = provider.saveHistoryState();
-    }
-    window.history.replaceState(newState, "", window.location.href);
-  }
-
-  private restoreAllProviderStates() {
-    const savedState = this.currentHistoryState?.providerStates;
-    if (savedState) {
-      for (const [key, provider] of this.stateProviders) {
-        if (key in savedState) {
-          provider.restoreHistoryState(savedState[key]);
-        }
-      }
-    }
-  }
 
   override render() {
     const { name, params } = this.route ?? this.defaultRoute;

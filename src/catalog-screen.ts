@@ -1,26 +1,17 @@
 import type { Subscription } from "dexie";
 import { LitElement, css, html } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
-import type { AppRouter, HistoryStateProvider } from "./app-router.ts";
+import { customElement, eventOptions, property, query, state } from "lit/decorators.js";
+import type { AppRouter } from "./app-router.ts";
 import { puzzleDataMap, version } from "./catalog.ts";
 import { store } from "./store.ts";
 import { waitForStableSize } from "./utils/resize.ts";
+import { debounced } from "./utils/timing.ts";
 
 // Register components
 import "./catalog-card.ts";
 
-interface CatalogScreenState {
-  scrollY: number; // scrollTop / scrollHeight
-}
-
-const isCatalogScreenState = (state: unknown): state is CatalogScreenState =>
-  typeof state === "object" &&
-  state !== null &&
-  "scrollY" in state &&
-  typeof state.scrollY === "number";
-
 @customElement("catalog-screen")
-export class CatalogScreen extends LitElement implements HistoryStateProvider {
+export class CatalogScreen extends LitElement {
   @property({ type: Object })
   router?: AppRouter;
 
@@ -30,45 +21,13 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
   @state()
   puzzlesInProgress: Set<string> = new Set();
 
-  private stateKey = this.localName;
-
   @query(".app", true)
   private appElement?: HTMLDivElement;
-
-  saveHistoryState = (): CatalogScreenState => ({
-    scrollY: this.appElement
-      ? this.appElement.scrollTop / this.appElement.scrollHeight
-      : 0,
-  });
-
-  restoreHistoryState = async (state: unknown) => {
-    if (!isCatalogScreenState(state)) {
-      console.warn("Invalid catalog-screen state in restoreHistoryState", state);
-      return;
-    }
-    await this.updateComplete;
-    if (!this.appElement) {
-      return;
-    }
-
-    // It may take time for children to fully render. Repeatedly update
-    // the scroll as they do, to minimize appearance of jumping around.
-    const { scrollY } = state;
-    const restoreScrollPosition = () => {
-      if (this.appElement) {
-        this.appElement.scrollTop = scrollY * this.appElement.scrollHeight;
-      }
-    };
-    restoreScrollPosition();
-    await waitForStableSize(this.appElement, { resized: restoreScrollPosition });
-    restoreScrollPosition();
-  };
 
   private autoSavedPuzzlesSubscription?: Subscription;
 
   override connectedCallback() {
     super.connectedCallback();
-    this.router?.registerStateProvider(this.stateKey, this);
     this.autoSavedPuzzlesSubscription = store.autoSavedPuzzlesLiveQuery.subscribe({
       next: (puzzlesInProgress) => {
         this.puzzlesInProgress = puzzlesInProgress;
@@ -78,14 +37,13 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
 
   override disconnectedCallback() {
     super.connectedCallback();
-    this.router?.unregisterStateProvider(this.stateKey);
     this.autoSavedPuzzlesSubscription?.unsubscribe();
     this.autoSavedPuzzlesSubscription = undefined;
   }
 
   protected override render() {
     return html`
-      <div class="app">
+      <div class="app" @scroll=${this.handleAppScroll}>
         <header>
           <h1>Puzzles</h1>
           <div class="subtitle">from Simon Tatham's portable puzzle collection</div>
@@ -127,6 +85,41 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
         </footer>
       </div>
     `;
+  }
+
+  protected override async firstUpdated() {
+    // Restore the scroll position if in history state.
+    // (It's not clear why browser's native scroll restoration doesn't work.)
+    const { catalogScrollY } = window.history.state ?? {};
+    if (typeof catalogScrollY === "number") {
+      await this.updateComplete;
+      if (!this.appElement) {
+        return;
+      }
+      // It may take time for children to fully render. Repeatedly update
+      // the scroll as they do, to minimize appearance of jumping around.
+      const restoreScrollPosition = () => {
+        if (this.appElement) {
+          this.appElement.scrollTop = catalogScrollY * this.appElement.scrollHeight;
+        }
+      };
+      restoreScrollPosition();
+      await waitForStableSize(this.appElement, { resized: restoreScrollPosition });
+      restoreScrollPosition();
+    }
+  }
+
+  @eventOptions({ passive: true })
+  @debounced(100)
+  handleAppScroll() {
+    // Record the scroll position for restoration in firstUpdated.
+    if (this.appElement?.scrollHeight) {
+      const newState = {
+        ...window.history.state,
+        catalogScrollY: this.appElement.scrollTop / this.appElement.scrollHeight,
+      };
+      window.history.replaceState(newState, "");
+    }
   }
 
   static styles = css`
