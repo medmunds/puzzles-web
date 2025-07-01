@@ -524,6 +524,8 @@ VAL_CONSTANT(NotifyGameStateChangeType, GAME_STATE_CHANGE, "game-state-change")
 struct NotifyGameStateChange {
     NotifyGameStateChangeType type = GAME_STATE_CHANGE();
     GameStatus status = STATUS_ONGOING();
+    int currentMove = 0;
+    int totalMoves = 0;
     bool canUndo = false;
     bool canRedo = false;
 
@@ -532,14 +534,15 @@ struct NotifyGameStateChange {
     explicit NotifyGameStateChange(midend *me)
         : canUndo(midend_can_undo(me)),
           canRedo(midend_can_redo(me)) {
-        auto const status = midend_status(me);
-        if (status < 0) {
-            this->status = STATUS_LOST();
-        } else if (status > 0) {
+        midend_get_move_count(me, &currentMove, &totalMoves);
+        auto const _status = midend_status(me);
+        if (_status < 0) {
+            status = STATUS_LOST();
+        } else if (_status > 0) {
             // TODO: separate midend status for STATUS_SOLVED_WITH_HELP()
-            this->status = STATUS_SOLVED();
+            status = STATUS_SOLVED();
         } else {
-            this->status = STATUS_ONGOING();
+            status = STATUS_ONGOING();
         }
     }
 };
@@ -583,6 +586,8 @@ EMSCRIPTEN_BINDINGS(notifiations) {
     value_object<NotifyGameStateChange>("NotifyGameStateChange")
         .field("type", &NotifyGameStateChange::type)
         .field("status", &NotifyGameStateChange::status)
+        .field("currentMove", &NotifyGameStateChange::currentMove)
+        .field("totalMoves", &NotifyGameStateChange::totalMoves)
         .field("canUndo", &NotifyGameStateChange::canUndo)
         .field("canRedo", &NotifyGameStateChange::canRedo);
 

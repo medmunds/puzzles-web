@@ -93,12 +93,10 @@ export class Puzzle {
       }
       case "game-state-change":
         update(this._status, message.status);
+        update(this._currentMove, message.currentMove);
+        update(this._totalMoves, message.totalMoves);
         update(this._canUndo, message.canUndo);
         update(this._canRedo, message.canRedo);
-        // TODO: Yuck. We are converting the event stream from the worker to a signal,
-        //   so that puzzle-context can react to the signal by converting it to
-        //   a (different) event stream.
-        update(this._stateCounter, this.stateCounter + 1);
         break;
       case "preset-id-change":
         update(this._currentPresetId, message.presetId);
@@ -120,8 +118,9 @@ export class Puzzle {
   public readonly wantsStatusbar: boolean;
 
   // Reactive properties
-  private _stateCounter = signal<number>(0);
   private _status = signal<GameStatus>("ongoing");
+  private _currentMove = signal<number>(0);
+  private _totalMoves = signal<number>(0);
   private _canUndo = signal(false);
   private _canRedo = signal(false);
   private _currentPresetId = signal<number | undefined>(undefined);
@@ -136,18 +135,20 @@ export class Puzzle {
   private _canFormatAsText = signal(false);
   private _statusbarText = signal<string>("");
 
-  // For reacting to *any* change to puzzle's underlying game state/game id.
-  // (Used for autosave; most other uses should prefer more specific signals.)
-  public get stateCounter(): number {
-    return this._stateCounter.get();
-  }
-
   public get status(): GameStatus {
     return this._status.get();
   }
 
   public get isSolved(): boolean {
     return this.status === "solved" || this.status === "solved-with-help";
+  }
+
+  public get currentMove(): number {
+    return this._currentMove.get();
+  }
+
+  public get totalMoves(): number {
+    return this._totalMoves.get();
   }
 
   public get canUndo(): boolean {

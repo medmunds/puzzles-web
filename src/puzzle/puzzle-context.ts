@@ -15,7 +15,7 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
   @property({ type: String })
   type?: string;
 
-  @property({ type: String })
+  @property({ type: String, reflect: true })
   gameid?: string;
 
   @property({ type: String })
@@ -29,9 +29,9 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
     return this._puzzle;
   }
 
-  // For dispatching puzzle-game-state-change (yuck)
+  // For dispatching puzzle-game-state-change
   @state()
-  private stateCounter?: number;
+  protected currentMove?: number;
 
   override async connectedCallback() {
     super.connectedCallback();
@@ -58,14 +58,15 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
       await this._unloadPuzzle();
       await this._loadPuzzle();
     }
-    // Observe puzzle.stateCounter for dispatching puzzle-state-change events
-    this.stateCounter = this.puzzle?.stateCounter;
+    // Observe gameid and currentMove for dispatching puzzle-game-state-change
+    this.gameid = this.puzzle?.currentGameId;
+    this.currentMove = this.puzzle?.currentMove;
   }
 
   protected override async updated(changedProps: Map<string, unknown>) {
     if (
-      changedProps.get("stateCounter") !== this.stateCounter &&
-      this.stateCounter !== undefined
+      this.puzzle?.currentGameId &&
+      (changedProps.has("gameid") || changedProps.has("currentMove"))
     ) {
       this.dispatchPuzzleEvent("puzzle-game-state-change");
     }

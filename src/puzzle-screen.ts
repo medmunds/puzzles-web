@@ -7,6 +7,7 @@ import type { HelpViewer } from "./help-viewer.ts";
 import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import { store } from "./store.ts";
+import { debounced } from "./utils/timing.ts";
 
 // Register components
 import "@shoelace-style/shoelace/dist/components/button/button.js";
@@ -222,18 +223,20 @@ export class PuzzleScreen extends LitElement {
     await this.shadowRoot?.querySelector("puzzle-context")?.updateComplete;
   }
 
+  @debounced(250)
   private async handlePuzzleGameStateChange(event: PuzzleEvent) {
     const { puzzle } = event.detail;
-    // TODO: somehow skip autosave during newGame/restoreGame
-    //   (to avoid storing & showing "resume" for unplayed puzzles)
     if (puzzle.currentGameId) {
-      if (!puzzle.isSolved) {
+      if (puzzle.totalMoves > 0 && !puzzle.isSolved) {
+        // Wait to autosave until the user has made at least one actual move,
+        // to avoid autosaving from just browsing through puzzles.
         this.autoSaveId ??= store.makeAutoSaveId();
-        // TODO: throttle auto saving to 500 or 1000 ms or longer
         await store.autoSaveGame(puzzle, this.autoSaveId);
       } else if (this.autoSaveId) {
-        // Puzzle is solved; no need to keep the autosave around
-        await store.removeAutoSavedGame(puzzle, this.autoSaveId);
+        // Don't retain autosave for solved or unstarted puzzle.
+        const autoSaveId = this.autoSaveId;
+        this.autoSaveId = undefined;
+        await store.removeAutoSavedGame(puzzle, autoSaveId);
       }
     }
   }
