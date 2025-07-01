@@ -38,7 +38,7 @@ export class PuzzleScreen extends LitElement {
   @state()
   private puzzleData?: PuzzleData;
 
-  @query("help-viewer") // TODO: cache?
+  @query("help-viewer", true)
   private helpPanel?: HelpViewer;
 
   private _autoSaveId?: string;
@@ -80,8 +80,7 @@ export class PuzzleScreen extends LitElement {
 
   override render() {
     if (!this.puzzleData) {
-      console.warn("PuzzleScreen.render without puzzleData");
-      return;
+      throw new Error("PuzzleScreen.render without puzzleData");
     }
 
     const iconUrl = new URL(
