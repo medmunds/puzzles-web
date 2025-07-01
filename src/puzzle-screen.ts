@@ -1,11 +1,11 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
-import type { AppRouter } from "./app-router.ts";
+import type { AppRouter, HistoryStateProvider } from "./app-router.ts";
 import { type PuzzleData, puzzleDataMap, version } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
 import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
-import type { ConfigValues } from "./puzzle/types.ts";
+import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import { store } from "./store.ts";
 
 // Register components
@@ -23,8 +23,21 @@ import "./puzzle/puzzle-preset-menu.ts";
 import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
 
+interface PuzzleScreenState {
+  puzzleId: string;
+  autoSaveId?: string;
+}
+
+const isPuzzleScreenState = (state: unknown): state is PuzzleScreenState =>
+  typeof state === "object" &&
+  state !== null &&
+  "puzzleId" in state &&
+  typeof state.puzzleId === "string" &&
+  "autoSaveId" in state &&
+  (typeof state.autoSaveId === "string" || state.autoSaveId === undefined);
+
 @customElement("puzzle-screen")
-export class PuzzleScreen extends LitElement {
+export class PuzzleScreen extends LitElement implements HistoryStateProvider {
   @property({ type: Object })
   router?: AppRouter;
 
@@ -38,11 +51,34 @@ export class PuzzleScreen extends LitElement {
   @state()
   private puzzleData?: PuzzleData;
 
-  @state()
-  private puzzlePreferences: ConfigValues = {};
-
-  @query("help-viewer")
+  @query("help-viewer") // TODO: cache?
   private helpPanel?: HelpViewer;
+
+  private stateKey = this.localName;
+
+  private autoSaveId?: string;
+
+  saveHistoryState = (): PuzzleScreenState => ({
+    puzzleId: this.puzzleType,
+    autoSaveId: this.autoSaveId,
+  });
+
+  restoreHistoryState = async (state: unknown) => {
+    if (isPuzzleScreenState(state) && state.puzzleId === this.puzzleType) {
+      this.autoSaveId = state.autoSaveId;
+      // TODO: there's maybe a race condition here with puzzle-loaded?
+    }
+  };
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.router?.registerStateProvider(this.stateKey, this);
+  }
+
+  override disconnectedCallback() {
+    super.connectedCallback();
+    this.router?.unregisterStateProvider(this.stateKey);
+  }
 
   protected override async willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("puzzleType") && this.puzzleType) {
@@ -51,7 +87,7 @@ export class PuzzleScreen extends LitElement {
         throw new Error(`Unknown puzzle type ${this.puzzleType}`);
       }
       this.puzzleData = data;
-      this.puzzlePreferences = await store.getPuzzlePreferences(this.puzzleType);
+      this.autoSaveId = undefined;
     }
   }
 
@@ -75,7 +111,8 @@ export class PuzzleScreen extends LitElement {
       <puzzle-context 
           type=${this.puzzleType} 
           params=${this.puzzleParams} 
-          .preferences=${this.puzzlePreferences}
+          @puzzle-loaded=${this.handlePuzzleLoaded}
+          @puzzle-game-state-change=${this.handlePuzzleGameStateChange}
           @puzzle-preferences-change=${this.handlePreferencesChange}
       >
         <head-matter>
@@ -176,9 +213,44 @@ export class PuzzleScreen extends LitElement {
     this.shadowRoot?.querySelector("puzzle-preset-menu")?.show();
   }
 
+  private async handlePuzzleLoaded(event: PuzzleEvent) {
+    const { puzzle } = event.detail;
+    event.preventDefault(); // We'll set up our own new game (or restore one from autoSave)
+
+    const prefs = await store.getPuzzlePreferences(puzzle.puzzleId);
+    await puzzle.setPreferences(prefs);
+
+    // TODO: restore custom presets, current game type from settings
+
+    if (!this.autoSaveId) {
+      this.autoSaveId = await store.findMostRecentAutoSave(puzzle.puzzleId);
+    }
+
+    if (this.autoSaveId) {
+      await store.restoreAutoSavedGame(puzzle, this.autoSaveId);
+    } else {
+      await puzzle.newGame();
+    }
+    await this.shadowRoot?.querySelector("puzzle-context")?.updateComplete;
+  }
+
+  private async handlePuzzleGameStateChange(event: PuzzleEvent) {
+    const { puzzle } = event.detail;
+    // TODO: somehow skip autosave during newGame/restoreGame
+    //   (to avoid storing & showing "resume" for unplayed puzzles)
+    if (puzzle.currentGameId) {
+      if (!puzzle.isSolved) {
+        this.autoSaveId ??= store.makeAutoSaveId();
+        // TODO: throttle auto saving to 500 or 1000 ms or longer
+        await store.autoSaveGame(puzzle, this.autoSaveId);
+      } else if (this.autoSaveId) {
+        // Puzzle is solved; no need to keep the autosave around
+        await store.removeAutoSavedGame(puzzle, this.autoSaveId);
+      }
+    }
+  }
+
   private async handlePreferencesChange(event: PuzzleConfigChangeEvent) {
-    // Merge changes into local property in case of later rerender
-    Object.assign(this.puzzlePreferences, event.detail.changes);
     // Persist only the changed preferences to the DB
     await store.setPuzzlePreferences(this.puzzleType, event.detail.changes);
   }

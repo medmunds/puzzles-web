@@ -4,7 +4,11 @@ import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { puzzleContext } from "./contexts.ts";
 import { Puzzle } from "./puzzle.ts";
-import type { ConfigValues } from "./types.ts";
+
+interface PuzzleEventDetail {
+  puzzle: Puzzle;
+}
+export type PuzzleEvent = CustomEvent<PuzzleEventDetail>;
 
 @customElement("puzzle-context")
 export class PuzzleContext extends SignalWatcher(LitElement) {
@@ -17,9 +21,6 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
   @property({ type: String })
   params?: string;
 
-  @property({ type: Object })
-  preferences?: ConfigValues;
-
   @provide({ context: puzzleContext })
   @state()
   private _puzzle?: Puzzle;
@@ -27,6 +28,10 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
   get puzzle(): Puzzle | undefined {
     return this._puzzle;
   }
+
+  // For dispatching puzzle-game-state-change (yuck)
+  @state()
+  private stateCounter?: number;
 
   override async connectedCallback() {
     super.connectedCallback();
@@ -41,7 +46,6 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
   }
 
   protected override render() {
-    // Render the default slot for child components
     return html`<slot></slot>`;
   }
 
@@ -54,11 +58,16 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
       await this._unloadPuzzle();
       await this._loadPuzzle();
     }
+    // Observe puzzle.stateCounter for dispatching puzzle-state-change events
+    this.stateCounter = this.puzzle?.stateCounter;
   }
 
   protected override async updated(changedProps: Map<string, unknown>) {
-    if (changedProps.has("preferences") && this.preferences) {
-      await this._puzzle?.setPreferences(this.preferences);
+    if (
+      changedProps.get("stateCounter") !== this.stateCounter &&
+      this.stateCounter !== undefined
+    ) {
+      this.dispatchPuzzleEvent("puzzle-game-state-change");
     }
   }
 
@@ -68,41 +77,50 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
     }
     this._puzzle = await Puzzle.create(this.type);
 
-    // Set up the game based on attributes
-    if (this.params) {
-      const preset = Number.parseInt(this.params, 10);
-      if (!Number.isNaN(preset)) {
-        await this._puzzle.setPreset(preset);
+    // Notify puzzle-loaded. Listeners can preventDefault() to disable further setup.
+    const event = this.dispatchPuzzleEvent("puzzle-loaded");
+    if (!event.defaultPrevented) {
+      // Set up the game based on attributes
+      if (this.params) {
+        const preset = Number.parseInt(this.params, 10);
+        if (!Number.isNaN(preset)) {
+          await this._puzzle.setPreset(preset);
+        }
+      }
+
+      if (this.gameid === "none") {
+        // Just set up the midend but don't create a new game
+      } else if (this.gameid) {
+        // Use the specified game ID
+        await this._puzzle.setGameId(this.gameid);
+      } else {
+        // Create a new random game
+        await this._puzzle.newGame();
       }
     }
-
-    if (this.gameid === "none") {
-      // Just set up the midend but don't create a new game
-    } else if (this.gameid) {
-      // Use the specified game ID
-      await this._puzzle.setGameId(this.gameid);
-    } else {
-      // Create a new random game
-      await this._puzzle.newGame();
-    }
-
-    if (this.preferences) {
-      await this._puzzle.setPreferences(this.preferences);
-    }
-
-    // Dispatch event to indicate the puzzle is loaded
-    this.dispatchEvent(
-      new CustomEvent("puzzle-loaded", {
-        bubbles: true,
-        composed: true,
-        detail: { puzzle: this._puzzle },
-      }),
-    );
   }
 
   private async _unloadPuzzle() {
     this._puzzle?.delete();
     this._puzzle = undefined;
+  }
+
+  private dispatchPuzzleEvent(type: string): PuzzleEvent {
+    if (!this.puzzle) {
+      throw new Error(
+        `puzzle-context dispatchEvent("${type}") before puzzle initialized`,
+      );
+    }
+    const event = new CustomEvent<PuzzleEventDetail>(type, {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      detail: {
+        puzzle: this.puzzle,
+      },
+    });
+    this.dispatchEvent(event);
+    return event;
   }
 
   static styles = css`
@@ -115,5 +133,10 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
 declare global {
   interface HTMLElementTagNameMap {
     "puzzle-context": PuzzleContext;
+  }
+
+  interface HTMLElementEventMap {
+    "puzzle-loaded": PuzzleEvent;
+    "puzzle-game-state-change": PuzzleEvent;
   }
 }

@@ -26,6 +26,9 @@ export class CatalogCard extends LitElement {
   @property({ type: String })
   href = "";
 
+  @property({ type: Boolean })
+  resume = false;
+
   renderIcon() {
     if (this.unfinished) {
       // Unfinished puzzles don't have icons yet
@@ -65,7 +68,7 @@ export class CatalogCard extends LitElement {
               href="${this.href}" 
               aria-label=${`Play ${this.name}`} 
               variant="primary"
-          >Play</sl-button>
+          >${this.resume ? "Resume" : "Play"}</sl-button>
         </footer>
       </sl-card>
     `;

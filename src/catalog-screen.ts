@@ -1,7 +1,8 @@
 import { LitElement, css, html } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import type { AppRouter, HistoryStateProvider } from "./app-router.ts";
 import { puzzleDataMap, version } from "./catalog.ts";
+import { store } from "./store.ts";
 import { waitForStableSize } from "./utils/resize.ts";
 
 // Register components
@@ -24,6 +25,9 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
 
   @property({ type: Boolean, attribute: "show-unfinished" })
   showUnfinished = false;
+
+  @state()
+  puzzlesInProgress: Set<string> = new Set();
 
   private stateKey = this.localName;
 
@@ -69,7 +73,13 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
     this.router?.unregisterStateProvider(this.stateKey);
   }
 
-  render() {
+  protected override async willUpdate() {
+    // TODO: use Dexie.liveQuery (Observable)
+    // (Set.difference is baseline 2024. Just set unconditionally.)
+    this.puzzlesInProgress = await store.autoSavedPuzzles();
+  }
+
+  protected override render() {
     return html`
       <div class="app">
         <header>
@@ -90,6 +100,7 @@ export class CatalogScreen extends LitElement implements HistoryStateProvider {
                   name=${name}
                   description=${description}
                   objective=${objective}
+                  ?resume=${this.puzzlesInProgress.has(puzzleType)}
                   ?unfinished=${unfinished}
                 ></catalog-card>
               `,

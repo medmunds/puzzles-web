@@ -1,4 +1,5 @@
 import Dexie, { type Table } from "dexie";
+import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { ConfigValues, GameStatus } from "./puzzle/types.ts";
 
 export type PuzzleId = string;
@@ -34,14 +35,26 @@ export type SettingsRecord =
   | { id: "puzzle-common"; type: "puzzle-common"; data: CommonPuzzleSettings }
   | { id: PuzzleId; type: "puzzle"; data: PuzzleSettings };
 
-export interface SavedGameRecord {
-  id: string; // `${puzzleId}:${filename}`
+enum SaveType {
+  User = 0,
+  Auto = 1,
+}
+const TIMESTAMP_MIN = Dexie.minKey;
+const TIMESTAMP_MAX = Dexie.maxKey;
+const PUZZLE_ID_MIN = Dexie.minKey;
+const PUZZLE_ID_MAX = Dexie.maxKey;
+
+export interface SavedGameMetadata {
+  filename: string;
   puzzleId: PuzzleId;
-  filename: string; // user-chosen name or `autosave-${uuid}`
-  isAutosave: boolean;
   timestamp: number;
   status: GameStatus;
   gameId: string;
+}
+
+export interface SavedGameRecord extends SavedGameMetadata {
+  id: string; // `${puzzleId}:${filename}`
+  saveType: SaveType; // IndexedDB can't index boolean, so use a number
   data: Blob;
 }
 
@@ -55,15 +68,15 @@ class Database extends Dexie {
       settings: ["id", "type"].join(", "),
 
       savedGames: [
-        "id",
-        "puzzleId",
-        "timestamp",
-        "&[puzzleId+filename]", // Ensure unique filenames per puzzle
+        "id", // TODO: use a compound primaryKey on [puzzleId, filename] and drop id field?
+        "[puzzleId+saveType+timestamp]", // supports several common queries
+        "&[puzzleId+saveType+filename]", // ensure unique filenames per puzzle
       ].join(", "),
     });
   }
 }
 
+// TODO: split out SettingsStore, SavedGamesStore (with shared Database)
 class Store {
   private db: Database = new Database();
 
@@ -159,6 +172,108 @@ class Store {
         : undefined;
     const puzzlePreferences = Object.keys(rest).length > 0 ? rest : undefined;
     return { commonPreferences, puzzlePreferences };
+  }
+
+  //
+  // Saved games
+  //
+
+  /**
+   * Return a list of saved games for puzzleId if provided, or all puzzles if not.
+   */
+  async listSavedGames(puzzleId?: PuzzleId): Promise<readonly SavedGameMetadata[]> {
+    return this.db.savedGames
+      .where("[puzzleId+saveType+timestamp]")
+      .between(
+        [puzzleId ?? PUZZLE_ID_MIN, SaveType.User, TIMESTAMP_MIN],
+        [puzzleId ?? PUZZLE_ID_MAX, SaveType.User, TIMESTAMP_MAX],
+      )
+      .toArray();
+  }
+
+  /**
+   * Return a set of each PuzzleId that has at least one autosaved game.
+   */
+  async autoSavedPuzzles(): Promise<Set<PuzzleId>> {
+    // Extract puzzleIds from the puzzleId+saveType index where SaveType.Auto
+    const keys = (await this.db.savedGames
+      .where("[puzzleId+saveType+timestamp]")
+      .between(
+        [PUZZLE_ID_MIN, SaveType.Auto, TIMESTAMP_MIN],
+        [PUZZLE_ID_MAX, SaveType.Auto, TIMESTAMP_MAX],
+      )
+      .uniqueKeys()) as unknown as [PuzzleId, SaveType, number][];
+    return new Set(keys.map((key) => key[0]));
+  }
+
+  /**
+   * Return the filename of the most recent autosave for puzzleId, if any.
+   */
+  async findMostRecentAutoSave(puzzleId: PuzzleId): Promise<string | undefined> {
+    const record = await this.db.savedGames
+      .where("[puzzleId+saveType+timestamp]")
+      .between(
+        [puzzleId, SaveType.Auto, TIMESTAMP_MIN],
+        [puzzleId, SaveType.Auto, TIMESTAMP_MAX],
+      )
+      .last();
+
+    return record?.filename;
+  }
+
+  makeAutoSaveId(): string {
+    // This could be a uuid or some random chars to avoid possible duplication,
+    // but a timestamp is probably sufficient for now.
+    return `autosave-${Date.now()}`;
+  }
+
+  /**
+   * Create or update the autosave record for puzzle.
+   */
+  async autoSaveGame(puzzle: Puzzle, autoSaveId: string) {
+    const puzzleId = puzzle.puzzleId;
+    const id = `${puzzleId}:${autoSaveId}`;
+    const timestamp = Date.now();
+    const status = puzzle.status;
+    const gameId = puzzle.currentGameId ?? "";
+    const savedGame = await puzzle.saveGame();
+    const data = new Blob([savedGame]);
+    await this.db.savedGames.put({
+      id,
+      puzzleId,
+      filename: autoSaveId,
+      saveType: SaveType.Auto,
+      timestamp,
+      status,
+      gameId,
+      data,
+    });
+  }
+
+  async removeAutoSavedGame(puzzleOrId: Puzzle | PuzzleId, autoSaveId: string) {
+    const puzzleId = typeof puzzleOrId === "string" ? puzzleOrId : puzzleOrId.puzzleId;
+    const id = `${puzzleId}:${autoSaveId}`;
+    await this.db.savedGames.delete(id); // (does nothing if id not in table)
+  }
+
+  async restoreAutoSavedGame(puzzle: Puzzle, autoSaveId: string): Promise<boolean> {
+    const id = `${puzzle.puzzleId}:${autoSaveId}`;
+    const record = await this.db.savedGames.get(id);
+    if (!record) {
+      return false;
+    }
+    if (record.saveType !== SaveType.Auto) {
+      throw new Error(`Error restoring autosave ${id}: not autosave`);
+    }
+
+    const buffer = await record.data.arrayBuffer();
+    const data = new Uint8Array(buffer);
+    const result = await puzzle.loadGame(data);
+    if (result) {
+      throw new Error(`Error restoring autosave ${id}: ${result}`);
+    }
+
+    return true;
   }
 }
 
