@@ -364,6 +364,7 @@ const char *identify_game(char **name,
                           void *rctx);
 void midend_request_id_changes(midend *me, void (*notify)(void *), void *ctx);
 bool midend_get_cursor_location(midend *me, int *x, int *y, int *w, int *h);
+void midend_get_move_count(midend *me, int *current, int *total);
 
 /* Printing functions supplied by the mid-end */
 const char *midend_print_puzzle(midend *me, document *doc, bool with_soln);

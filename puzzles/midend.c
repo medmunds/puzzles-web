@@ -1701,6 +1701,15 @@ bool midend_get_cursor_location(midend *me,
     return true;
 }
 
+void midend_get_move_count(midend *me, int *current, int *total)
+{
+    /* don't count the initial NEW or RESTART state */
+    if (current)
+        *current = me->statepos - 1;
+    if (total)
+        *total = me->nstates - 1;
+}
+
 void midend_supersede_game_desc(midend *me, const char *desc,
                                 const char *privdesc)
 {
