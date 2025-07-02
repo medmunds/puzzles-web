@@ -10,7 +10,6 @@ import type { PuzzlePreferences } from "./puzzle-config.ts";
 import type { Puzzle } from "./puzzle.ts";
 
 // Component registration
-import "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";
 import "@shoelace-style/shoelace/dist/components/button/button.js";
 import "@shoelace-style/shoelace/dist/components/divider/divider.js";
 import "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";

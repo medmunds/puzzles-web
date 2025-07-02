@@ -75,10 +75,10 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
 
   override render() {
     return html`
-      <slot slot="before"></slot>
+      <slot name="before"></slot>
       ${this.renderVirtualKeys()}
       ${this.renderUndoRedo()}
-      <slot slot="after"></slot>
+      <slot name="after"></slot>
     `;
   }
 
