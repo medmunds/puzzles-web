@@ -55,6 +55,7 @@ export interface SavedGameMetadata {
 export interface SavedGameRecord extends SavedGameMetadata {
   saveType: SaveType; // IndexedDB can't index boolean, so use a number
   data: Blob;
+  checkpoints?: readonly number[];
 }
 
 class Database extends Dexie {
@@ -243,6 +244,7 @@ class Store {
     const gameId = puzzle.currentGameId ?? "";
     const savedGame = await puzzle.saveGame();
     const data = new Blob([savedGame]);
+    const checkpoints = puzzle.checkpoints;
     await this.db.savedGames.put({
       puzzleId,
       filename: autoSaveId,
@@ -251,6 +253,7 @@ class Store {
       status,
       gameId,
       data,
+      checkpoints,
     });
   }
 
@@ -277,6 +280,7 @@ class Store {
     if (errorMessage) {
       throw new Error(`Error restoring autosave ${autoSaveId}: ${errorMessage}`);
     }
+    puzzle.checkpoints = record.checkpoints ?? [];
     return true;
   }
 }

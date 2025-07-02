@@ -21,6 +21,7 @@ import redo2Icon from "lucide-static/icons/redo-2.svg";
 import rocketIcon from "lucide-static/icons/rocket.svg";
 import settingsIcon from "lucide-static/icons/settings.svg";
 import share2Icon from "lucide-static/icons/share-2.svg";
+import shieldCheckIcon from "lucide-static/icons/shield-check.svg";
 import sparklesIcon from "lucide-static/icons/sparkles.svg";
 import squareArrowOutUpRightIcon from "lucide-static/icons/square-arrow-out-up-right.svg";
 import squarePenIcon from "lucide-static/icons/square-pen.svg";
@@ -39,6 +40,7 @@ import wandIcon from "lucide-static/icons/wand.svg";
 const icons: Record<string, string> = {
   // general
   "back-to-catalog": boxIcon,
+  "checkpoint": shieldCheckIcon,
   "help": circleQuestionMarkIcon,
   "new-game": plusIcon,
   "puzzle-type": swatchBookIcon,

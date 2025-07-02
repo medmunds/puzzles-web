@@ -97,6 +97,7 @@ export class Puzzle {
         update(this._totalMoves, message.totalMoves);
         update(this._canUndo, message.canUndo);
         update(this._canRedo, message.canRedo);
+        this.purgeInvalidCheckpoints();
         break;
       case "preset-id-change":
         update(this._currentPresetId, message.presetId);
@@ -286,6 +287,65 @@ export class Puzzle {
 
   public async saveGame(): Promise<Uint8Array> {
     return await this.workerPuzzle.saveGame();
+  }
+
+  //
+  // Checkpoints
+  //
+
+  private _checkpoints = signal<number[]>([]);
+
+  /**
+   * A sorted list of move numbers that have been set as checkpoints.
+   */
+  get checkpoints(): ReadonlyArray<number> {
+    return this._checkpoints.get();
+  }
+
+  set checkpoints(value: ReadonlyArray<number>) {
+    this._checkpoints.set([...value]);
+  }
+
+  /**
+   * Set a checkpoint at the current move.
+   */
+  public setCheckpoint() {
+    const currentMove = this.currentMove;
+    if (this.checkpoints.indexOf(currentMove) < 0) {
+      const newCheckpoints = [...this.checkpoints, currentMove];
+      newCheckpoints.sort();
+      this.checkpoints = newCheckpoints;
+    }
+  }
+
+  /**
+   * Wind the game forward/backward to move number checkpoint.
+   * (Checkpoint can actually be any valid move number,
+   * and does not have to have been saved as a checkpoint.)
+   */
+  public async goToCheckpoint(checkpoint: number): Promise<void> {
+    if (checkpoint < 0 || checkpoint > this.totalMoves) {
+      throw new RangeError(`Move ${checkpoint} out of bounds`);
+    }
+    const delta = checkpoint - this.currentMove;
+    if (delta < 0) {
+      for (let i = 0; i < -delta; i++) {
+        await this.undo();
+      }
+    } else if (delta > 0) {
+      for (let i = 0; i < delta; i++) {
+        await this.redo();
+      }
+    }
+  }
+
+  private purgeInvalidCheckpoints() {
+    // Strip any checkpoints > this.totalMoves
+    const totalMoves = this.totalMoves;
+    const latest = this.checkpoints.at(-1);
+    if (latest !== undefined && latest > totalMoves) {
+      this.checkpoints = this.checkpoints.filter((move) => move <= totalMoves);
+    }
   }
 
   //

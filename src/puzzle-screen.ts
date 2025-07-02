@@ -16,6 +16,7 @@ import "@shoelace-style/shoelace/dist/components/menu-label/menu-label.js";
 import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
 import "./head-matter.ts";
 import "./help-viewer.ts";
+import "./puzzle/puzzle-checkpoints.ts";
 import "./puzzle/puzzle-context.ts";
 import "./puzzle/puzzle-display-name.ts";
 import "./puzzle/puzzle-game-menu.ts";
@@ -169,7 +170,9 @@ export class PuzzleScreen extends LitElement {
             </sl-button>
           </puzzle-end-notification>
 
-          <puzzle-keys></puzzle-keys>
+          <puzzle-keys>
+            <puzzle-checkpoints slot="after"></puzzle-checkpoints>
+          </puzzle-keys>
         </div>
       </puzzle-context>
 
