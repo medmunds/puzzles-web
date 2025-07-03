@@ -41,6 +41,28 @@ function stripHoverRules(cssResult: CSSResult): CSSResult {
 }
 
 /**
+ * Add rotation effect to sl-dropdown trigger caret
+ * (like in sl-select's caret).
+ */
+function rotateSlButtonCaretWhenExpanded() {
+  SlButton.elementStyles.push(
+    css`
+      @media(prefers-reduced-motion: no-preference) {
+        .button--caret .button__caret {
+          transition: transform var(--sl-transition-fast) ease;
+        }
+        .button--caret[aria-expanded="false"] .button__caret {
+          transform: rotate(0deg);
+        }
+        .button--caret[aria-expanded="true"] .button__caret {
+          transform: rotate(-180deg);
+        }
+      }
+    `,
+  );
+}
+
+/**
  * sl-menu-item uses --sl-spacing-x-small (0.5rem) between prefix and label,
  * but uses 1em before/after content (space for checkmark and submenu arrow).
  * Increase the prefix spacing to balance it. Same for suffix.
@@ -62,5 +84,6 @@ function increaseSlMenuItemPrefixSpacing() {
 
 export function installShoelaceHacks() {
   removeHoverStylesFromSlButton();
+  rotateSlButtonCaretWhenExpanded();
   increaseSlMenuItemPrefixSpacing();
 }
