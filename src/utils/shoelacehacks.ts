@@ -1,4 +1,5 @@
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.js";
+import SlDropdown from "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";
 import SlMenuItem from "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
 import { CSSResult, css, unsafeCSS } from "lit";
 
@@ -41,22 +42,40 @@ function stripHoverRules(cssResult: CSSResult): CSSResult {
 }
 
 /**
- * Add rotation effect to sl-dropdown trigger caret
- * (like in sl-select's caret).
+ * Give sl-button a `--caret-rotation` property for default caret rotation
+ * (useful for flipping it in drop-up menus). Add rotation effect to the
+ * caret when used for an sl-dropdown trigger (like in sl-select's caret).
  */
 function rotateSlButtonCaretWhenExpanded() {
   SlButton.elementStyles.push(
     css`
+      :host {
+        --caret-rotation: 0deg;
+      }
+      .button--caret .button__caret {
+        transform: rotate(var(--caret-rotation));
+      }
+      
       @media(prefers-reduced-motion: no-preference) {
         .button--caret .button__caret {
           transition: transform var(--sl-transition-fast) ease;
         }
-        .button--caret[aria-expanded="false"] .button__caret {
-          transform: rotate(0deg);
-        }
         .button--caret[aria-expanded="true"] .button__caret {
-          transform: rotate(-180deg);
+          transform: rotate(calc(var(--caret-rotation) - 180deg));
         }
+      }
+    `,
+  );
+}
+
+/**
+ * Make sl-dropdown flip its trigger caret when placement suggests "drop-up".
+ */
+function flipSlDropdownCaretForTopPlacement() {
+  SlDropdown.elementStyles.push(
+    css`
+      :host([placement*="top"]) slot[name="trigger"]::slotted(sl-button) {
+        --caret-rotation: 180deg;
       }
     `,
   );
@@ -85,5 +104,6 @@ function increaseSlMenuItemPrefixSpacing() {
 export function installShoelaceHacks() {
   removeHoverStylesFromSlButton();
   rotateSlButtonCaretWhenExpanded();
+  flipSlDropdownCaretForTopPlacement();
   increaseSlMenuItemPrefixSpacing();
 }

@@ -1,7 +1,7 @@
 import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
 import type SlMenuItem from "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
-import { LitElement, css, html, nothing } from "lit";
+import { LitElement, html, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
@@ -60,21 +60,6 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
       this.puzzle?.goToCheckpoint(checkpoint);
     }
   }
-
-  static styles = css`
-    sl-button::part(caret) {
-      transform: rotate(180deg);
-    }
-    
-    @media(prefers-reduced-motion: no-preference) {
-      sl-dropdown sl-button::part(caret) {
-        transition: transform var(--sl-transition-fast) ease;
-      }
-      sl-dropdown[open] sl-button::part(caret) {
-        transform: rotate(0deg);
-      }
-    }
-  `;
 }
 
 declare global {
