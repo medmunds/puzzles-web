@@ -92,12 +92,12 @@ export class Puzzle {
         break;
       }
       case "game-state-change":
+        this.purgeInvalidCheckpoints(message.totalMoves);
         update(this._status, message.status);
         update(this._currentMove, message.currentMove);
         update(this._totalMoves, message.totalMoves);
         update(this._canUndo, message.canUndo);
         update(this._canRedo, message.canRedo);
-        this.purgeInvalidCheckpoints();
         break;
       case "preset-id-change":
         update(this._currentPresetId, message.presetId);
@@ -293,28 +293,41 @@ export class Puzzle {
   // Checkpoints
   //
 
-  private _checkpoints = signal<number[]>([]);
+  private _checkpoints = signal<ReadonlySet<number>>(new Set());
 
   /**
-   * A sorted list of move numbers that have been set as checkpoints.
+   * A set of move numbers that have been set as checkpoints.
    */
-  get checkpoints(): ReadonlyArray<number> {
+  get checkpoints(): ReadonlySet<number> {
     return this._checkpoints.get();
   }
 
-  set checkpoints(value: ReadonlyArray<number>) {
-    this._checkpoints.set([...value]);
+  set checkpoints(value: Iterable<number>) {
+    this._checkpoints.set(new Set(value));
   }
 
   /**
-   * Set a checkpoint at the current move.
+   * Set a checkpoint at move (default the current move).
    */
-  public setCheckpoint() {
-    const currentMove = this.currentMove;
-    if (this.checkpoints.indexOf(currentMove) < 0) {
-      const newCheckpoints = [...this.checkpoints, currentMove];
-      newCheckpoints.sort();
-      this.checkpoints = newCheckpoints;
+  public addCheckpoint(move?: number) {
+    const checkpoint = move ?? this.currentMove;
+    if (!this.checkpoints.has(checkpoint)) {
+      // TODO: use reactive set (from signal-utils) rather than replacing value
+      const newCheckpoints = new Set(this.checkpoints);
+      newCheckpoints.add(checkpoint);
+      this._checkpoints.set(newCheckpoints);
+    }
+  }
+
+  /**
+   * Remove checkpoint if it exists
+   */
+  public removeCheckpoint(checkpoint: number) {
+    if (this.checkpoints.has(checkpoint)) {
+      // TODO: use reactive set (from signal-utils) rather than replacing value
+      const newCheckpoints = new Set(this.checkpoints);
+      newCheckpoints.delete(checkpoint);
+      this._checkpoints.set(newCheckpoints);
     }
   }
 
@@ -339,12 +352,24 @@ export class Puzzle {
     }
   }
 
-  private purgeInvalidCheckpoints() {
-    // Strip any checkpoints > this.totalMoves
-    const totalMoves = this.totalMoves;
-    const latest = this.checkpoints.at(-1);
-    if (latest !== undefined && latest > totalMoves) {
-      this.checkpoints = this.checkpoints.filter((move) => move <= totalMoves);
+  private purgeInvalidCheckpoints(totalMoves: number) {
+    // Called before updating this.currentMove and this.totalMoves.
+    // Prune any checkpoints past new totalMoves.
+    if (totalMoves < this.totalMoves && this.checkpoints.size > 0) {
+      // TODO: use reactive set (from signal-utils) rather than replacing value
+      const newCheckpoints = new Set(this.checkpoints);
+      for (const checkpoint of newCheckpoints) {
+        // BUG: this can't distinguish these two cases:
+        //   - set checkpoint; undo; redo (shouldn't purge checkpoint == totalMoves)
+        //   - set checkpoint; undo; move (_should_ purge checkpoint >= totalMoves)
+        // To avoid unexpected purging, use `>` rather than `>=`:
+        if (checkpoint > totalMoves) {
+          newCheckpoints.delete(checkpoint);
+        }
+      }
+      if (newCheckpoints.size < this.checkpoints.size) {
+        this._checkpoints.set(newCheckpoints);
+      }
     }
   }
 

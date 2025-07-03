@@ -13,6 +13,7 @@ import "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";
 import "@shoelace-style/shoelace/dist/components/icon/icon.js";
 import "@shoelace-style/shoelace/dist/components/menu/menu.js";
 import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
+import "@shoelace-style/shoelace/dist/components/menu-label/menu-label.js";
 
 @customElement("puzzle-checkpoints")
 export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
@@ -21,17 +22,30 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
   private puzzle?: Puzzle;
 
   protected override render() {
-    const checkpoints = this.puzzle?.checkpoints ?? [];
+    const checkpoints = this.puzzle ? [...this.puzzle.checkpoints] : [];
+    if (
+      this.puzzle &&
+      this.puzzle.currentMove < this.puzzle.totalMoves &&
+      !this.puzzle.checkpoints.has(this.puzzle.totalMoves)
+    ) {
+      // When rewound to an earlier checkpoint (or any undo state),
+      // always show a "Last move" allowing fast forward back to now.
+      checkpoints.push(this.puzzle.totalMoves);
+    }
+    checkpoints.sort();
+    const hasCheckpoints = checkpoints.length > 0;
+
     return html`
       <sl-dropdown hoist placement="top-start">
         <sl-button slot="trigger" caret>
           <sl-icon slot="prefix" name="checkpoint"></sl-icon>
-          Checkpoint
+          Checkpoints
         </sl-button>
-        <sl-menu @sl-select=${this.handleSelect}>
+        <sl-menu @sl-select=${this.handleSelectCheckpoint}>
+          ${hasCheckpoints ? html`<sl-menu-label>Return to checkpoint</sl-menu-label>` : nothing}
           ${checkpoints.map((checkpoint) => this.renderCheckpointItem(checkpoint))}
-          ${checkpoints.length > 0 ? html`<sl-divider></sl-divider>` : nothing}
-          <sl-menu-item value="new">Set checkpoint</sl-menu-item>
+          ${hasCheckpoints ? html`<sl-divider></sl-divider>` : nothing}
+          <sl-menu-item @click=${this.handleSaveCheckpoint}>Save checkpoint</sl-menu-item>
         </sl-menu>
       </sl-dropdown>
     `;
@@ -41,7 +55,7 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
     const checked = checkpoint === this.puzzle?.currentMove;
     const ago = (this.puzzle?.totalMoves ?? 0) - checkpoint;
     const label =
-      ago === 0 ? "Current move" : ago === 1 ? "Last move" : `${ago} moves ago`;
+      ago === 0 ? "Last move" : ago === 1 ? "1 move ago" : `${ago} moves ago`;
     return html`
       <sl-menu-item 
           value=${checkpoint} 
@@ -51,14 +65,17 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
     `;
   }
 
-  private handleSelect(event: CustomEvent<{ item: SlMenuItem }>) {
+  private handleSelectCheckpoint(event: CustomEvent<{ item: SlMenuItem }>) {
     const value = event.detail.item.value;
-    if (value === "new") {
-      this.puzzle?.setCheckpoint();
-    } else {
-      const checkpoint = Number.parseInt(value);
+    const checkpoint = Number.parseInt(value);
+    if (Number.isFinite(checkpoint)) {
       this.puzzle?.goToCheckpoint(checkpoint);
     }
+  }
+
+  private handleSaveCheckpoint(event: Event) {
+    event.stopPropagation(); // keep popup open
+    this.puzzle?.addCheckpoint();
   }
 }
 

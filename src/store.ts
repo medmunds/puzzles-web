@@ -244,7 +244,7 @@ class Store {
     const gameId = puzzle.currentGameId ?? "";
     const savedGame = await puzzle.saveGame();
     const data = new Blob([savedGame]);
-    const checkpoints = puzzle.checkpoints;
+    const checkpoints = [...puzzle.checkpoints];
     await this.db.savedGames.put({
       puzzleId,
       filename: autoSaveId,
