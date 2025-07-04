@@ -18,7 +18,6 @@ import "./head-matter.ts";
 import "./help-viewer.ts";
 import "./puzzle/puzzle-checkpoints.ts";
 import "./puzzle/puzzle-context.ts";
-import "./puzzle/puzzle-display-name.ts";
 import "./puzzle/puzzle-game-menu.ts";
 import "./puzzle/puzzle-keys.ts";
 import "./puzzle/puzzle-preset-menu.ts";
@@ -116,10 +115,8 @@ export class PuzzleScreen extends LitElement {
         
         <div class="app">
           <header>
-            <h1>
-              <puzzle-display-name></puzzle-display-name>
-              <span class="subtitle">from Simon Tatham's portable puzzles collection</span>
-            </h1>
+            <h1>${this.puzzleData.name}</h1>
+            <div class="subtitle">from Simon Tatham’s portable puzzle collection</div>
           </header>
 
           <div class="toolbar">
@@ -312,12 +309,27 @@ export class PuzzleScreen extends LitElement {
       font-size: var(--sl-font-size-x-large);
       line-height: var(--sl-line-height-dense);
     }
-
     .subtitle {
-      display: block;
-      font-size: var(--sl-font-size-small);
+      font-size: var(--sl-font-size-medium);
       font-weight: var(--sl-font-weight-normal);
-      color: var(--sl-color-neutral-600);
+      color: var(--sl-color-neutral-700);
+    }
+    @container (max-width: 36rem) {
+      /* This sizing is just kind of eyeballed with "Same Game",
+       * which seems to have the longest name. */
+      /* TODO: should really combine the header and top toolbar on small screens */
+      .subtitle {
+        display: none;
+      }
+    }
+
+    header {
+      display: flex;
+      align-items: baseline;
+      text-wrap: nowrap;
+      h1 {
+        margin-inline-end: 0.5em;
+      }
     }
 
     .toolbar {

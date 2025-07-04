@@ -46,7 +46,7 @@ export class CatalogScreen extends LitElement {
       <div class="app" @scroll=${this.handleAppScroll}>
         <header>
           <h1>Puzzles</h1>
-          <div class="subtitle">from Simon Tatham's portable puzzle collection</div>
+          <div class="subtitle">from Simon Tatham’s portable puzzle collection</div>
         </header>
   
         <div class="puzzle-grid">
@@ -181,6 +181,12 @@ export class CatalogScreen extends LitElement {
       margin: var(--sl-spacing-medium) 0 0 0;
       font-size: var(--sl-font-size-medium);
       font-weight: var(--sl-font-weight-normal);
+    }
+
+    .subtitle {
+      font-size: var(--sl-font-size-medium);
+      font-weight: var(--sl-font-weight-normal);
+      color: var(--sl-color-neutral-700);
     }
 
     header {
