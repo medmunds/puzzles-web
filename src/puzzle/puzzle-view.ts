@@ -125,8 +125,11 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
     if (this.isAttachedToPuzzle && this.canvas && this.puzzle) {
       let needsRedraw = false;
+      const renderingFirstGame =
+        changedProperties.has("renderedPuzzleGameId") &&
+        changedProperties.get("renderedPuzzleGameId") === undefined;
 
-      if (changedProperties.has("renderedPuzzleParams")) {
+      if (changedProperties.has("renderedPuzzleParams") || renderingFirstGame) {
         // Changing game params may alter desired canvas size.
         // (Since game id has probably also changed, we'll redraw either way.)
         needsRedraw = !(await this.resize(false));
@@ -190,7 +193,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       !this.puzzle?.currentGameId
     ) {
       // midend_size() is only valid while there's a game.
-      // (We'll get called again when that's true.)
+      // We'll get called again then (see renderingFirstGame in updated()).
       // (We can end up in here before the first update thanks to resize observers.)
       return false;
     }
@@ -217,7 +220,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
     if (changed) {
       // console.log(
-      //   `Resize: current ${current.width}x${current.height},` +
+      //   `Resize: current ${this.canvasSize.w}x${this.canvasSize.h},` +
       //     ` available ${available.width}x${available.height},` +
       //     ` used ${size.w}x${size.h}`,
       // );
