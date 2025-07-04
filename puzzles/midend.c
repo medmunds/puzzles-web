@@ -470,6 +470,36 @@ static char *encode_params(midend *me, const game_params *params, bool full)
     return encoded;
 }
 
+// Like midend_set_params, but takes encoded string.
+// Returns static error message or null.
+const char *midend_set_encoded_params(midend *me, const char *encoded_params)
+{
+    game_params *params = me->ourgame->default_params();
+    me->ourgame->decode_params(params, encoded_params);
+    const char *error = me->ourgame->validate_params(params, true);
+    if (error) {
+        me->ourgame->free_params(params);
+        return error;
+    }
+    me->ourgame->free_params(me->params);
+    me->params = params;
+    return error;
+}
+
+// Like midend_get_params, but returns encoded, allocated string.
+char *midend_get_encoded_params(midend *me)
+{
+    return encode_params(me, me->params, true);
+}
+
+// Returns _static_ string (do not free).
+const char *midend_get_encoded_params_for_preset(midend *me, int preset)
+{
+    if (preset >= 0 && preset < me->n_encoded_presets)
+        return me->encoded_presets[preset];
+    return NULL;
+}
+
 static void assert_printable_ascii(char const *s)
 {
     /* Assert that s is entirely printable ASCII, and hence safe for
