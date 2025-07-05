@@ -39,6 +39,9 @@ export class PuzzleScreen extends LitElement {
   @state()
   private puzzleData?: PuzzleData;
 
+  @state()
+  private puzzleLoaded = false;
+
   @query("help-viewer", true)
   private helpPanel?: HelpViewer;
 
@@ -76,6 +79,7 @@ export class PuzzleScreen extends LitElement {
       }
       this.puzzleData = data;
       this.autoSaveId = undefined;
+      this.puzzleLoaded = false;
     }
   }
 
@@ -99,6 +103,7 @@ export class PuzzleScreen extends LitElement {
           type=${this.puzzleType} 
           params=${this.puzzleParams} 
           @puzzle-loaded=${this.handlePuzzleLoaded}
+          @puzzle-params-change=${this.handlePuzzleParamsChange}
           @puzzle-game-state-change=${this.handlePuzzleGameStateChange}
           @puzzle-preferences-change=${this.handlePreferencesChange}
       >
@@ -207,7 +212,19 @@ export class PuzzleScreen extends LitElement {
     const prefs = await store.getPuzzlePreferences(puzzle.puzzleId);
     await puzzle.setPreferences(prefs);
 
-    // TODO: restore custom presets, current game type from settings
+    const params = await store.getCurrentParams(puzzle.puzzleId);
+    if (params) {
+      const error = await puzzle.setParams(params);
+      if (error) {
+        console.warn(
+          `Error setting puzzle ${puzzle.puzzleId} params to saved "${params}": ` +
+            `${error}. Discarding.`,
+        );
+        await store.setCurrentParams(puzzle.puzzleId, undefined);
+      }
+    }
+
+    // TODO: restore custom presets from settings
 
     if (!this.autoSaveId) {
       this.autoSaveId = await store.findMostRecentAutoSave(puzzle.puzzleId);
@@ -220,7 +237,21 @@ export class PuzzleScreen extends LitElement {
     if (!restored) {
       await puzzle.newGame();
     }
+
+    this.puzzleLoaded = true;
     await this.shadowRoot?.querySelector("puzzle-context")?.updateComplete;
+  }
+
+  private async handlePuzzleParamsChange(event: PuzzleEvent) {
+    // (Ignore params change as puzzle is loading -- that's its default value.)
+    const { puzzle } = event.detail;
+    if (
+      this.puzzleLoaded &&
+      puzzle.currentParams &&
+      puzzle.currentParams !== (await store.getCurrentParams(puzzle.puzzleId))
+    ) {
+      await store.setCurrentParams(puzzle.puzzleId, puzzle.currentParams);
+    }
   }
 
   @debounced(250)

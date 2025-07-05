@@ -71,6 +71,9 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
   }
 
   protected override async updated(changedProps: Map<string, unknown>) {
+    if (this.puzzle?.currentParams && changedProps.has("params")) {
+      this.dispatchPuzzleEvent("puzzle-params-change");
+    }
     if (
       this.puzzle?.currentGameId &&
       (changedProps.has("gameid") || changedProps.has("currentMove"))
@@ -146,5 +149,6 @@ declare global {
   interface HTMLElementEventMap {
     "puzzle-loaded": PuzzleEvent;
     "puzzle-game-state-change": PuzzleEvent;
+    "puzzle-params-change": PuzzleEvent;
   }
 }

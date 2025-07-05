@@ -27,8 +27,13 @@ export interface PuzzleSettings {
     name: string;
     params: EncodedParams;
   }>;
-  currentParams?: number | EncodedParams;
+  currentParams?: EncodedParams;
 }
+
+const defaultPuzzleSettings: PuzzleSettings = {
+  puzzlePreferences: {},
+  customPresets: [],
+};
 
 export type SettingsRecord =
   | { id: "catalog"; type: "catalog"; data: CatalogSettings }
@@ -142,7 +147,7 @@ class Store {
     if (puzzlePreferences !== undefined) {
       const current = await this.getPuzzleSettings(puzzleId);
       const updated: PuzzleSettings = {
-        customPresets: [],
+        ...defaultPuzzleSettings,
         ...current,
         puzzlePreferences: {
           ...current?.puzzlePreferences,
@@ -171,6 +176,25 @@ class Store {
         : undefined;
     const puzzlePreferences = Object.keys(rest).length > 0 ? rest : undefined;
     return { commonPreferences, puzzlePreferences };
+  }
+
+  async getCurrentParams(puzzleId: PuzzleId): Promise<string | undefined> {
+    const puzzleRecord = await this.getPuzzleSettings(puzzleId);
+    return puzzleRecord?.currentParams;
+  }
+
+  async setCurrentParams(puzzleId: PuzzleId, params?: EncodedParams): Promise<void> {
+    const current = await this.getPuzzleSettings(puzzleId);
+    const updated: PuzzleSettings = {
+      ...defaultPuzzleSettings,
+      ...current,
+      currentParams: params,
+    };
+    await this.db.settings.put({
+      id: puzzleId,
+      type: "puzzle",
+      data: updated,
+    });
   }
 
   //
