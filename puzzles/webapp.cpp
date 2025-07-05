@@ -51,91 +51,117 @@ std::string slugify(const std::string& text) {
     return slug;
 }
 
-//
-// Smart pointers for C data types
-//
-
-static const auto sfree_deleter = [](auto* ptr) {
-    sfree(static_cast<void*>(ptr));
-};
-
-template<typename T>
-using allocated_ptr = std::unique_ptr<T, decltype(sfree_deleter)>;
-
+/*
+ * Smart pointers for C data types
+ */
 
 /**
- * @brief A utility class to manage char* pointers returned by C APIs
- *        that must be freed using sfree().
- *
- * This class uses std::unique_ptr internally to provide RAII for
- * char* resources, ensuring automatic and safe deallocation.
- */
-class allocated_char_ptr {
-    allocated_ptr<char> m_ptr;
+  * @brief A base utility class for managing pointers with custom deleters.
+  *        (This is essentially std::unique_ptr<T, decltype(deleter)>,
+  *        but ensures the default deleter is never accidentally used.)
+  * @tparam T The type of the pointer to manage (e.g., char).
+  * @tparam deleter The deleter function for the pointer (e.g., sfree).
+  */
+template <typename T, auto& deleter>
+class allocated_ptr_base {
+protected:
+    std::unique_ptr<T, decltype(deleter)> m_ptr;
 
 public:
-    /**
-     * @brief Constructs a AllocatedCharPtr object, taking ownership of the raw char*.
-     * @param raw_ptr The char* returned by a C API, to be freed with sfree().
-     */
-    explicit allocated_char_ptr(char* raw_ptr)
-        : m_ptr(raw_ptr, sfree_deleter) {}
+    explicit allocated_ptr_base(T* raw_ptr)
+        : m_ptr(raw_ptr, deleter) {}
 
-    // allocated_char_ptr is non-copyable to ensure unique ownership of the managed resource.
-    allocated_char_ptr(const allocated_char_ptr&) = delete;
-    allocated_char_ptr& operator=(const allocated_char_ptr&) = delete;
+    // Non-copyable
+    allocated_ptr_base(const allocated_ptr_base&) = delete;
+    allocated_ptr_base& operator=(const allocated_ptr_base&) = delete;
 
-    // Allow move operations for efficient transfer of ownership.
-    allocated_char_ptr(allocated_char_ptr&& other) noexcept = default;
-    allocated_char_ptr& operator=(allocated_char_ptr&& other) noexcept = default;
+    // Movable
+    allocated_ptr_base(allocated_ptr_base&& other) noexcept = default;
+    allocated_ptr_base& operator=(allocated_ptr_base&& other) noexcept = default;
 
     /**
-     * @brief Converts the managed char* to a std::string.
-     * @return A std::string. If the internal char* is nullptr, returns an empty string.
+     * @brief Provides access to the raw managed pointer.
+     * @warning Use with caution. The caller must not free this pointer directly.
      */
-    [[nodiscard]] std::string as_string() const {
-        if (m_ptr) {
-            return {m_ptr.get()};
-        }
-        return {}; // Return empty string if the raw pointer is nullptr
+    [[nodiscard]] T* get() const { return m_ptr.get(); }
+
+    /**
+     * @brief Checks if the object is managing a valid (non-nullptr) pointer.
+     */
+    explicit operator bool() const noexcept { return static_cast<bool>(m_ptr); }
+};
+
+/**
+ * @brief A mixin class providing string conversion methods for string-like types.
+ * @tparam Derived The derived class that inherits from this mixin.
+ *                 It must define a `get()` method that returns a type that
+ *                 can be passed to std::string() (e.g., `char *`).
+ */
+template <typename Derived>
+class string_mixins {
+    [[nodiscard]] const Derived* derived() const {
+        return static_cast<const Derived*>(this);
     }
 
-    /**
-     * @brief Converts the managed char* to an optional std::string.
-     * @return An std::optional<std::string>. Returns std::nullopt if the internal char* is nullptr,
-     *         otherwise returns an optional containing the string.
-     */
+public:
+    [[nodiscard]] std::string as_string() const {
+        if (const auto value = derived()->get()) {
+            return std::string(value);
+        }
+        return {};
+    }
+
     [[nodiscard]] std::optional<std::string> as_optional_string() const {
-        if (m_ptr) {
-            return std::make_optional(std::string(m_ptr.get()));
+        if (const auto value = derived()->get()) {
+            return std::make_optional(std::string(value));
         }
         return std::nullopt;
     }
-
-    /**
-     * @brief Provides access to the raw managed char* pointer.
-     * @warning Use with caution. The caller must not free this pointer directly.
-     * @return The raw char* pointer, or nullptr if none is managed.
-     */
-    [[nodiscard]] char* get() const {
-        return m_ptr.get();
-    }
-
-    /**
-     * @brief Checks if the CCharPtr object is currently managing a valid (non-nullptr) char*.
-     * @return true if managing a non-nullptr char*, false otherwise.
-     */
-    explicit operator bool() const noexcept {
-        return static_cast<bool>(m_ptr);
-    }
 };
 
-
-static const auto cfg_deleter = [](config_item* ptr) {
-    free_cfg(ptr);
+/**
+ * A char* allocated in C that must be freed with sfree().
+ * Supports as_string() and as_optional_string().
+ */
+class allocated_char_ptr:
+    public allocated_ptr_base<char, sfree>,
+    public string_mixins<allocated_char_ptr>
+{
+public:
+    explicit allocated_char_ptr(char* raw_ptr) : allocated_ptr_base(raw_ptr) {}
 };
 
-using allocated_config_item_ptr = std::unique_ptr<config_item, decltype(cfg_deleter)>;
+/**
+ * A static const char* from C that must not be freed.
+ * (All midend error messages are static.)
+ * Supports as_string() and as_optional_string().
+ */
+class static_char_ptr: public string_mixins<static_char_ptr> {
+    const char* m_ptr;
+
+public:
+    explicit static_char_ptr(const char* raw_ptr) : m_ptr(raw_ptr) {}
+
+    // Non-owning, so default copy/move are fine
+    static_char_ptr(const static_char_ptr&) = default;
+    static_char_ptr& operator=(const static_char_ptr&) = default;
+    static_char_ptr(static_char_ptr&&) noexcept = default;
+    static_char_ptr& operator=(static_char_ptr&&) noexcept = default;
+
+    [[nodiscard]] const char* get() const { return m_ptr; }
+
+    explicit operator bool() const noexcept { return m_ptr != nullptr; }
+};
+
+class allocated_float_ptr: public allocated_ptr_base<float, sfree> {
+public:
+    explicit allocated_float_ptr(float* raw_ptr) : allocated_ptr_base(raw_ptr) {}
+};
+
+class allocated_config_item_ptr: public allocated_ptr_base<config_item, free_cfg> {
+public:
+    explicit allocated_config_item_ptr(config_item* raw_ptr) : allocated_ptr_base(raw_ptr) {}
+};
 
 
 // Converting std::vector to JS Array:
@@ -994,7 +1020,7 @@ public:
         // midend_colours returns an allocated array of ncolours r,g,b values
         // (that is, 3 * ncolours floats long).
         int ncolours;
-        allocated_ptr<float> colours(midend_colours(me(), &ncolours), sfree_deleter);
+        const allocated_float_ptr colours(midend_colours(me(), &ncolours));
         static_assert(
             sizeof(Colour) == 3 * sizeof(float),
             "Colour doesn't match midend_colours layout"
@@ -1024,7 +1050,7 @@ private:
     [[nodiscard]] ConfigDescription build_config_description(const int which) const {
         char *_title;
         const allocated_config_item_ptr config_items(
-            midend_get_config(me(), which, &_title), cfg_deleter
+            midend_get_config(me(), which, &_title)
         );
         const allocated_char_ptr title(_title);
 
@@ -1164,13 +1190,10 @@ private:
     [[nodiscard]] ConfigValues get_config_values(const int which) const {
         char *_title;
         const allocated_config_item_ptr config_items(
-            midend_get_config(me(), which, &_title), cfg_deleter
+            midend_get_config(me(), which, &_title)
         );
         const allocated_char_ptr title(_title);
-        const auto values = config_values_from_config(
-            config_items.get(), which != CFG_PREFS
-        );
-        return values;
+        return config_values_from_config(config_items.get(), which != CFG_PREFS);
     }
 
     [[nodiscard]] std::optional<std::string> set_config_values(
@@ -1178,16 +1201,15 @@ private:
     ) const {
         char *_title;
         const allocated_config_item_ptr config_items(
-            midend_get_config(me(), which, &_title), cfg_deleter
+            midend_get_config(me(), which, &_title)
         );
         const allocated_char_ptr title(_title);
 
-        std::optional<std::string> result = std::nullopt;
-        if (config_values_to_config(config_items.get(), values, which != CFG_PREFS)) {
-            if (const auto error = midend_set_config(me(), which, config_items.get()))
-                result = error;
+        if (!config_values_to_config(config_items.get(), values, which != CFG_PREFS)) {
+            return std::nullopt;
         }
-        return result;
+        const static_char_ptr error(midend_set_config(me(), which, config_items.get()));
+        return error.as_optional_string();
     }
 
 public:
@@ -1213,12 +1235,10 @@ public:
 
     [[nodiscard]] std::optional<std::string> loadPreferences(const Uint8Array &data) const {
         ReadBuffer buffer(data);
-        const auto error = midend_load_prefs(me(), ReadBuffer::read_callback, &buffer);
-        if (error) {
-            // midend_load_prefs returns a static string on error
-            return std::string(error);
-        }
-        return std::nullopt;
+        const static_char_ptr error(
+            midend_load_prefs(me(), ReadBuffer::read_callback, &buffer)
+        );
+        return error.as_optional_string();
     }
 
 /*
@@ -1226,21 +1246,21 @@ public:
  */
 
     [[nodiscard]] std::string getParams() const {
-        const auto encoded= midend_get_encoded_params(me());
-        const auto result = std::string(encoded);
-        sfree(encoded);
-        return result;
+        const allocated_char_ptr encoded(midend_get_encoded_params(me()));
+        return encoded.as_string();
     }
 
     // (This is not a property setter. It can return an error message.)
     [[nodiscard]] std::optional<std::string> setParams(
         const std::string &encodedParams
     ) const {
-        if (const auto error = midend_set_encoded_params(me(), encodedParams.c_str())) {
-            return std::string(error);
+        const static_char_ptr error(
+            midend_set_encoded_params(me(), encodedParams.c_str())
+        );
+        if (!error) {
+            notifyParamsChange();
         }
-        notifyParamsChange();
-        return std::nullopt;
+        return error.as_optional_string();
     }
 
     [[nodiscard]] PresetMenuEntryList getPresets() const {
@@ -1274,24 +1294,23 @@ public:
 
         // Get default config items and apply ConfigValues
         auto *default_params = ourgame->default_params();
-        const auto config_items = ourgame->configure(default_params);
+        const allocated_config_item_ptr config_items(ourgame->configure(default_params));
         midend_free_params(me(), default_params);
 
-        config_values_to_config(config_items, values, true);
+        config_values_to_config(config_items.get(), values, true);
 
         // Convert config items to params and encode
-        auto *params = ourgame->custom_params(config_items);
-        free_cfg(config_items);
+        auto *params = ourgame->custom_params(config_items.get());
 
         std::string result;
-        if (const auto error = ourgame->validate_params(params, true)) {
-            result.reserve(8 + strlen(error));
+        const static_char_ptr error(ourgame->validate_params(params, true));
+        if (error) {
+            result.reserve(8 + strlen(error.get()));
             result.append("#ERROR:");
-            result.append(error);
+            result.append(error.get());
         } else {
-            const auto encoded = midend_encode_params(me(), params);
-            result = std::string(encoded);
-            sfree(encoded);
+            const allocated_char_ptr encoded(midend_encode_params(me(), params));
+            result = encoded.as_string();
         }
         midend_free_params(me(), params);
         return result;
@@ -1300,30 +1319,24 @@ public:
     // Returns undefined if successful, else error message.
     // (This is not a property setter.)
     [[nodiscard]] std::optional<std::string> setGameId(const std::string &id) const {
-        auto result = midend_game_id(me(), id.c_str());
-        if (result == nullptr) {
+        const static_char_ptr error(midend_game_id(me(), id.c_str()));
+        if (!error) {
             // (midend_game_id will notify about game id change.
             // It deliberately does not alter the current params.)
             notifyGameStateChange();
         }
-        return result == nullptr ? std::nullopt : std::optional<std::string>(result);
+        return error.as_optional_string();
     }
 
     [[nodiscard]] std::string getCurrentGameId() const {
-        auto game_id = midend_get_game_id(me());
-        auto result = std::string(game_id);
-        sfree(game_id);
-        return result;
+        const allocated_char_ptr game_id(midend_get_game_id(me()));
+        return game_id.as_string();
     }
 
     [[nodiscard]] std::optional<std::string> getRandomSeed() const {
         // TODO: this can return non-printable characters -- maybe use a byte array?
-        auto random_seed = midend_get_random_seed(me());
-        auto result = random_seed == nullptr
-                          ? std::nullopt
-                          : std::optional<std::string>(std::string(random_seed));
-        sfree(random_seed);
-        return result;
+        const allocated_char_ptr random_seed(midend_get_random_seed(me()));
+        return random_seed.as_optional_string();
     }
 
     [[nodiscard]] bool getCanFormatAsText() const {
@@ -1332,22 +1345,16 @@ public:
     }
 
     [[nodiscard]] std::optional<std::string> formatAsText() const {
-        auto formatted = midend_text_format(me());
-        auto result = formatted == nullptr
-                          ? std::nullopt
-                          : std::optional<std::string>(std::string(formatted));
-        sfree(formatted);
-        return result;
+        const allocated_char_ptr formatted(midend_text_format(me()));
+        return formatted.as_optional_string();
     }
 
     [[nodiscard]] std::optional<std::string> solve() const {
-        auto error = midend_solve(me()); // not dynamically allocated
-        if (error == nullptr) {
+        const static_char_ptr error(midend_solve(me()));
+        if (!error) {
             notifyGameStateChange();
         }
-        return error == nullptr
-                   ? std::nullopt
-                   : std::optional(std::string(error));
+        return error.as_optional_string();
     }
 
     void undo() const {
@@ -1375,23 +1382,20 @@ public:
 
     [[nodiscard]] std::optional<std::string> loadGame(const Uint8Array &data) const {
         ReadBuffer buffer(data);
-        const auto error = midend_deserialise(me(), ReadBuffer::read_callback, &buffer);
-        if (error) {
-            // midend_deserialise returns a static string on error
-            return std::string(error);
+        const static_char_ptr error(midend_deserialise(me(), ReadBuffer::read_callback, &buffer));
+        if (!error) {
+            // Successful load; midend has already called notify_id_changes
+            notifyParamsChange(); // (may have changed; doesn't hurt to notify either way)
+            notifyGameStateChange();
         }
-        // Successful load; midend has already called notify_id_changes
-        notifyParamsChange(); // (may have changed; doesn't hurt to notify either way)
-        notifyGameStateChange();
-        return std::nullopt;
+        return error.as_optional_string();
     }
 
     [[nodiscard]] OptionalRect getCursorLocation() const {
         int x, y, w, h;
         if (midend_get_cursor_location(me(), &x, &y, &w, &h))
             return Rect(x, y, w, h);
-        else
-            return std::nullopt;
+        return std::nullopt;
     }
 
     // ???: int midend_tilesize(midend *me);
