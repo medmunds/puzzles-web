@@ -51,6 +51,93 @@ std::string slugify(const std::string& text) {
     return slug;
 }
 
+//
+// Smart pointers for C data types
+//
+
+static const auto sfree_deleter = [](auto* ptr) {
+    sfree(static_cast<void*>(ptr));
+};
+
+template<typename T>
+using allocated_ptr = std::unique_ptr<T, decltype(sfree_deleter)>;
+
+
+/**
+ * @brief A utility class to manage char* pointers returned by C APIs
+ *        that must be freed using sfree().
+ *
+ * This class uses std::unique_ptr internally to provide RAII for
+ * char* resources, ensuring automatic and safe deallocation.
+ */
+class allocated_char_ptr {
+    allocated_ptr<char> m_ptr;
+
+public:
+    /**
+     * @brief Constructs a AllocatedCharPtr object, taking ownership of the raw char*.
+     * @param raw_ptr The char* returned by a C API, to be freed with sfree().
+     */
+    explicit allocated_char_ptr(char* raw_ptr)
+        : m_ptr(raw_ptr, sfree_deleter) {}
+
+    // allocated_char_ptr is non-copyable to ensure unique ownership of the managed resource.
+    allocated_char_ptr(const allocated_char_ptr&) = delete;
+    allocated_char_ptr& operator=(const allocated_char_ptr&) = delete;
+
+    // Allow move operations for efficient transfer of ownership.
+    allocated_char_ptr(allocated_char_ptr&& other) noexcept = default;
+    allocated_char_ptr& operator=(allocated_char_ptr&& other) noexcept = default;
+
+    /**
+     * @brief Converts the managed char* to a std::string.
+     * @return A std::string. If the internal char* is nullptr, returns an empty string.
+     */
+    [[nodiscard]] std::string as_string() const {
+        if (m_ptr) {
+            return {m_ptr.get()};
+        }
+        return {}; // Return empty string if the raw pointer is nullptr
+    }
+
+    /**
+     * @brief Converts the managed char* to an optional std::string.
+     * @return An std::optional<std::string>. Returns std::nullopt if the internal char* is nullptr,
+     *         otherwise returns an optional containing the string.
+     */
+    [[nodiscard]] std::optional<std::string> as_optional_string() const {
+        if (m_ptr) {
+            return std::make_optional(std::string(m_ptr.get()));
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Provides access to the raw managed char* pointer.
+     * @warning Use with caution. The caller must not free this pointer directly.
+     * @return The raw char* pointer, or nullptr if none is managed.
+     */
+    [[nodiscard]] char* get() const {
+        return m_ptr.get();
+    }
+
+    /**
+     * @brief Checks if the CCharPtr object is currently managing a valid (non-nullptr) char*.
+     * @return true if managing a non-nullptr char*, false otherwise.
+     */
+    explicit operator bool() const noexcept {
+        return static_cast<bool>(m_ptr);
+    }
+};
+
+
+static const auto cfg_deleter = [](config_item* ptr) {
+    free_cfg(ptr);
+};
+
+using allocated_config_item_ptr = std::unique_ptr<config_item, decltype(cfg_deleter)>;
+
+
 // Converting std::vector to JS Array:
 //
 // We'd like to write `typedef std::vector<Foo> FooList`, and have FooList
@@ -500,17 +587,10 @@ struct NotifyGameIdChange {
 
     NotifyGameIdChange() = default;
 
-    explicit NotifyGameIdChange(midend *me) {
-        auto const game_id = midend_get_game_id(me);
-        currentGameId = std::string(game_id);
-        sfree(game_id);
-
-        auto const random_seed = midend_get_random_seed(me);
-        randomSeed = random_seed == nullptr
-                          ? std::nullopt
-                          : std::optional(std::string(random_seed));
-        sfree(random_seed);
-    }
+    explicit NotifyGameIdChange(midend *me)
+        : currentGameId(allocated_char_ptr(midend_get_game_id(me)).as_string()),
+          randomSeed(allocated_char_ptr(midend_get_random_seed(me)).as_optional_string())
+    {}
 };
 
 EMSCRIPTEN_DECLARE_VAL_TYPE(GameStatus);
@@ -555,11 +635,9 @@ struct NotifyParamsChange {
 
     NotifyParamsChange() = default;
 
-    explicit NotifyParamsChange(midend *me) {
-        auto const _params= midend_get_encoded_params(me);
-        params = std::string(_params);
-        sfree(_params);
-    }
+    explicit NotifyParamsChange(midend *me)
+        : params(allocated_char_ptr(midend_get_encoded_params(me)).as_string())
+    {}
 };
 
 EMSCRIPTEN_DECLARE_VAL_TYPE(NotifyStatusBarChangeType);
@@ -916,16 +994,15 @@ public:
         // midend_colours returns an allocated array of ncolours r,g,b values
         // (that is, 3 * ncolours floats long).
         int ncolours;
-        auto *colours = midend_colours(me(), &ncolours);
+        allocated_ptr<float> colours(midend_colours(me(), &ncolours), sfree_deleter);
         static_assert(
-            sizeof(Colour) == 3 * sizeof(*colours),
+            sizeof(Colour) == 3 * sizeof(float),
             "Colour doesn't match midend_colours layout"
         );
         auto colours_vec = std::vector<Colour>(ncolours);
         colours_vec.assign_range(
-            std::span(reinterpret_cast<Colour *>(colours), ncolours)
+            std::span(reinterpret_cast<Colour *>(colours.get()), ncolours)
         );
-        sfree(colours);
 
         defaultBackgroundIsValid = false;
         return val::array(colours_vec).as<ColourList>();
@@ -945,11 +1022,14 @@ private:
     }
 
     [[nodiscard]] ConfigDescription build_config_description(const int which) const {
-        char *title;
-        auto *config_items = midend_get_config(me(), which, &title);
+        char *_title;
+        const allocated_config_item_ptr config_items(
+            midend_get_config(me(), which, &_title), cfg_deleter
+        );
+        const allocated_char_ptr title(_title);
 
         auto config = val::object();
-        config.set("title", std::string(title));
+        config.set("title", title.as_string());
 
         // CFG_PREFS have keywords defined. CFG_SETTINGS and other CFG types
         // leave kw uninitialized; use the slugified name for them.
@@ -957,7 +1037,7 @@ private:
 
         auto items = val::object();
         // Process config items until we hit C_END
-        for (const config_item *config_item = config_items;
+        for (const config_item *config_item = config_items.get();
              config_item->type != C_END;
              config_item++) {
             auto item = val::object();
@@ -1002,9 +1082,6 @@ private:
             auto id = config_item_id(config_item, slug_ids);
             items.set(id, item);
         }
-
-        free_cfg(config_items);
-        sfree(title);
 
         config.set("items", items);
         return config.as<ConfigDescription>();
@@ -1085,26 +1162,31 @@ private:
     }
 
     [[nodiscard]] ConfigValues get_config_values(const int which) const {
-        char *title;
-        auto *config_items = midend_get_config(me(), which, &title);
-        const auto values = config_values_from_config(config_items, which != CFG_PREFS);
-        free_cfg(config_items);
-        sfree(title);
+        char *_title;
+        const allocated_config_item_ptr config_items(
+            midend_get_config(me(), which, &_title), cfg_deleter
+        );
+        const allocated_char_ptr title(_title);
+        const auto values = config_values_from_config(
+            config_items.get(), which != CFG_PREFS
+        );
         return values;
     }
 
     [[nodiscard]] std::optional<std::string> set_config_values(
         const int which, const ConfigValuesIn &values
     ) const {
-        char *title;
-        auto *config_items = midend_get_config(me(), which, &title);
+        char *_title;
+        const allocated_config_item_ptr config_items(
+            midend_get_config(me(), which, &_title), cfg_deleter
+        );
+        const allocated_char_ptr title(_title);
+
         std::optional<std::string> result = std::nullopt;
-        if (config_values_to_config(config_items, values, which != CFG_PREFS)) {
-            if (const auto error = midend_set_config(me(), which, config_items))
+        if (config_values_to_config(config_items.get(), values, which != CFG_PREFS)) {
+            if (const auto error = midend_set_config(me(), which, config_items.get()))
                 result = error;
         }
-        free_cfg(config_items);
-        sfree(title);
         return result;
     }
 
