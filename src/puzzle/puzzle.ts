@@ -1,4 +1,4 @@
-import { type Signal, computed, signal } from "@lit-labs/signals";
+import { type Signal, signal } from "@lit-labs/signals";
 import * as Comlink from "comlink";
 import { transfer } from "comlink";
 import {
@@ -99,8 +99,8 @@ export class Puzzle {
         update(this._canUndo, message.canUndo);
         update(this._canRedo, message.canRedo);
         break;
-      case "preset-id-change":
-        update(this._currentPresetId, message.presetId);
+      case "params-change":
+        update(this._currentParams, message.params);
         break;
       case "status-bar-change":
         update(this._statusbarText, message.statusBarText);
@@ -124,13 +124,7 @@ export class Puzzle {
   private _totalMoves = signal<number>(0);
   private _canUndo = signal(false);
   private _canRedo = signal(false);
-  private _currentPresetId = signal<number | undefined>(undefined);
-  private _currentParams = computed<string | undefined>(
-    () =>
-      // The encoded params are in randomSeed before '#' and currentGameId before ':'.
-      // The randomSeed version is more descriptive if available (e.g, includes difficulty).
-      this.randomSeed?.split("#", 1).at(0) ?? this.currentGameId?.split(":", 1).at(0),
-  );
+  private _currentParams = signal<string>("");
   private _currentGameId = signal<string | undefined>(undefined);
   private _randomSeed = signal<string | undefined>(undefined);
   private _canFormatAsText = signal(false);
@@ -160,11 +154,7 @@ export class Puzzle {
     return this._canRedo.get();
   }
 
-  public get currentPresetId(): number | undefined {
-    return this._currentPresetId.get();
-  }
-
-  public get currentParams(): string | undefined {
+  public get currentParams(): string {
     return this._currentParams.get();
   }
 
@@ -205,10 +195,6 @@ export class Puzzle {
     return await this.workerPuzzle.solve();
   }
 
-  public async setPreset(id: number): Promise<void> {
-    await this.workerPuzzle.setPreset(id);
-  }
-
   public async processKey(key: number): Promise<boolean> {
     return await this.workerPuzzle.processKey(key);
   }
@@ -219,6 +205,14 @@ export class Puzzle {
 
   public async requestKeys(): Promise<KeyLabel[]> {
     return await this.workerPuzzle.requestKeys();
+  }
+
+  public async getParams(): Promise<string> {
+    return await this.workerPuzzle.getParams();
+  }
+
+  public async setParams(params: string): Promise<string | undefined> {
+    return await this.workerPuzzle.setParams(params);
   }
 
   public async getPresets(): Promise<PresetMenuEntry[]> {
@@ -235,6 +229,10 @@ export class Puzzle {
 
   public async setCustomParams(values: ConfigValues): Promise<string | undefined> {
     return await this.workerPuzzle.setCustomParams(values);
+  }
+
+  public async encodeCustomParams(values: ConfigValues): Promise<string> {
+    return await this.workerPuzzle.encodeCustomParams(values);
   }
 
   public async getPreferencesConfig(): Promise<ConfigDescription> {

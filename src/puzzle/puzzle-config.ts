@@ -329,6 +329,22 @@ export class PuzzleCustomParams extends PuzzleConfig {
   protected override async setValues(values: ConfigValues) {
     return this.puzzle?.setCustomParams(values);
   }
+
+  /**
+   * Return encoded params for current dialog values
+   */
+  async getParams(): Promise<string | undefined> {
+    if (this.puzzle) {
+      const result = await this.puzzle.encodeCustomParams({
+        ...this.values,
+        ...this.changes,
+      });
+      if (!result.startsWith("#ERROR:")) {
+        return result;
+      }
+      console.warn(`PuzzleCustomParams.getParams: ${result}`);
+    }
+  }
 }
 
 /**

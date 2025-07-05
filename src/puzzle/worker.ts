@@ -110,10 +110,6 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
     return this.frontend.solve();
   }
 
-  setPreset(id: number): void {
-    this.frontend.setPreset(id);
-  }
-
   processKey(key: number): boolean {
     return this.frontend.processKey(0, 0, key);
   }
@@ -124,6 +120,14 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
 
   requestKeys(): KeyLabel[] {
     return this.frontend.requestKeys();
+  }
+
+  getParams(): string {
+    return this.frontend.getParams();
+  }
+
+  setParams(params: string): string | undefined {
+    return this.frontend.setParams(params);
   }
 
   getPresets(): PresetMenuEntry[] {
@@ -140,6 +144,10 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
 
   setCustomParams(values: ConfigValues): string | undefined {
     return this.frontend.setCustomParams(values);
+  }
+
+  encodeCustomParams(values: ConfigValues): string {
+    return this.frontend.encodeCustomParams(values);
   }
 
   getPreferencesConfig(): ConfigDescription {

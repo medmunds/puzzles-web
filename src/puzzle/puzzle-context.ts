@@ -18,7 +18,7 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
   @property({ type: String, reflect: true })
   gameid?: string;
 
-  @property({ type: String })
+  @property({ type: String, reflect: true })
   params?: string;
 
   @provide({ context: puzzleContext })
@@ -59,7 +59,14 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
       await this._loadPuzzle();
     }
     // Observe gameid and currentMove for dispatching puzzle-game-state-change
-    this.gameid = this.puzzle?.currentGameId;
+    if (this.puzzle) {
+      if (this.puzzle.currentGameId) {
+        this.gameid = this.puzzle.currentGameId;
+      }
+      if (this.puzzle.currentParams) {
+        this.params = this.puzzle.currentParams;
+      }
+    }
     this.currentMove = this.puzzle?.currentMove;
   }
 
@@ -83,9 +90,9 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
     if (!event.defaultPrevented) {
       // Set up the game based on attributes
       if (this.params) {
-        const preset = Number.parseInt(this.params, 10);
-        if (!Number.isNaN(preset)) {
-          await this._puzzle.setPreset(preset);
+        const error = await this._puzzle.setParams(this.params);
+        if (error) {
+          throw new Error(`Invalid puzzle-view params="${this.params}": ${error}`);
         }
       }
 

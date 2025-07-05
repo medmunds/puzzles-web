@@ -38,15 +38,11 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   @property({ type: Boolean })
   open = false;
 
-  // TODO: @computed()
-  get currentPresetId(): string {
-    return this.puzzle?.currentPresetId?.toString() ?? "custom";
-  }
-
-  // TODO: @computed()
+  // This should be computed, but lit-labs/signals @computed
+  // doesn't react to changes in Lit's reactive @state.
   get currentPresetLabel(): string {
-    const presetId = this.puzzle?.currentPresetId ?? -1;
-    const menuEntry = this.presets.find((preset) => preset.id === presetId);
+    const params = this.puzzle?.currentParams ?? "";
+    const menuEntry = this.presets.find((preset) => preset.params === params);
     return menuEntry?.title ?? "Custom type";
   }
 
@@ -103,22 +99,21 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   }
 
   private renderPresetMenuItems(): TemplateResult[] {
-    // Items for sl-dropdown menu
     const result: TemplateResult[] = [];
-    const currentPresetId = this.currentPresetId;
+    const currentParams = this.puzzle?.currentParams;
+    const isCustom = !this.presets.some((preset) => preset.params === currentParams);
 
-    for (const { submenu, title, id } of this.presets) {
+    for (const { submenu, title, params } of this.presets) {
       if (submenu) {
         result.push(html`<sl-divider></sl-divider>`);
         result.push(html`<sl-menu-label>${title}</sl-menu-label>`);
       } else {
-        const idString = id.toString();
         result.push(html`
           <sl-menu-item
               type="checkbox"
               role="menuitemradio"
-              ?checked=${idString === currentPresetId}
-              value=${idString}
+              ?checked=${params === currentParams}
+              value=${params}
             >${title}</sl-menu-item>
         `);
       }
@@ -129,8 +124,8 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
       <sl-menu-item 
           type="checkbox"
           role="menuitemradio"
-          ?checked=${currentPresetId === "custom"} 
-          value="custom"
+          ?checked=${isCustom} 
+          value="#custom"
         >Custom type…</sl-menu-item>
     `);
 
@@ -161,21 +156,24 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   private async handleDropdownSelect(event: CustomEvent<{ item: { value: string } }>) {
     if (!this.puzzle) return;
     const value = event.detail.item.value;
-    if (value === "custom") {
+    if (value === "#custom") {
       // sl-menu automatically toggles checked, which results in custom getting
       // stuck in checked state even if user cancels dialog or matches some other
       // preset. Undo the automatic checked to prevent that.
       const customItem = this.shadowRoot?.querySelector<SlMenuItem>(
-        'sl-menu-item[value="custom"]',
+        'sl-menu-item[value="#custom"]',
       );
       if (customItem) {
         customItem.checked = false;
       }
       await this.launchCustomDialog();
     } else {
-      const preset = Number.parseInt(value, 10);
-      if (preset >= 0 && preset !== this.puzzle.currentPresetId) {
-        await this.puzzle.setPreset(preset);
+      if (value !== this.puzzle.currentParams) {
+        const error = await this.puzzle.setParams(value);
+        if (error) {
+          // This shouldn't happen: the presets list shouldn't include invalid params.
+          throw new Error(`Error on setParams to preset "${value}": ${error}`);
+        }
         await this.puzzle.newGame();
       }
     }

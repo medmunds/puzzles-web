@@ -547,17 +547,18 @@ struct NotifyGameStateChange {
     }
 };
 
-EMSCRIPTEN_DECLARE_VAL_TYPE(NotifyPresetIdChangeType);
-VAL_CONSTANT(NotifyPresetIdChangeType, PRESET_ID_CHANGE, "preset-id-change")
-struct NotifyPresetIdChange {
-    NotifyPresetIdChangeType type = PRESET_ID_CHANGE();
-    std::optional<int> presetId = std::nullopt;
+EMSCRIPTEN_DECLARE_VAL_TYPE(NotifyParamsChangeType);
+VAL_CONSTANT(NotifyParamsChangeType, PARAMS_CHANGE, "params-change")
+struct NotifyParamsChange {
+    NotifyParamsChangeType type = PARAMS_CHANGE();
+    std::string params;
 
-    NotifyPresetIdChange() = default;
+    NotifyParamsChange() = default;
 
-    explicit NotifyPresetIdChange(midend *me) {
-        auto const preset_id= midend_which_preset(me);
-        this->presetId = preset_id < 0 ? std::nullopt : std::optional(preset_id);
+    explicit NotifyParamsChange(midend *me) {
+        auto const _params= midend_get_encoded_params(me);
+        params = std::string(_params);
+        sfree(_params);
     }
 };
 
@@ -591,10 +592,10 @@ EMSCRIPTEN_BINDINGS(notifiations) {
         .field("canUndo", &NotifyGameStateChange::canUndo)
         .field("canRedo", &NotifyGameStateChange::canRedo);
 
-    register_type<NotifyPresetIdChangeType>("\"preset-id-change\"");
-    value_object<NotifyPresetIdChange>("NotifyPresetIdChange")
-        .field("type", &NotifyPresetIdChange::type)
-        .field("presetId", &NotifyPresetIdChange::presetId);
+    register_type<NotifyParamsChangeType>("\"params-change\"");
+    value_object<NotifyParamsChange>("NotifyParamsChange")
+        .field("type", &NotifyParamsChange::type)
+        .field("params", &NotifyParamsChange::params);
 
     register_type<NotifyStatusBarChangeType>("\"status-bar-change\"");
     value_object<NotifyStatusBarChange>("NotifyStatusBarChange")
@@ -606,7 +607,7 @@ EMSCRIPTEN_BINDINGS(notifiations) {
         (message:
             | NotifyGameIdChange
             | NotifyGameStateChange
-            | NotifyPresetIdChange
+            | NotifyParamsChange
             | NotifyStatusBarChange
         ) => void
     )");
@@ -717,24 +718,27 @@ EMSCRIPTEN_DECLARE_VAL_TYPE(PresetMenuEntryList);
 typedef std::optional<PresetMenuEntryList> OptionalPresetMenuEntryList;
 struct PresetMenuEntry {
     // TODO: these fields really should be const, but embind value_object doesn't like that
-    int id;
     std::string title;
-    OptionalPresetMenuEntryList submenu;
+    std::string params;
+    OptionalPresetMenuEntryList submenu = std::nullopt;
 
-    PresetMenuEntry() : id(-1), submenu(std::nullopt) {}
+    PresetMenuEntry() = default;
 
-    explicit PresetMenuEntry(const preset_menu_entry &preset) : id(preset.id),
+    explicit PresetMenuEntry(midend *me, const preset_menu_entry &preset) :
         title(preset.title),
+        params(midend_get_encoded_params_for_preset(me, preset.id)),
         submenu(
             preset.submenu == nullptr
                 ? std::nullopt
-                : OptionalPresetMenuEntryList(build_menu(preset.submenu))
+                : OptionalPresetMenuEntryList(build_menu(me, preset.submenu))
         ) {}
 
-    static PresetMenuEntryList build_menu(const preset_menu *menu) {
+    static PresetMenuEntryList build_menu(midend *me, const preset_menu *menu) {
         auto entries = std::span(menu->entries, menu->n_entries);
         auto menu_vec = std::vector<PresetMenuEntry>();
-        for (auto &entry: entries) { menu_vec.emplace_back(entry); }
+        for (auto &entry: entries) {
+            menu_vec.emplace_back(me, entry);
+        }
         return val::array(menu_vec).as<PresetMenuEntryList>();
     }
 };
@@ -791,10 +795,8 @@ public:
 
         midend_request_id_changes(me(), notify_id_changes, this);
 
-        // Notify the default preset ID.
-        // (midend_which_preset isn't valid until midend_get_presets has been called.)
-        midend_get_presets(me(), nullptr);
-        this->notifyPresetIdChange();
+        // Notify the default params.
+        this->notifyParamsChange();
     }
 
     void setDrawing(Drawing *drawing) { this->drawing = drawing; }
@@ -815,8 +817,8 @@ private:
         this->notifyChange(message);
     }
 
-    void notifyPresetIdChange() const {
-        auto message = NotifyPresetIdChange(me());
+    void notifyParamsChange() const {
+        auto message = NotifyParamsChange(me());
         this->notifyChange(message);
     }
 
@@ -838,14 +840,6 @@ public:
     [[nodiscard]] bool getNeedsRightButton() const {
         return midend_which_game(me())->flags & REQUIRE_RBUTTON;
     }
-
-    // We don't expose:
-    //   void midend_set_params(midend *me, game_params *params);
-    //   game_params *midend_get_params(midend *me);
-    // Although game_params* can be wrapped in a ClassHandle, it's added complexity
-    // and doesn't really offer any frontend value. (There's no way to serialise
-    // or restore game_params directly.) Use setPreset(id) to set params for a
-    // preset menu entry, or setGameId(customTypePrefix) to restore custom params.
 
     [[nodiscard]] Size size(
         const Size &maxSize, bool isUserSize, double devicePixelRatio
@@ -941,51 +935,31 @@ public:
 
     void timer(float tplus) const { midend_timer(me(), tplus); }
 
-    [[nodiscard]] PresetMenuEntryList getPresets() const {
-        auto *presets = midend_get_presets(me(), nullptr);
-        return PresetMenuEntry::build_menu(presets);
-    }
-
-    [[nodiscard]] std::optional<int> getCurrentPreset() const {
-        auto result = midend_which_preset(me());
-        return result < 0 ? std::nullopt : std::optional<int>(result);
-    }
-
-    // Use the game_params for the given preset menu entry
-    void setPreset(int preset_id) const {
-        const auto preset_menu = midend_get_presets(me(), nullptr);
-        if (const auto params = preset_menu_lookup_by_id(preset_menu, preset_id)) {
-            midend_set_params(me(), params);
-            this->notifyPresetIdChange();
-        }
-        // TODO: else throw? return an error string?
-    }
-
     [[nodiscard]] bool getWantsStatusbar() const {
         return midend_wants_statusbar(me());
     }
 
 private:
-    static std::string config_item_id(const int which, const config_item *item) {
-        // CFG_PREFS have keywords defined.
-        if (which == CFG_PREFS) {
-            return item->kw;
-        }
-        // CFG_SETTINGS and other CFG types don't use kw (and leave it uninitialized).
-        // Use the slugified name instead.
-        return slugify(item->name);
+    static std::string config_item_id(const config_item *item, const bool slug_ids) {
+        return slug_ids ? slugify(item->name) : item->kw;
     }
 
     [[nodiscard]] ConfigDescription build_config_description(const int which) const {
-        char *wintitle;
-        auto *config_items = midend_get_config(me(), which, &wintitle);
+        char *title;
+        auto *config_items = midend_get_config(me(), which, &title);
 
         auto config = val::object();
-        config.set("title", std::string(wintitle));
+        config.set("title", std::string(title));
+
+        // CFG_PREFS have keywords defined. CFG_SETTINGS and other CFG types
+        // leave kw uninitialized; use the slugified name for them.
+        auto const slug_ids = which != CFG_PREFS;
 
         auto items = val::object();
         // Process config items until we hit C_END
-        for (config_item *config_item = config_items; config_item->type != C_END; config_item++) {
+        for (const config_item *config_item = config_items;
+             config_item->type != C_END;
+             config_item++) {
             auto item = val::object();
             item.set("name", std::string(config_item->name));
 
@@ -1025,24 +999,25 @@ private:
                     break;
             }
 
-            auto id = config_item_id(which, config_item);
+            auto id = config_item_id(config_item, slug_ids);
             items.set(id, item);
         }
 
         free_cfg(config_items);
-        sfree(wintitle);
+        sfree(title);
 
         config.set("items", items);
         return config.as<ConfigDescription>();
     }
 
-    [[nodiscard]] ConfigValues get_config_values(const int which) const {
-        char *wintitle;
-        auto *config_items = midend_get_config(me(), which, &wintitle);
-
+    // Converts config_items to ConfigValues
+    [[nodiscard]] static ConfigValues config_values_from_config(
+        const config_item *config_items, const bool slug_ids
+    ) {
         auto values = val::object();
-        for (config_item *config_item = config_items; config_item->type != C_END; config_item++) {
-            auto id = config_item_id(which, config_item);
+        for (const config_item *config_item = config_items; config_item->type != C_END;
+             config_item++) {
+            auto id = config_item_id(config_item, slug_ids);
             switch (config_item->type) {
                 case C_STRING:
                     values.set(id, std::string(config_item->u.string.sval));
@@ -1057,20 +1032,19 @@ private:
                     break;
             }
         }
-
-        free_cfg(config_items);
-        sfree(wintitle);
         return values.as<ConfigValues>();
     }
 
-    [[nodiscard]] std::optional<std::string> set_config_values(
-        const int which, const ConfigValuesIn &values
-    ) const {
-        char *wintitle;
-        auto *config_items = midend_get_config(me(), which, &wintitle);
-
-        for (config_item *config_item = config_items; config_item->type != C_END; config_item++) {
-            auto id = config_item_id(which, config_item);
+    // Applies non-null/undefined ConfigValues to matching config_items.
+    // Returns true if any changes applied.
+    static bool config_values_to_config(
+        config_item *config_items, const ConfigValuesIn &values, const bool slug_ids
+    ) {
+        bool changed = false;
+        for (config_item *config_item = config_items;
+             config_item->type != C_END;
+             config_item++) {
+            auto id = config_item_id(config_item, slug_ids);
             auto value = values[id];
             if (value.isUndefined() || value.isNull()) {
                 // Keep current value for this config_item
@@ -1078,40 +1052,75 @@ private:
             }
 
             switch (config_item->type) {
-                case C_STRING:
-                    sfree(config_item->u.string.sval); // free original value
-                    config_item->u.string.sval = dupstr(value.as<std::string>().c_str());
+                case C_STRING: {
+                    const auto str_val = value.as<std::string>();
+                    if (str_val != config_item->u.string.sval) {
+                        sfree(config_item->u.string.sval); // free original value
+                        config_item->u.string.sval = dupstr(str_val.c_str());
+                        changed = true;
+                    }
                     break;
-                case C_BOOLEAN:
-                    config_item->u.boolean.bval = value.as<bool>();
+                }
+                case C_BOOLEAN: {
+                    const auto bool_val = value.as<bool>();
+                    if (bool_val != config_item->u.boolean.bval) {
+                        config_item->u.boolean.bval = bool_val;
+                        changed = true;
+                    }
                     break;
-                case C_CHOICES:
-                    config_item->u.choices.selected = value.as<int>();
+                }
+                case C_CHOICES: {
+                    const auto int_val = value.as<int>();
+                    if (int_val != config_item->u.choices.selected) {
+                        config_item->u.choices.selected = int_val;
+                        changed = true;
+                    }
                     break;
+                }
                 default:
                     break;
             }
         }
+        return changed;
+    }
 
-        auto result = midend_set_config(me(), which, config_items);
+    [[nodiscard]] ConfigValues get_config_values(const int which) const {
+        char *title;
+        auto *config_items = midend_get_config(me(), which, &title);
+        const auto values = config_values_from_config(config_items, which != CFG_PREFS);
         free_cfg(config_items);
-        sfree(wintitle);
-        return result == nullptr ? std::nullopt : std::optional<std::string>(result);
+        sfree(title);
+        return values;
+    }
+
+    [[nodiscard]] std::optional<std::string> set_config_values(
+        const int which, const ConfigValuesIn &values
+    ) const {
+        char *title;
+        auto *config_items = midend_get_config(me(), which, &title);
+        std::optional<std::string> result = std::nullopt;
+        if (config_values_to_config(config_items, values, which != CFG_PREFS)) {
+            if (const auto error = midend_set_config(me(), which, config_items))
+                result = error;
+        }
+        free_cfg(config_items);
+        sfree(title);
+        return result;
     }
 
 public:
     [[nodiscard]] ConfigDescription getPreferencesConfig() const {
-        return this->build_config_description(CFG_PREFS);
+        return build_config_description(CFG_PREFS);
     }
 
     [[nodiscard]] ConfigValues getPreferences() const {
-        return this->get_config_values(CFG_PREFS);
+        return get_config_values(CFG_PREFS);
     }
 
     [[nodiscard]] std::optional<std::string> setPreferences(
         const ConfigValuesIn &values
     ) const {
-        return this->set_config_values(CFG_PREFS, values);
+        return set_config_values(CFG_PREFS, values);
     }
 
     [[nodiscard]] Uint8Array savePreferences() const {
@@ -1130,21 +1139,79 @@ public:
         return std::nullopt;
     }
 
+/*
+ * Params
+ */
+
+    [[nodiscard]] std::string getParams() const {
+        const auto encoded= midend_get_encoded_params(me());
+        const auto result = std::string(encoded);
+        sfree(encoded);
+        return result;
+    }
+
+    // (This is not a property setter. It can return an error message.)
+    [[nodiscard]] std::optional<std::string> setParams(
+        const std::string &encodedParams
+    ) const {
+        if (const auto error = midend_set_encoded_params(me(), encodedParams.c_str())) {
+            return std::string(error);
+        }
+        notifyParamsChange();
+        return std::nullopt;
+    }
+
+    [[nodiscard]] PresetMenuEntryList getPresets() const {
+        const auto *presets = midend_get_presets(me(), nullptr);
+        return PresetMenuEntry::build_menu(me(), presets);
+    }
+
     [[nodiscard]] ConfigDescription getCustomParamsConfig() const {
-        return this->build_config_description(CFG_SETTINGS);
+        return build_config_description(CFG_SETTINGS);
     }
 
     [[nodiscard]] ConfigValues getCustomParams() const {
-        return this->get_config_values(CFG_SETTINGS);
+        return get_config_values(CFG_SETTINGS);
     }
 
     [[nodiscard]] std::optional<std::string> setCustomParams(
         const ConfigValuesIn &values
     ) const {
-        auto result = this->set_config_values(CFG_SETTINGS, values);
-        if (result == std::nullopt) {
-            this->notifyPresetIdChange();
+        const auto error = set_config_values(CFG_SETTINGS, values);
+        if (error == std::nullopt)
+            notifyParamsChange();
+        return error;
+    }
+
+    // Return encoded params representing values or "#ERROR:..." if result
+    // is invalid. Makes no changes to the midend or current game state.
+    [[nodiscard]] std::string encodeCustomParams(
+        const ConfigValuesIn &values
+    ) const {
+        const auto ourgame = midend_which_game(me());
+
+        // Get default config items and apply ConfigValues
+        auto *default_params = ourgame->default_params();
+        const auto config_items = ourgame->configure(default_params);
+        midend_free_params(me(), default_params);
+
+        config_values_to_config(config_items, values, true);
+
+        // Convert config items to params and encode
+        auto *params = ourgame->custom_params(config_items);
+        free_cfg(config_items);
+
+        std::string result;
+        if (const auto error = ourgame->validate_params(params, true)) {
+            result.reserve(8 + strlen(error));
+            result.append("#ERROR:");
+            result.append(error);
+        } else {
+            const auto encoded = midend_encode_params(me(), params);
+            result = std::string(encoded);
+            sfree(encoded);
         }
+        midend_free_params(me(), params);
         return result;
     }
 
@@ -1154,7 +1221,7 @@ public:
         auto result = midend_game_id(me(), id.c_str());
         if (result == nullptr) {
             // (midend_game_id will notify about game id change.
-            // It deliberately does not alter the current preset type.)
+            // It deliberately does not alter the current params.)
             this->notifyGameStateChange();
         }
         return result == nullptr ? std::nullopt : std::optional<std::string>(result);
@@ -1232,7 +1299,7 @@ public:
             return std::string(error);
         }
         // Successful load; midend has already called notify_id_changes
-        notifyPresetIdChange(); // (may have changed; doesn't hurt to notify either way)
+        notifyParamsChange(); // (may have changed; doesn't hurt to notify either way)
         notifyGameStateChange();
         return std::nullopt;
     }
@@ -1295,8 +1362,8 @@ EMSCRIPTEN_BINDINGS(frontend) {
     register_type<Uint8Array>("Uint8Array");
 
     value_object<PresetMenuEntry>("PresetMenuEntry")
-        .field("id", &PresetMenuEntry::id)
         .field("title", &PresetMenuEntry::title)
+        .field("params", &PresetMenuEntry::params)
         .field("submenu", &PresetMenuEntry::submenu);
 
     register_type<PresetMenuEntryList>("PresetMenuEntry[]");
@@ -1344,18 +1411,19 @@ EMSCRIPTEN_BINDINGS(frontend) {
         .function("getColourPalette(defaultBackground)", &frontend::getColourPalette)
         .function("freezeTimer(tprop)", &frontend::freezeTimer)
         .function("timer(tplus)", &frontend::timer)
-        .function("getPresets", &frontend::getPresets)
-        .property("currentPreset", &frontend::getCurrentPreset)
-        .function("setPreset(id)", &frontend::setPreset)
         .property("wantsStatusbar", &frontend::getWantsStatusbar)
         .function("getPreferencesConfig", &frontend::getPreferencesConfig)
         .function("getPreferences", &frontend::getPreferences)
         .function("setPreferences(values)", &frontend::setPreferences)
         .function("savePreferences", &frontend::savePreferences)
         .function("loadPreferences(data)", &frontend::loadPreferences)
+        .function("getParams", &frontend::getParams)
+        .function("setParams(params)", &frontend::setParams)
+        .function("getPresets", &frontend::getPresets)
         .function("getCustomParamsConfig", &frontend::getCustomParamsConfig)
-        .function("getCustomParams", &frontend::getCustomParams)
+        .function("getCustomParams()", &frontend::getCustomParams)
         .function("setCustomParams(values)", &frontend::setCustomParams)
+        .function("encodeCustomParams(values)", &frontend::encodeCustomParams)
         .function("setGameId(id)", &frontend::setGameId)
         .property("currentGameId", &frontend::getCurrentGameId)
         .property("randomSeed", &frontend::getRandomSeed)

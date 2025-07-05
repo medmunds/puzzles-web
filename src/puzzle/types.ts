@@ -9,7 +9,7 @@ import type {
   MainModule,
   NotifyGameIdChange,
   NotifyGameStateChange,
-  NotifyPresetIdChange,
+  NotifyParamsChange,
   NotifyStatusBarChange,
   Point,
   Size,
@@ -25,7 +25,7 @@ export type {
   FrontendConstructorArgs,
   NotifyGameIdChange,
   NotifyGameStateChange,
-  NotifyPresetIdChange,
+  NotifyParamsChange,
   NotifyStatusBarChange,
   KeyLabel,
   Point,
@@ -41,7 +41,7 @@ export type ConfigValues = ReturnType<Frontend["getPreferences"]>;
 export type ChangeNotification =
   | NotifyGameIdChange
   | NotifyGameStateChange
-  | NotifyPresetIdChange
+  | NotifyParamsChange
   | NotifyStatusBarChange;
 
 export type GameStatus = NotifyGameStateChange["status"];
