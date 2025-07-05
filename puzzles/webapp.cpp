@@ -502,11 +502,11 @@ struct NotifyGameIdChange {
 
     explicit NotifyGameIdChange(midend *me) {
         auto const game_id = midend_get_game_id(me);
-        this->currentGameId = std::string(game_id);
+        currentGameId = std::string(game_id);
         sfree(game_id);
 
         auto const random_seed = midend_get_random_seed(me);
-        this->randomSeed = random_seed == nullptr
+        randomSeed = random_seed == nullptr
                           ? std::nullopt
                           : std::optional(std::string(random_seed));
         sfree(random_seed);
@@ -796,10 +796,10 @@ public:
         midend_request_id_changes(me(), notify_id_changes, this);
 
         // Notify the default params.
-        this->notifyParamsChange();
+        notifyParamsChange();
     }
 
-    void setDrawing(Drawing *drawing) { this->drawing = drawing; }
+    void setDrawing(Drawing *_drawing) { drawing = _drawing; }
 
 private:
     // midend_request_id_changes callback
@@ -809,17 +809,17 @@ private:
 
     void notifyGameIdChange() const {
         auto message = NotifyGameIdChange(me());
-        this->notifyChange(message);
+        notifyChange(message);
     }
 
     void notifyGameStateChange() const {
         auto message = NotifyGameStateChange(me());
-        this->notifyChange(message);
+        notifyChange(message);
     }
 
     void notifyParamsChange() const {
         auto message = NotifyParamsChange(me());
-        this->notifyChange(message);
+        notifyChange(message);
     }
 
 public:
@@ -854,12 +854,12 @@ public:
 
     void newGame() const {
         midend_new_game(me()); // will callback to notify_id_changes
-        this->notifyGameStateChange();
+        notifyGameStateChange();
     }
 
     void restartGame() const {
         midend_restart_game(me());
-        this->notifyGameStateChange();
+        notifyGameStateChange();
     }
 
     /**
@@ -873,7 +873,7 @@ public:
             // Skip state change notification on dragging -- it overwhelms the UI.
             // TODO: maybe throttle instead of skipping altogether?
             if (!IS_MOUSE_DRAG(button)) {
-                this->notifyGameStateChange();
+                notifyGameStateChange();
             }
         }
         // PKR_QUIT means the midend recognized the 'Q' key or similar; it has
@@ -897,21 +897,21 @@ public:
         return midend_current_key_label(me(), button);
     }
 
-    [[nodiscard]] std::string getStatusbarText() const { return this->statusbarText; }
+    [[nodiscard]] std::string getStatusbarText() const { return statusbarText; }
 
     void forceRedraw() const {
-        if (this->drawing != nullptr)
+        if (drawing != nullptr)
             midend_force_redraw(me());
     }
 
     void redraw() const {
-        if (this->drawing != nullptr)
+        if (drawing != nullptr)
             midend_redraw(me());
     }
 
-    [[nodiscard]] ColourList getColourPalette(const Colour& defaultBackground) {
-        this->defaultBackground = defaultBackground;
-        this->defaultBackgroundIsValid = true;
+    [[nodiscard]] ColourList getColourPalette(const Colour& _defaultBackground) {
+        defaultBackground = _defaultBackground;
+        defaultBackgroundIsValid = true;
 
         // midend_colours returns an allocated array of ncolours r,g,b values
         // (that is, 3 * ncolours floats long).
@@ -927,7 +927,7 @@ public:
         );
         sfree(colours);
 
-        this->defaultBackgroundIsValid = false;
+        defaultBackgroundIsValid = false;
         return val::array(colours_vec).as<ColourList>();
     }
 
@@ -1222,7 +1222,7 @@ public:
         if (result == nullptr) {
             // (midend_game_id will notify about game id change.
             // It deliberately does not alter the current params.)
-            this->notifyGameStateChange();
+            notifyGameStateChange();
         }
         return result == nullptr ? std::nullopt : std::optional<std::string>(result);
     }
@@ -1261,7 +1261,7 @@ public:
     [[nodiscard]] std::optional<std::string> solve() const {
         auto error = midend_solve(me()); // not dynamically allocated
         if (error == nullptr) {
-            this->notifyGameStateChange();
+            notifyGameStateChange();
         }
         return error == nullptr
                    ? std::nullopt
@@ -1270,13 +1270,13 @@ public:
 
     void undo() const {
         if (midend_process_key(me(), 0, 0, UI_UNDO) == PKR_SOME_EFFECT) {
-            this->notifyGameStateChange();
+            notifyGameStateChange();
         }
     }
 
     void redo() const {
         if (midend_process_key(me(), 0, 0, UI_REDO) == PKR_SOME_EFFECT) {
-            this->notifyGameStateChange();
+            notifyGameStateChange();
         }
     }
 
@@ -1323,18 +1323,18 @@ public:
     //
 
     void activate_timer() const {
-        (void) this->activateTimer();
+        (void) activateTimer();
     }
 
     void deactivate_timer() const {
-        (void) this->deactivateTimer();
+        (void) deactivateTimer();
     }
 
     void frontend_default_colour(float *output) const {
-        assert(this->defaultBackgroundIsValid); // else not in getColourPalette()
-        *output++ = this->defaultBackground.r;
-        *output++ = this->defaultBackground.g;
-        *output = this->defaultBackground.b;
+        assert(defaultBackgroundIsValid); // else not in getColourPalette()
+        *output++ = defaultBackground.r;
+        *output++ = defaultBackground.g;
+        *output = defaultBackground.b;
     }
 
     //
@@ -1342,9 +1342,9 @@ public:
     //
 
     void status_bar(const char *text) {
-        this->statusbarText = text;
+        statusbarText = text;
         auto notification = NotifyStatusBarChange(text);
-        this->notifyChange(notification);
+        notifyChange(notification);
     }
 
     [[nodiscard]] char *text_fallback(const char *const *strings, int nstrings) const {
@@ -1353,7 +1353,7 @@ public:
         for (const auto *str: std::span(strings, nstrings))
             val_strings.emplace_back(val::u8string(str));
         auto string_list = val::array(val_strings).as<StringList>();
-        const auto result = this->textFallback(string_list).as<std::string>();
+        const auto result = textFallback(string_list).as<std::string>();
         return dupstr(result.c_str());
     }
 };
