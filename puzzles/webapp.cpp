@@ -158,11 +158,6 @@ public:
     explicit allocated_float_ptr(float* raw_ptr) : allocated_ptr_base(raw_ptr) {}
 };
 
-class allocated_config_item_ptr: public allocated_ptr_base<config_item, free_cfg> {
-public:
-    explicit allocated_config_item_ptr(config_item* raw_ptr) : allocated_ptr_base(raw_ptr) {}
-};
-
 
 // Converting std::vector to JS Array:
 //
@@ -813,6 +808,94 @@ public:
 };
 
 /*
+ * Wrappers for config_item lists and game_params lists,
+ * adding RAII memory management and other conveniences.
+ */
+
+class allocated_config_item_ptr: public allocated_ptr_base<config_item, free_cfg> {
+public:
+    explicit allocated_config_item_ptr(config_item *raw_ptr) : allocated_ptr_base(raw_ptr) {}
+};
+
+class wrapped_config_items {
+public:
+    const int which;
+    // ReSharper disable once CppDFANotInitializedField: false positive on static builder
+    const allocated_char_ptr title;
+    const allocated_config_item_ptr items;
+
+    explicit wrapped_config_items(const int _which, config_item *_items, char *_title)
+        : which(_which), title(_title), items(_items) {}
+
+    static wrapped_config_items get(midend *me, const int which) {
+        // (It's not possible to call midend_get_config without title.)
+        char *title;
+        config_item *items = midend_get_config(me, which, &title);
+        return wrapped_config_items(which, items, title);
+    }
+
+    [[nodiscard]] static_char_ptr set(midend *me) const {
+        return static_char_ptr(midend_set_config(me, which, items.get()));
+    }
+
+    // Non-copyable
+    wrapped_config_items(const wrapped_config_items&) = delete;
+    wrapped_config_items& operator=(const wrapped_config_items&) = delete;
+
+    // Non-movable (it could be made movable, but we don't need it)
+    wrapped_config_items(wrapped_config_items&&) = delete;
+    wrapped_config_items& operator=(wrapped_config_items&&) = delete;
+};
+
+class wrapped_game_params {
+    const game *m_game;
+    game_params *m_params;
+
+public:
+    explicit wrapped_game_params(const game *game, game_params *params)
+        : m_game(game), m_params(params) {}
+
+    // Default params for game
+    explicit wrapped_game_params(const game *game)
+        : m_game(game), m_params(game->default_params()) {}
+
+    // Custom params for config items
+    explicit wrapped_game_params(const game *game, const config_item *items)
+        : m_game(game), m_params(game->custom_params(items)) {}
+    explicit wrapped_game_params(const game *game, const allocated_config_item_ptr &items)
+        : m_game(game), m_params(game->custom_params(items.get())) {}
+
+    ~wrapped_game_params() {
+        if (m_params && m_game) {
+            m_game->free_params(m_params);
+        }
+    }
+
+    [[nodiscard]] const game_params *get() const { return m_params; }
+
+    [[nodiscard]] static_char_ptr validate(const bool full=true) const {
+        return static_char_ptr(m_game->validate_params(m_params, full));
+    }
+
+    [[nodiscard]] allocated_char_ptr as_encoded_string(const bool full=true) const {
+        return allocated_char_ptr(m_game->encode_params(m_params, full));
+    }
+
+    [[nodiscard]] allocated_config_item_ptr as_config_items() const {
+        return allocated_config_item_ptr(m_game->configure(m_params));
+    }
+
+    // Non-copyable
+    wrapped_game_params(const wrapped_game_params&) = delete;
+    wrapped_game_params& operator=(const wrapped_game_params&) = delete;
+
+    // Non-movable (it could be made movable, but we don't need it)
+    wrapped_game_params(wrapped_game_params&&) = delete;
+    wrapped_game_params& operator=(wrapped_game_params&&) = delete;
+};
+
+
+/*
  * frontend -- exported to JS as Frontend.
  * Wraps midend functions for use by JS.
  * Provides frontend functions required by midend.
@@ -1048,14 +1131,10 @@ private:
     }
 
     [[nodiscard]] ConfigDescription build_config_description(const int which) const {
-        char *_title;
-        const allocated_config_item_ptr config_items(
-            midend_get_config(me(), which, &_title)
-        );
-        const allocated_char_ptr title(_title);
+        const auto cfg = wrapped_config_items::get(me(), which);
 
         auto config = val::object();
-        config.set("title", title.as_string());
+        config.set("title", cfg.title.as_string());
 
         // CFG_PREFS have keywords defined. CFG_SETTINGS and other CFG types
         // leave kw uninitialized; use the slugified name for them.
@@ -1063,7 +1142,7 @@ private:
 
         auto items = val::object();
         // Process config items until we hit C_END
-        for (const config_item *config_item = config_items.get();
+        for (const config_item *config_item = cfg.items.get();
              config_item->type != C_END;
              config_item++) {
             auto item = val::object();
@@ -1188,27 +1267,18 @@ private:
     }
 
     [[nodiscard]] ConfigValues get_config_values(const int which) const {
-        char *_title;
-        const allocated_config_item_ptr config_items(
-            midend_get_config(me(), which, &_title)
-        );
-        const allocated_char_ptr title(_title);
-        return config_values_from_config(config_items.get(), which != CFG_PREFS);
+        const auto cfg = wrapped_config_items::get(me(), which);
+        return config_values_from_config(cfg.items.get(), which != CFG_PREFS);
     }
 
     [[nodiscard]] std::optional<std::string> set_config_values(
         const int which, const ConfigValuesIn &values
     ) const {
-        char *_title;
-        const allocated_config_item_ptr config_items(
-            midend_get_config(me(), which, &_title)
-        );
-        const allocated_char_ptr title(_title);
-
-        if (!config_values_to_config(config_items.get(), values, which != CFG_PREFS)) {
+        const auto cfg = wrapped_config_items::get(me(), which);
+        if (!config_values_to_config(cfg.items.get(), values, which != CFG_PREFS)) {
             return std::nullopt;
         }
-        const static_char_ptr error(midend_set_config(me(), which, config_items.get()));
+        const auto error(cfg.set(me()));
         return error.as_optional_string();
     }
 
@@ -1292,28 +1362,18 @@ public:
     ) const {
         const auto ourgame = midend_which_game(me());
 
-        // Get default config items and apply ConfigValues
-        auto *default_params = ourgame->default_params();
-        const allocated_config_item_ptr config_items(ourgame->configure(default_params));
-        midend_free_params(me(), default_params);
+        // Get config items for default params
+        const wrapped_game_params default_params(ourgame);
+        const auto config_items(default_params.as_config_items());
 
+        // Apply ConfigValues and convert back to params
         config_values_to_config(config_items.get(), values, true);
+        const wrapped_game_params custom_params(ourgame, config_items);
 
-        // Convert config items to params and encode
-        auto *params = ourgame->custom_params(config_items.get());
-
-        std::string result;
-        const static_char_ptr error(ourgame->validate_params(params, true));
-        if (error) {
-            result.reserve(8 + strlen(error.get()));
-            result.append("#ERROR:");
-            result.append(error.get());
-        } else {
-            const allocated_char_ptr encoded(midend_encode_params(me(), params));
-            result = encoded.as_string();
+        if (const auto error = custom_params.validate()) {
+            return "#ERROR:" + error.as_string();
         }
-        midend_free_params(me(), params);
-        return result;
+        return custom_params.as_encoded_string().as_string();
     }
 
     // Returns undefined if successful, else error message.
