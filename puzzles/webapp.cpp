@@ -980,6 +980,7 @@ public:
           textFallback(args.textFallback),
           notifyChange(args.notifyChange) {
 
+        midend_request_params_changes(me(), notify_params_changes, this);
         midend_request_id_changes(me(), notify_id_changes, this);
 
         // Notify the default params.
@@ -989,6 +990,11 @@ public:
     void setDrawing(Drawing *_drawing) { drawing = _drawing; }
 
 private:
+    // midend_request_params_changes callback
+    static void notify_params_changes(void *ctx) {
+        static_cast<frontend *>(ctx)->notifyParamsChange();
+    }
+
     // midend_request_id_changes callback
     static void notify_id_changes(void *ctx) {
         static_cast<frontend *>(ctx)->notifyGameIdChange();
@@ -1327,9 +1333,6 @@ public:
         const static_char_ptr error(
             midend_set_encoded_params(me(), encodedParams.c_str())
         );
-        if (!error) {
-            notifyParamsChange();
-        }
         return error.as_optional_string();
     }
 
@@ -1349,10 +1352,7 @@ public:
     [[nodiscard]] std::optional<std::string> setCustomParams(
         const ConfigValuesIn &values
     ) const {
-        const auto error = set_config_values(CFG_SETTINGS, values);
-        if (error == std::nullopt)
-            notifyParamsChange();
-        return error;
+        return set_config_values(CFG_SETTINGS, values);
     }
 
     // Return encoded params representing values or "#ERROR:..." if result
@@ -1444,8 +1444,8 @@ public:
         ReadBuffer buffer(data);
         const static_char_ptr error(midend_deserialise(me(), ReadBuffer::read_callback, &buffer));
         if (!error) {
-            // Successful load; midend has already called notify_id_changes
-            notifyParamsChange(); // (may have changed; doesn't hurt to notify either way)
+            // Successful load; midend has already called
+            // notify_params_changes and notify_id_changes
             notifyGameStateChange();
         }
         return error.as_optional_string();
