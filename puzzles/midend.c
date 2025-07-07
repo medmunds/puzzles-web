@@ -102,6 +102,9 @@ struct midend {
     void (*game_id_change_notify_function)(void *);
     void *game_id_change_notify_ctx;
 
+    void (*game_params_change_notify_function)(void *);
+    void *game_params_change_notify_ctx;
+
     bool one_key_shortcuts;
 };
 
@@ -450,6 +453,8 @@ void midend_set_params(midend *me, game_params *params)
 {
     me->ourgame->free_params(me->params);
     me->params = me->ourgame->dup_params(params);
+    if (me->game_params_change_notify_function)
+        me->game_params_change_notify_function(me->game_params_change_notify_ctx);
 }
 
 game_params *midend_get_params(midend *me)
@@ -483,6 +488,8 @@ const char *midend_set_encoded_params(midend *me, const char *encoded_params)
     }
     me->ourgame->free_params(me->params);
     me->params = params;
+    if (me->game_params_change_notify_function)
+        me->game_params_change_notify_function(me->game_params_change_notify_ctx);
     return error;
 }
 
@@ -1687,6 +1694,12 @@ void midend_request_id_changes(midend *me, void (*notify)(void *), void *ctx)
     me->game_id_change_notify_ctx = ctx;
 }
 
+void midend_request_params_changes(midend *me, void (*notify)(void *), void *ctx)
+{
+    me->game_params_change_notify_function = notify;
+    me->game_params_change_notify_ctx = ctx;
+}
+
 bool midend_get_cursor_location(midend *me,
                                 int *x_out, int *y_out,
                                 int *w_out, int *h_out)
@@ -2041,6 +2054,8 @@ const char *midend_set_config(midend *me, int which, config_item *cfg)
 
 	me->ourgame->free_params(me->params);
 	me->params = params;
+	if (me->game_params_change_notify_function)
+	    me->game_params_change_notify_function(me->game_params_change_notify_ctx);
 	break;
 
       case CFG_SEED:
@@ -2736,6 +2751,8 @@ static const char *midend_deserialise_internal(
 				   me->states[me->statepos-1].state);
     me->first_draw = true;
     midend_size_new_drawstate(me);
+    if (me->game_params_change_notify_function)
+        me->game_params_change_notify_function(me->game_params_change_notify_ctx);
     if (me->game_id_change_notify_function)
         me->game_id_change_notify_function(me->game_id_change_notify_ctx);
 

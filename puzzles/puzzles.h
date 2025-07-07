@@ -54,7 +54,7 @@ enum {
     UI_UNDO,
     UI_REDO,
     UI_UPPER_BOUND,
-    
+
     /* made smaller because of 'limited range of datatype' errors. */
     MOD_CTRL       = 0x1000,
     MOD_SHFT       = 0x2000,
@@ -363,6 +363,7 @@ const char *identify_game(char **name,
                           bool (*read)(void *ctx, void *buf, int len),
                           void *rctx);
 void midend_request_id_changes(midend *me, void (*notify)(void *), void *ctx);
+void midend_request_params_changes(midend *me, void (*notify)(void *), void *ctx);
 bool midend_get_cursor_location(midend *me, int *x, int *y, int *w, int *h);
 void midend_get_move_count(midend *me, int *current, int *total);
 
