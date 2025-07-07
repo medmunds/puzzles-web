@@ -54,7 +54,7 @@ enum {
     UI_UNDO,
     UI_REDO,
     UI_UPPER_BOUND,
-    
+
     /* made smaller because of 'limited range of datatype' errors. */
     MOD_STYLUS     = 0x0800,
     MOD_CTRL       = 0x1000,
@@ -315,6 +315,9 @@ void midend_free(midend *me);
 const game *midend_which_game(midend *me);
 void midend_set_params(midend *me, game_params *params);
 game_params *midend_get_params(midend *me);
+const char *midend_set_encoded_params(midend *me, const char *encoded_params);
+char *midend_get_encoded_params(midend *me);
+const char *midend_get_encoded_params_for_preset(midend *me, int preset);
 void midend_size(midend *me, int *x, int *y, bool user_size,
                  double device_pixel_ratio);
 void midend_reset_tilesize(midend *me);
@@ -363,6 +366,7 @@ const char *identify_game(char **name,
                           bool (*read)(void *ctx, void *buf, int len),
                           void *rctx);
 void midend_request_id_changes(midend *me, void (*notify)(void *), void *ctx);
+void midend_request_params_changes(midend *me, void (*notify)(void *), void *ctx);
 bool midend_get_cursor_location(midend *me, int *x, int *y, int *w, int *h);
 void midend_get_move_count(midend *me, int *current, int *total);
 
