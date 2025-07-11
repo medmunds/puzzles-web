@@ -1,4 +1,4 @@
-import { type Signal, signal } from "@lit-labs/signals";
+import { type Signal, computed, signal } from "@lit-labs/signals";
 import * as Comlink from "comlink";
 import { transfer } from "comlink";
 import {
@@ -100,7 +100,7 @@ export class Puzzle {
         update(this._canRedo, message.canRedo);
         break;
       case "params-change":
-        update(this._currentParams, message.params);
+        update(this._params, message.params);
         break;
       case "status-bar-change":
         update(this._statusbarText, message.statusBarText);
@@ -124,7 +124,13 @@ export class Puzzle {
   private _totalMoves = signal<number>(0);
   private _canUndo = signal(false);
   private _canRedo = signal(false);
-  private _currentParams = signal<string>("");
+  private _params = signal<string>("");
+  private _currentParams = computed<string | undefined>(
+    () =>
+      // The encoded params are in randomSeed before '#' and currentGameId before ':'.
+      // The randomSeed version is more descriptive if available (e.g, includes difficulty).
+      this.randomSeed?.split("#", 1).at(0) ?? this.currentGameId?.split(":", 1).at(0),
+  );
   private _currentGameId = signal<string | undefined>(undefined);
   private _randomSeed = signal<string | undefined>(undefined);
   private _canFormatAsText = signal(false);
@@ -154,7 +160,13 @@ export class Puzzle {
     return this._canRedo.get();
   }
 
-  public get currentParams(): string {
+  // The encoded game params that will be used for the next "new game".
+  public get params(): string {
+    return this._params.get();
+  }
+
+  // The encoded game params in effect for the current game.
+  public get currentParams(): string | undefined {
     return this._currentParams.get();
   }
 

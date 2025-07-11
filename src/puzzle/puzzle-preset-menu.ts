@@ -38,9 +38,10 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   @property({ type: Boolean })
   open = false;
 
-  // This should be computed, but lit-labs/signals @computed
-  // doesn't react to changes in Lit's reactive @state.
-  get currentPresetLabel(): string {
+  // Description of the params for the current game (or "Custom" if unknown).
+  get currentGameTypeLabel(): string {
+    // (This should be computed, but lit-labs/signals @computed
+    // doesn't react to changes in Lit's reactive @state.)
     const params = this.puzzle?.currentParams ?? "";
     const menuEntry = this.presets.find((preset) => preset.params === params);
     return menuEntry?.title ?? "Custom type";
@@ -87,7 +88,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
           <sl-icon slot="prefix" name="puzzle-type"></sl-icon>
           <div class=${classMap({ "dropdown-label": true, open: this.open })}>
             ${this.label}<br>
-            ${this.currentPresetLabel}
+            ${this.currentGameTypeLabel}
           </div>
         </sl-button>
         <sl-menu @sl-select=${this.handleDropdownSelect}>
@@ -100,8 +101,11 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
 
   private renderPresetMenuItems(): TemplateResult[] {
     const result: TemplateResult[] = [];
-    const currentParams = this.puzzle?.currentParams;
-    const isCustom = !this.presets.some((preset) => preset.params === currentParams);
+    // Show the checkmark by params that will be used for the next "new game".
+    // (This may not match "currentParams" after loading a game by id, or after
+    // undoing into an earlier game with different params.)
+    const checkedParams = this.puzzle?.params;
+    const isCustom = !this.presets.some((preset) => preset.params === checkedParams);
 
     for (const { submenu, title, params } of this.presets) {
       if (submenu) {
@@ -112,7 +116,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
           <sl-menu-item
               type="checkbox"
               role="menuitemradio"
-              ?checked=${params === currentParams}
+              ?checked=${params === checkedParams}
               value=${params}
             >${title}</sl-menu-item>
         `);

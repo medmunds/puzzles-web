@@ -212,7 +212,7 @@ export class PuzzleScreen extends LitElement {
     const prefs = await store.getPuzzlePreferences(puzzle.puzzleId);
     await puzzle.setPreferences(prefs);
 
-    const params = await store.getCurrentParams(puzzle.puzzleId);
+    const params = await store.getParams(puzzle.puzzleId);
     if (params) {
       const error = await puzzle.setParams(params);
       if (error) {
@@ -220,7 +220,7 @@ export class PuzzleScreen extends LitElement {
           `Error setting puzzle ${puzzle.puzzleId} params to saved "${params}": ` +
             `${error}. Discarding.`,
         );
-        await store.setCurrentParams(puzzle.puzzleId, undefined);
+        await store.setParams(puzzle.puzzleId, undefined);
       }
     }
 
@@ -247,10 +247,10 @@ export class PuzzleScreen extends LitElement {
     const { puzzle } = event.detail;
     if (
       this.puzzleLoaded &&
-      puzzle.currentParams &&
-      puzzle.currentParams !== (await store.getCurrentParams(puzzle.puzzleId))
+      puzzle.params &&
+      puzzle.params !== (await store.getParams(puzzle.puzzleId))
     ) {
-      await store.setCurrentParams(puzzle.puzzleId, puzzle.currentParams);
+      await store.setParams(puzzle.puzzleId, puzzle.params);
     }
   }
 

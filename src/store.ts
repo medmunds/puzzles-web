@@ -27,7 +27,7 @@ export interface PuzzleSettings {
     name: string;
     params: EncodedParams;
   }>;
-  currentParams?: EncodedParams;
+  params?: EncodedParams;
 }
 
 const defaultPuzzleSettings: PuzzleSettings = {
@@ -178,17 +178,17 @@ class Store {
     return { commonPreferences, puzzlePreferences };
   }
 
-  async getCurrentParams(puzzleId: PuzzleId): Promise<string | undefined> {
+  async getParams(puzzleId: PuzzleId): Promise<string | undefined> {
     const puzzleRecord = await this.getPuzzleSettings(puzzleId);
-    return puzzleRecord?.currentParams;
+    return puzzleRecord?.params;
   }
 
-  async setCurrentParams(puzzleId: PuzzleId, params?: EncodedParams): Promise<void> {
+  async setParams(puzzleId: PuzzleId, params?: EncodedParams): Promise<void> {
     const current = await this.getPuzzleSettings(puzzleId);
     const updated: PuzzleSettings = {
       ...defaultPuzzleSettings,
       ...current,
-      currentParams: params,
+      params,
     };
     await this.db.settings.put({
       id: puzzleId,
