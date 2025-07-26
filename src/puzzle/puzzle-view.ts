@@ -113,6 +113,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       const offscreenCanvas = this.canvas.transferControlToOffscreen();
       await this.puzzle.attachCanvas(offscreenCanvas, fontInfo);
       this.isAttachedToPuzzle = true;
+      this.isAttachingToPuzzle = false;
 
       await this.updateColorPalette();
       // Recalculate canvas size for newly-attached puzzle. If somehow the current
