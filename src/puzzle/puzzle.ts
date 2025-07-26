@@ -5,6 +5,7 @@ import {
   installWorkerErrorReceivers,
   uninstallWorkerErrorReceivers,
 } from "../utils/errors.ts";
+import { nextAnimationFrame } from "../utils/timing.ts";
 import type {
   ChangeNotification,
   Colour,
@@ -393,6 +394,11 @@ export class Puzzle {
   ): Promise<void> {
     // Transfer the canvas to the worker
     await this.workerPuzzle.attachCanvas(Comlink.transfer(canvas, [canvas]), fontInfo);
+    // Delay one frame to avoid a problem in Safari and Firefox where the
+    // onscreen canvas initially (and somewhat randomly) appears solid black
+    // or solid background color. (Seems like drawing to the offscreen canvas
+    // immediately after transfer to the worker doesn't make it back onscreen.)
+    await nextAnimationFrame();
   }
 
   public async detachCanvas(): Promise<void> {
