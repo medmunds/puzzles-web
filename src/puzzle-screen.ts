@@ -132,6 +132,7 @@ export class PuzzleScreen extends LitElement {
                 Other puzzles
               </sl-menu-item>
               <sl-divider></sl-divider>
+              <sl-menu-item value="redraw">Redraw puzzle</sl-menu-item>
               <sl-menu-label class="version">v${version}</sl-menu-label>
             </puzzle-game-menu>
             <puzzle-preset-menu></puzzle-preset-menu>
@@ -187,6 +188,10 @@ export class PuzzleScreen extends LitElement {
     switch (value) {
       case "catalog":
         this.router?.navigate(this.router.defaultRoute);
+        break;
+      case "redraw":
+        // TODO: Remove the "redraw" command (added for debugging Safari)
+        this.shadowRoot?.querySelector("puzzle-view-interactive")?.redraw();
         break;
       default:
         // Other commands are handled by puzzle-game-menu

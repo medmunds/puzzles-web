@@ -7,6 +7,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { coordsToColour, equalColour } from "../utils/colour.ts";
+import { isSafari } from "../utils/events.ts";
 import { almostEqual } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
@@ -152,8 +153,20 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     }
   }
 
+  override connectedCallback() {
+    super.connectedCallback();
+    if (isSafari) {
+      document.addEventListener("visibilitychange", this.kickSafariCanvas);
+      window.addEventListener("focus", this.kickSafariCanvas);
+    }
+  }
+
   override async disconnectedCallback() {
     super.disconnectedCallback();
+    if (isSafari) {
+      document.removeEventListener("visibilitychange", this.kickSafariCanvas);
+      window.removeEventListener("focus", this.kickSafariCanvas);
+    }
     if (this.isAttachedToPuzzle) {
       await this.puzzle?.detachCanvas();
       this.isAttachedToPuzzle = false;
@@ -183,6 +196,28 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   protected renderStatusbar() {
     return html`<div part="statusbar">${this.puzzle?.statusbarText}</div>`;
+  }
+
+  protected kickSafariCanvas = async () => {
+    // Give Safari a good kick in the side to try to fix a randomly blank
+    // canvas after the tab has been hidden or occluded by another window,
+    // or the app has resumed. The OffscreenCanvas has the correct content,
+    // but Safari seems to fail to copy it onscreen. (Weirdly, the canvas
+    // appears correctly in Safari developer tools under both Graphics and
+    // Timelines: Screenshots.)
+    if (document.visibilityState === "visible" && this.canvas) {
+      // Something in resize() seems to help to get the canvas connection
+      // working again (usually), but I haven't been able to isolate it.
+      await this.resize(true);
+      await this.updateComplete;
+      await this.redraw();
+    }
+  };
+
+  async redraw() {
+    if (this.isAttachedToPuzzle) {
+      await this.puzzle?.redraw();
+    }
   }
 
   // Returns true if canvasSize changed

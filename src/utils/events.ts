@@ -36,6 +36,12 @@ export const isAppleDevice =
   /(Mac|iPhone|iPad|iPod)/i.test(globalThis.navigator?.userAgent ?? "");
 
 /**
+ * Browser detection using userAgent sniffing, for handling Safari bugs.
+ * **Prefer using feature detection whenever possible.**
+ */
+export const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+/**
  * Returns true if event has ctrlKey or Apple's Command (⌘) key pressed.
  * (But returns false for generic Meta key or Windows logo/start key.)
  */
