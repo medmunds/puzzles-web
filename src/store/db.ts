@@ -5,14 +5,14 @@ export type PuzzleId = string;
 export type EncodedParams = string;
 
 export interface CatalogSettings {
-  favorites: PuzzleId[];
-  showUnfinished: boolean;
+  favorites?: PuzzleId[];
+  showUnfinished?: boolean;
 }
 
 // Settings shared by all puzzles
 export interface CommonPuzzleSettings {
   // Preferences shared between all puzzles
-  puzzlePreferences: ConfigValues;
+  puzzlePreferences?: ConfigValues;
 
   // Secondary button emulation
   rightButtonLongPress?: boolean;
@@ -25,8 +25,8 @@ export interface CommonPuzzleSettings {
 
 // PuzzleId-specific settings
 export interface PuzzleSettings {
-  puzzlePreferences: ConfigValues;
-  customPresets: Array<{
+  puzzlePreferences?: ConfigValues;
+  customPresets?: Array<{
     name: string;
     params: EncodedParams;
   }>;
@@ -34,11 +34,6 @@ export interface PuzzleSettings {
   // Default params for new puzzles
   params?: EncodedParams;
 }
-
-export const defaultPuzzleSettings: PuzzleSettings = {
-  puzzlePreferences: {},
-  customPresets: [],
-};
 
 export type SettingsRecord =
   | { id: "catalog"; type: "catalog"; data: CatalogSettings }

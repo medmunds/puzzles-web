@@ -5,7 +5,6 @@ import {
   type PuzzleId,
   type PuzzleSettings,
   db,
-  defaultPuzzleSettings,
 } from "./db.ts";
 
 const defaultSettings = {
@@ -171,7 +170,6 @@ class Settings {
     if (puzzlePreferences !== undefined) {
       const current = await this.getPuzzleSettings(puzzleId);
       const updated: PuzzleSettings = {
-        ...defaultPuzzleSettings,
         ...current,
         puzzlePreferences: {
           ...current?.puzzlePreferences,
@@ -208,12 +206,14 @@ class Settings {
   }
 
   async setParams(puzzleId: PuzzleId, params?: string): Promise<void> {
-    const current = await this.getPuzzleSettings(puzzleId);
-    const updated: PuzzleSettings = {
-      ...defaultPuzzleSettings,
-      ...current,
-      params,
-    };
+    const { params: _, ...current } = (await this.getPuzzleSettings(puzzleId)) ?? {};
+    const updated: PuzzleSettings =
+      params === undefined
+        ? current
+        : {
+            ...current,
+            params,
+          };
     await db.settings.put({
       id: puzzleId,
       type: "puzzle",
