@@ -1,9 +1,9 @@
-import type { Subscription } from "dexie";
+import { SignalWatcher } from "@lit-labs/signals";
 import { LitElement, css, html } from "lit";
-import { customElement, eventOptions, property, query, state } from "lit/decorators.js";
+import { customElement, eventOptions, property, query } from "lit/decorators.js";
 import type { AppRouter } from "./app-router.ts";
 import { puzzleDataMap, version } from "./catalog.ts";
-import { store } from "./store.ts";
+import { savedGames } from "./store/saved-games.ts";
 import { waitForStableSize } from "./utils/resize.ts";
 import { debounced } from "./utils/timing.ts";
 
@@ -11,35 +11,15 @@ import { debounced } from "./utils/timing.ts";
 import "./catalog-card.ts";
 
 @customElement("catalog-screen")
-export class CatalogScreen extends LitElement {
+export class CatalogScreen extends SignalWatcher(LitElement) {
   @property({ type: Object })
   router?: AppRouter;
 
   @property({ type: Boolean, attribute: "show-unfinished" })
   showUnfinished = false;
 
-  @state()
-  puzzlesInProgress: Set<string> = new Set();
-
   @query(".app", true)
   private appElement?: HTMLDivElement;
-
-  private autoSavedPuzzlesSubscription?: Subscription;
-
-  override connectedCallback() {
-    super.connectedCallback();
-    this.autoSavedPuzzlesSubscription = store.autoSavedPuzzlesLiveQuery.subscribe({
-      next: (puzzlesInProgress) => {
-        this.puzzlesInProgress = puzzlesInProgress;
-      },
-    });
-  }
-
-  override disconnectedCallback() {
-    super.connectedCallback();
-    this.autoSavedPuzzlesSubscription?.unsubscribe();
-    this.autoSavedPuzzlesSubscription = undefined;
-  }
 
   protected override render() {
     return html`
@@ -62,7 +42,7 @@ export class CatalogScreen extends LitElement {
                   name=${name}
                   description=${description}
                   objective=${objective}
-                  ?resume=${this.puzzlesInProgress.has(puzzleType)}
+                  ?resume=${savedGames.autoSavedPuzzles.has(puzzleType)}
                   ?unfinished=${unfinished}
                 ></catalog-card>
               `,

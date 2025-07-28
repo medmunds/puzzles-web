@@ -1,3 +1,4 @@
+import { SignalWatcher } from "@lit-labs/signals";
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
@@ -6,7 +7,8 @@ import { type PuzzleData, puzzleDataMap, version } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
 import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
-import { store } from "./store.ts";
+import { savedGames } from "./store/saved-games.ts";
+import { settings } from "./store/settings.ts";
 import { debounced } from "./utils/timing.ts";
 
 // Register components
@@ -25,7 +27,7 @@ import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
 
 @customElement("puzzle-screen")
-export class PuzzleScreen extends LitElement {
+export class PuzzleScreen extends SignalWatcher(LitElement) {
   @property({ type: Object })
   router?: AppRouter;
 
@@ -146,7 +148,11 @@ export class PuzzleScreen extends LitElement {
               tabIndex="0"
               role="figure"
               aria-label="interactive puzzle displayed as an image"
-              maximize
+              ?longPress=${settings.rightButtonLongPress}
+              ?twoFingerTap=${settings.rightButtonTwoFingerTap}
+              secondaryButtonTimeout=${settings.rightButtonTimeout}
+              secondaryButtonSlop=${settings.rightButtonSlop}
+              ?maximize=${settings.maximizePuzzleSize !== 0}
               .resizeElement=${
                 // puzzle-view observes its own size, but we also want it to grow
                 // when we're getting larger (without enabling flex-grow).
@@ -214,10 +220,10 @@ export class PuzzleScreen extends LitElement {
     const { puzzle } = event.detail;
     event.preventDefault(); // We'll set up our own new game (or restore one from autoSave)
 
-    const prefs = await store.getPuzzlePreferences(puzzle.puzzleId);
+    const prefs = await settings.getPuzzlePreferences(puzzle.puzzleId);
     await puzzle.setPreferences(prefs);
 
-    const params = await store.getParams(puzzle.puzzleId);
+    const params = await settings.getParams(puzzle.puzzleId);
     if (params) {
       const error = await puzzle.setParams(params);
       if (error) {
@@ -225,19 +231,19 @@ export class PuzzleScreen extends LitElement {
           `Error setting puzzle ${puzzle.puzzleId} params to saved "${params}": ` +
             `${error}. Discarding.`,
         );
-        await store.setParams(puzzle.puzzleId, undefined);
+        await settings.setParams(puzzle.puzzleId, undefined);
       }
     }
 
     // TODO: restore custom presets from settings
 
     if (!this.autoSaveId) {
-      this.autoSaveId = await store.findMostRecentAutoSave(puzzle.puzzleId);
+      this.autoSaveId = await savedGames.findMostRecentAutoSave(puzzle.puzzleId);
     }
 
     let restored = false;
     if (this.autoSaveId) {
-      restored = await store.restoreAutoSavedGame(puzzle, this.autoSaveId);
+      restored = await savedGames.restoreAutoSavedGame(puzzle, this.autoSaveId);
     }
     if (!restored) {
       await puzzle.newGame();
@@ -253,9 +259,9 @@ export class PuzzleScreen extends LitElement {
     if (
       this.puzzleLoaded &&
       puzzle.params &&
-      puzzle.params !== (await store.getParams(puzzle.puzzleId))
+      puzzle.params !== (await settings.getParams(puzzle.puzzleId))
     ) {
-      await store.setParams(puzzle.puzzleId, puzzle.params);
+      await settings.setParams(puzzle.puzzleId, puzzle.params);
     }
   }
 
@@ -266,20 +272,20 @@ export class PuzzleScreen extends LitElement {
       if (puzzle.totalMoves > 0 && !puzzle.isSolved) {
         // Wait to autosave until the user has made at least one actual move,
         // to avoid autosaving from just browsing through puzzles.
-        this.autoSaveId ??= store.makeAutoSaveId();
-        await store.autoSaveGame(puzzle, this.autoSaveId);
+        this.autoSaveId ??= savedGames.makeAutoSaveId();
+        await savedGames.autoSaveGame(puzzle, this.autoSaveId);
       } else if (this.autoSaveId) {
         // Don't retain autosave for solved or unstarted puzzle.
         const autoSaveId = this.autoSaveId;
         this.autoSaveId = undefined;
-        await store.removeAutoSavedGame(puzzle, autoSaveId);
+        await savedGames.removeAutoSavedGame(puzzle, autoSaveId);
       }
     }
   }
 
   private async handlePreferencesChange(event: PuzzleConfigChangeEvent) {
     // Persist only the changed preferences to the DB
-    await store.setPuzzlePreferences(this.puzzleType, event.detail.changes);
+    await settings.setPuzzlePreferences(this.puzzleType, event.detail.changes);
   }
 
   //
