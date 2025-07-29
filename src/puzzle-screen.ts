@@ -5,7 +5,10 @@ import { query } from "lit/decorators/query.js";
 import type { AppRouter } from "./app-router.ts";
 import { type PuzzleData, puzzleDataMap, version } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
-import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
+import type {
+  PuzzleConfigChangeEvent,
+  PuzzlePreferences,
+} from "./puzzle/puzzle-config.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
@@ -19,6 +22,7 @@ import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
 import "./head-matter.ts";
 import "./help-viewer.ts";
 import "./puzzle/puzzle-checkpoints.ts";
+import "./puzzle/puzzle-config.ts";
 import "./puzzle/puzzle-context.ts";
 import "./puzzle/puzzle-game-menu.ts";
 import "./puzzle/puzzle-keys.ts";
@@ -46,6 +50,9 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
   @query("help-viewer", true)
   private helpPanel?: HelpViewer;
+
+  @query("puzzle-preferences", true)
+  private preferencesDialog?: PuzzlePreferences;
 
   private _autoSaveId?: string;
   private get autoSaveId(): string | undefined {
@@ -107,7 +114,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           @puzzle-loaded=${this.handlePuzzleLoaded}
           @puzzle-params-change=${this.handlePuzzleParamsChange}
           @puzzle-game-state-change=${this.handlePuzzleGameStateChange}
-          @puzzle-preferences-change=${this.handlePreferencesChange}
       >
         <head-matter>
           <title>
@@ -128,6 +134,10 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
           <div class="toolbar">
             <puzzle-game-menu @sl-select=${this.handleGameMenuCommand}>
+              <sl-menu-item value="preferences">
+                <sl-icon slot="prefix" name="settings"></sl-icon>
+                Preferences…
+              </sl-menu-item>
               <sl-divider></sl-divider>
               <sl-menu-item value="catalog">
                 <sl-icon slot="prefix" name="back-to-catalog"></sl-icon>
@@ -183,17 +193,29 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
             <puzzle-checkpoints slot="after"></puzzle-checkpoints>
           </puzzle-keys>
         </div>
+
+        <puzzle-preferences
+            @puzzle-preferences-change=${this.handlePreferencesChange}
+          ></puzzle-preferences>
       </puzzle-context>
 
       <help-viewer src=${helpUrl} label=${`${this.puzzleData.name} Help`}></help-viewer>
     `;
   }
 
-  private handleGameMenuCommand(event: CustomEvent<{ item: { value: string } }>) {
+  private async handleGameMenuCommand(event: CustomEvent<{ item: { value: string } }>) {
     const value = event.detail.item.value;
     switch (value) {
       case "catalog":
         this.router?.navigate(this.router.defaultRoute);
+        break;
+      case "preferences":
+        if (this.preferencesDialog) {
+          if (!this.preferencesDialog.open) {
+            await this.preferencesDialog.reloadValues();
+          }
+          this.preferencesDialog.show();
+        }
         break;
       case "redraw":
         // TODO: Remove the "redraw" command (added for debugging Safari)

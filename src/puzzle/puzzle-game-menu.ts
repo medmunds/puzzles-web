@@ -6,7 +6,6 @@ import { when } from "lit/directives/when.js";
 import { notifyError } from "../utils/errors.ts";
 import { sleep } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
-import type { PuzzlePreferences } from "./puzzle-config.ts";
 import type { Puzzle } from "./puzzle.ts";
 
 // Component registration
@@ -16,23 +15,12 @@ import "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";
 import "@shoelace-style/shoelace/dist/components/icon/icon.js";
 import "@shoelace-style/shoelace/dist/components/menu/menu.js";
 import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
-import "./puzzle-config.ts";
 
 @customElement("puzzle-game-menu")
 export class PuzzleGameMenu extends SignalWatcher(LitElement) {
   @consume({ context: puzzleContext, subscribe: true })
   @state()
   private puzzle?: Puzzle;
-
-  private preferencesDialog?: PuzzlePreferences;
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    if (this.preferencesDialog) {
-      this.preferencesDialog.remove();
-      this.preferencesDialog = undefined;
-    }
-  }
 
   render(): TemplateResult {
     return html`
@@ -70,10 +58,6 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
             <sl-icon slot="prefix" name="load-game"></sl-icon>
             Load…
           </sl-menu-item>
-          <sl-menu-item value="preferences">
-            <sl-icon slot="prefix" name="settings"></sl-icon>
-            Preferences…
-          </sl-menu-item>
           <slot></slot>
         </sl-menu>
       </sl-dropdown>
@@ -102,9 +86,6 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
         break;
       case "load":
         await this.loadGameFromFile();
-        break;
-      case "preferences":
-        await this.launchPreferencesDialog();
         break;
       // Other commands are handled by the parent component
     }
@@ -153,26 +134,6 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
       },
     });
     input.click();
-  }
-
-  private async launchPreferencesDialog() {
-    if (!this.puzzle) {
-      throw new Error("launchPreferencesDialog() called without a puzzle");
-    }
-    if (!this.preferencesDialog) {
-      const container = this.closest("puzzle-context");
-      if (!container) {
-        throw new Error("launchCustomDialog() can't find puzzle-context container");
-      }
-      this.preferencesDialog = document.createElement("puzzle-preferences");
-      container.appendChild(this.preferencesDialog);
-      await this.preferencesDialog.updateComplete;
-    } else if (!this.preferencesDialog.open) {
-      // Refresh the items for the current puzzle
-      await this.preferencesDialog.reloadValues();
-    }
-
-    this.preferencesDialog.show();
   }
 }
 
