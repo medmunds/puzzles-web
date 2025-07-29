@@ -1,7 +1,7 @@
-import { SignalWatcher } from "@lit-labs/signals";
+import { SignalWatcher, signal } from "@lit-labs/signals";
 import { consume } from "@lit/context";
 import type SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.js";
-import { LitElement, css, html } from "lit";
+import { LitElement, type TemplateResult, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
 import { when } from "lit/directives/when.js";
@@ -31,46 +31,22 @@ interface PuzzleConfigChangeDetail {
 export type PuzzleConfigChangeEvent = CustomEvent<PuzzleConfigChangeDetail>;
 
 /**
- * Common code for configuration dialogs.
+ * Common code for configuration forms.
  * Must be used within a puzzle-context component.
  */
-abstract class PuzzleConfig extends SignalWatcher(LitElement) {
+abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
   @consume({ context: puzzleContext, subscribe: true })
   @state()
   protected puzzle?: Puzzle;
 
   /**
-   * The label for the submit button
+   * The title for the dialog, per the config
    */
-  @property({ type: String })
-  submitLabel = "Apply";
-
-  /**
-   * The label for the cancel button
-   */
-  @property({ type: String })
-  cancelLabel = "Cancel";
-
-  /**
-   * The title for the dialog; taken from the config title by default
-   */
-  @property({ type: String })
-  dialogTitle = "Configure puzzle";
-
-  // Expose dialog's open property
-  get open() {
-    return this.dialog?.open ?? false;
-  }
-  set open(isOpen: boolean) {
-    if (isOpen) {
-      this.dialog?.show();
-    } else {
-      this.dialog?.hide();
-    }
+  get title(): string {
+    return this._title.get();
   }
 
-  @query("sl-dialog")
-  protected dialog?: SlDialog;
+  protected _title = signal<string>("");
 
   @state()
   protected config?: ConfigDescription;
@@ -91,7 +67,7 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
 
   protected async loadConfig(): Promise<void> {
     this.config = await this.getConfig();
-    this.dialogTitle = this.config?.title || "";
+    this._title.set(this.config?.title ?? "");
     await this.loadValues();
   }
 
@@ -107,23 +83,13 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
     }
   }
 
-  override render() {
+  protected override render() {
     return html`
-      <sl-dialog 
-          label=${this.dialogTitle} 
-          @sl-request-close=${this.handleDialogRequestClose}
-      >
+      <form part="form" @submit=${this.submit}>
         ${when(this.error, () => html`<div part="error">${this.error}</div>`)}
 
-        <form part="form" @submit=${this.handleSubmit}>
-          ${Object.entries(this.config?.items ?? {}).map(([id, config]) => this.renderConfigItem(id, config))}
-        </form>
-
-        <div slot="footer" part="footer">
-          <sl-button variant="primary" @click=${this.handleSubmit}>${this.submitLabel}</sl-button>
-          <sl-button @click=${this.handleCancel}>${this.cancelLabel}</sl-button>
-        </div>
-      </sl-dialog>
+        ${Object.entries(this.config?.items ?? {}).map(([id, config]) => this.renderConfigItem(id, config))}
+      </form>
     `;
   }
 
@@ -225,8 +191,12 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
     this.changes[target.id] = Number.parseInt(target.value); // doesn't force redraw
   }
 
-  private async handleSubmit(event: Event) {
-    event.preventDefault();
+  public get hasErrors(): boolean {
+    return this.error !== undefined;
+  }
+
+  public async submit(event?: Event) {
+    event?.preventDefault();
 
     const result = await this.setValues(this.changes);
     if (result) {
@@ -234,8 +204,6 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
       this.error = result;
     } else {
       // Success
-      this.hide();
-
       if (this.puzzle) {
         this.dispatchEvent(
           new CustomEvent<PuzzleConfigChangeDetail>(this.submitEventType, {
@@ -255,30 +223,10 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
     }
   }
 
-  private async handleCancel() {
-    this.hide();
+  public async reset() {
     this.changes = {};
-  }
-
-  private handleDialogRequestClose(event: CustomEvent<{ source: string }>) {
-    // Prevent the dialog from closing when the user clicks on the overlay
-    if (event.detail.source === "overlay") {
-      event.preventDefault();
-    }
-  }
-
-  /**
-   * Show the configuration dialog
-   */
-  public show() {
-    this.dialog?.show();
-  }
-
-  /**
-   * Hide the configuration dialog
-   */
-  public hide() {
-    this.dialog?.hide();
+    this.error = undefined;
+    this.resetFormItemValues();
   }
 
   public async reloadValues() {
@@ -290,32 +238,27 @@ abstract class PuzzleConfig extends SignalWatcher(LitElement) {
   static styles = css`
     :host {
       display: contents;
+      --item-spacing: var(--sl-spacing-medium);
     }
 
     [part="form"] {
       display: flex;
       flex-direction: column;
-      gap: var(--sl-spacing-medium);
-    }
-
-    [part="footer"] {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--sl-spacing-small);
+      gap: var(--item-spacing);
     }
 
     [part="error"] {
       color: var(--sl-color-danger-600);
-      margin-bottom: var(--sl-spacing-medium);
+      margin-bottom: var(--item-spacing);
     }
   `;
 }
 
 /**
- * Dialog for editing custom game params (custom type)
+ * Form for editing custom game params (custom puzzle type)
  */
-@customElement("puzzle-custom-params")
-export class PuzzleCustomParams extends PuzzleConfig {
+@customElement("puzzle-custom-params-form")
+export class PuzzleCustomParamsForm extends PuzzleConfigForm {
   protected override submitEventType = "puzzle-custom-params-change";
 
   protected override async getConfig() {
@@ -331,7 +274,7 @@ export class PuzzleCustomParams extends PuzzleConfig {
   }
 
   /**
-   * Return encoded params for current dialog values
+   * Return encoded params for current form values
    */
   async getParams(): Promise<string | undefined> {
     if (this.puzzle) {
@@ -342,16 +285,16 @@ export class PuzzleCustomParams extends PuzzleConfig {
       if (!result.startsWith("#ERROR:")) {
         return result;
       }
-      console.warn(`PuzzleCustomParams.getParams: ${result}`);
+      console.warn(`PuzzleCustomParamsForm.getParams: ${result}`);
     }
   }
 }
 
 /**
- * Dialog for editing puzzle preferences
+ * Form for editing puzzle preferences
  */
-@customElement("puzzle-preferences")
-export class PuzzlePreferences extends PuzzleConfig {
+@customElement("puzzle-preferences-form")
+export class PuzzlePreferencesForm extends PuzzleConfigForm {
   protected override submitEventType = "puzzle-preferences-change";
 
   protected override async getConfig() {
@@ -371,10 +314,151 @@ export class PuzzlePreferences extends PuzzleConfig {
   }
 }
 
+abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
+  /**
+   * The label for the submit button
+   */
+  @property({ type: String, attribute: "submit-label" })
+  submitLabel = "OK";
+
+  /**
+   * The label for the cancel button
+   */
+  @property({ type: String, attribute: "cancel-label" })
+  cancelLabel = "Cancel";
+
+  @property({ type: String, attribute: "dialog-title" })
+  dialogTitle = "Configuration";
+
+  @query("sl-dialog", true)
+  protected dialog?: SlDialog;
+
+  protected abstract form?: PuzzleConfigForm;
+
+  protected override render() {
+    return html`
+      <sl-dialog
+          label=${this.dialogTitle}
+          @sl-request-close=${this.handleDialogRequestClose}
+      >
+        ${this.renderConfigForm()}
+
+        <div slot="footer" part="footer">
+          <sl-button variant="primary" @click=${this.handleSubmit}>${this.submitLabel}</sl-button>
+          <sl-button @click=${this.handleCancel}>${this.cancelLabel}</sl-button>
+        </div>
+      </sl-dialog>
+    `;
+  }
+
+  protected override updated() {
+    if (!this.hasAttribute("dialog-title")) {
+      // Get the dialog title from the form
+      const title = this.form?.title;
+      if (title && title !== this.dialogTitle) {
+        this.dialogTitle = title;
+      }
+    }
+  }
+
+  protected abstract renderConfigForm(): TemplateResult;
+
+  protected handleDialogRequestClose(event: CustomEvent<{ source: string }>) {
+    // Prevent the dialog from closing when the user clicks on the overlay
+    if (event.detail.source === "overlay") {
+      event.preventDefault();
+    }
+  }
+
+  protected async handleSubmit() {
+    await this.form?.submit();
+    if (!this.form?.hasErrors) {
+      await this.hide();
+    }
+  }
+
+  protected async handleCancel() {
+    await this.form?.reset();
+    await this.hide();
+  }
+
+  // Expose dialog's open property
+  get open() {
+    return this.dialog?.open ?? false;
+  }
+  set open(isOpen: boolean) {
+    if (isOpen) {
+      this.dialog?.show();
+    } else {
+      this.dialog?.hide();
+    }
+  }
+
+  async show(): Promise<void> {
+    return this.dialog?.show();
+  }
+
+  async hide(): Promise<void> {
+    return this.dialog?.hide();
+  }
+
+  async reloadValues(): Promise<void> {
+    return this.form?.reloadValues();
+  }
+
+  static styles = css`
+    :host {
+      display: contents;
+    }
+
+    [part="footer"] {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--sl-spacing-small);
+    }
+  `;
+}
+
+/**
+ * Dialog for editing custom game params (custom puzzle type)
+ */
+@customElement("puzzle-custom-params-dialog")
+export class PuzzleCustomParamsDialog extends PuzzleConfigDialog {
+  @query("puzzle-custom-params-form")
+  protected form?: PuzzleCustomParamsForm;
+
+  protected override renderConfigForm() {
+    return html`
+      <puzzle-custom-params-form part="form"></puzzle-custom-params-form>
+    `;
+  }
+
+  async getParams(): Promise<string | undefined> {
+    return this.form?.getParams();
+  }
+}
+
+/**
+ * Dialog for editing puzzle preferences
+ */
+@customElement("puzzle-preferences-dialog")
+export class PuzzlePreferencesDialog extends PuzzleConfigDialog {
+  @query("puzzle-preferences-form")
+  protected form?: PuzzlePreferencesForm;
+
+  protected override renderConfigForm() {
+    return html`
+      <puzzle-preferences-form part="form"></puzzle-preferences-form>
+    `;
+  }
+}
+
 declare global {
   interface HTMLElementTagNameMap {
-    "puzzle-custom-params": PuzzleCustomParams;
-    "puzzle-preferences": PuzzlePreferences;
+    "puzzle-custom-params-form": PuzzleCustomParamsForm;
+    "puzzle-preferences-form": PuzzlePreferencesForm;
+    "puzzle-custom-params-dialog": PuzzleCustomParamsDialog;
+    "puzzle-preferences-dialog": PuzzlePreferencesDialog;
   }
 
   interface HTMLElementEventMap {

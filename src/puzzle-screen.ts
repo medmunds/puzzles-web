@@ -7,7 +7,7 @@ import { type PuzzleData, puzzleDataMap, version } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
 import type {
   PuzzleConfigChangeEvent,
-  PuzzlePreferences,
+  PuzzlePreferencesDialog,
 } from "./puzzle/puzzle-config.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import { savedGames } from "./store/saved-games.ts";
@@ -51,8 +51,8 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   @query("help-viewer", true)
   private helpPanel?: HelpViewer;
 
-  @query("puzzle-preferences", true)
-  private preferencesDialog?: PuzzlePreferences;
+  @query("puzzle-preferences-dialog", true)
+  private preferencesDialog?: PuzzlePreferencesDialog;
 
   private _autoSaveId?: string;
   private get autoSaveId(): string | undefined {
@@ -194,9 +194,9 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           </puzzle-keys>
         </div>
 
-        <puzzle-preferences
+        <puzzle-preferences-dialog
             @puzzle-preferences-change=${this.handlePreferencesChange}
-          ></puzzle-preferences>
+          ></puzzle-preferences-dialog>
       </puzzle-context>
 
       <help-viewer src=${helpUrl} label=${`${this.puzzleData.name} Help`}></help-viewer>
