@@ -39,6 +39,9 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
   @state()
   protected puzzle?: Puzzle;
 
+  @property({ type: Boolean })
+  autosubmit = false;
+
   /**
    * The title for the dialog, per the config
    */
@@ -176,19 +179,28 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
     target.select();
   }
 
-  private updateTextValue(event: CustomEvent) {
+  private async updateTextValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
     this.changes[target.id] = target.value; // doesn't force redraw
+    if (this.autosubmit) {
+      await this.submit();
+    }
   }
 
-  private updateCheckboxValue(event: CustomEvent) {
+  private async updateCheckboxValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
     this.changes[target.id] = target.checked; // doesn't force redraw
+    if (this.autosubmit) {
+      await this.submit();
+    }
   }
 
-  private updateSelectValue(event: CustomEvent) {
+  private async updateSelectValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
     this.changes[target.id] = Number.parseInt(target.value); // doesn't force redraw
+    if (this.autosubmit) {
+      await this.submit();
+    }
   }
 
   public get hasErrors(): boolean {
