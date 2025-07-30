@@ -5,11 +5,8 @@ import { query } from "lit/decorators/query.js";
 import type { AppRouter } from "./app-router.ts";
 import { type PuzzleData, puzzleDataMap, version } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
-import type {
-  PuzzleConfigChangeEvent,
-  PuzzlePreferencesDialog,
-} from "./puzzle/puzzle-config.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
+import type { SettingsDialog } from "./settings-dialog.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { debounced } from "./utils/timing.ts";
@@ -22,13 +19,13 @@ import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
 import "./head-matter.ts";
 import "./help-viewer.ts";
 import "./puzzle/puzzle-checkpoints.ts";
-import "./puzzle/puzzle-config.ts";
 import "./puzzle/puzzle-context.ts";
 import "./puzzle/puzzle-game-menu.ts";
 import "./puzzle/puzzle-keys.ts";
 import "./puzzle/puzzle-preset-menu.ts";
 import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
+import "./settings-dialog.ts";
 
 @customElement("puzzle-screen")
 export class PuzzleScreen extends SignalWatcher(LitElement) {
@@ -51,8 +48,8 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   @query("help-viewer", true)
   private helpPanel?: HelpViewer;
 
-  @query("puzzle-preferences-dialog", true)
-  private preferencesDialog?: PuzzlePreferencesDialog;
+  @query("settings-dialog", true)
+  private preferencesDialog?: SettingsDialog;
 
   private _autoSaveId?: string;
   private get autoSaveId(): string | undefined {
@@ -194,9 +191,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           </puzzle-keys>
         </div>
 
-        <puzzle-preferences-dialog
-            @puzzle-preferences-change=${this.handlePreferencesChange}
-          ></puzzle-preferences-dialog>
+        <settings-dialog puzzle-name=${this.puzzleData.name}></settings-dialog>
       </puzzle-context>
 
       <help-viewer src=${helpUrl} label=${`${this.puzzleData.name} Help`}></help-viewer>
@@ -211,10 +206,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         break;
       case "preferences":
         if (this.preferencesDialog) {
-          if (!this.preferencesDialog.open) {
-            await this.preferencesDialog.reloadValues();
-          }
-          this.preferencesDialog.show();
+          await this.preferencesDialog.show();
         }
         break;
       case "redraw":
@@ -303,11 +295,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         await savedGames.removeAutoSavedGame(puzzle, autoSaveId);
       }
     }
-  }
-
-  private async handlePreferencesChange(event: PuzzleConfigChangeEvent) {
-    // Persist only the changed preferences to the DB
-    await settings.setPuzzlePreferences(this.puzzleType, event.detail.changes);
   }
 
   //
