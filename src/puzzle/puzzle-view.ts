@@ -131,7 +131,11 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         changedProperties.has("renderedPuzzleGameId") &&
         changedProperties.get("renderedPuzzleGameId") === undefined;
 
-      if (changedProperties.has("renderedPuzzleParams") || renderingFirstGame) {
+      if (
+        changedProperties.has("maximize") ||
+        changedProperties.has("renderedPuzzleParams") ||
+        renderingFirstGame
+      ) {
         // Changing game params may alter desired canvas size.
         // (Since game id has probably also changed, we'll redraw either way.)
         needsRedraw = !(await this.resize(false));
