@@ -31,6 +31,8 @@ import triangleAlertIcon from "lucide-static/icons/triangle-alert.svg";
 import undo2Icon from "lucide-static/icons/undo-2.svg";
 import uploadIcon from "lucide-static/icons/upload.svg";
 import wandIcon from "lucide-static/icons/wand.svg";
+import mouseLeftButtonIcon from "./assets/mouse-left-button.svg";
+import mouseRightButtonIcon from "./assets/mouse-right-button.svg";
 
 /**
  * Re-export the Lucide icons we use with symbolic names, for easier modification
@@ -65,6 +67,8 @@ const icons: Record<string, string> = {
   "key-clear": deleteIcon,
   "key-marks": squarePenIcon, // or maybe rectangle-ellipsis?
   "key-hints": wandIcon,
+  "mouse-left-button": mouseLeftButtonIcon,
+  "mouse-right-button": mouseRightButtonIcon,
   // puzzle-end-notifications
   "solved-a": awardIcon,
   "solved-b": crownIcon,
