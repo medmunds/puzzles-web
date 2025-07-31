@@ -7,7 +7,7 @@ import { puzzleContext } from "./puzzle/contexts.ts";
 import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import { settings } from "./store/settings.ts";
-import { assertHasWritableProperty } from "./utils/types.ts";
+import { autoBind } from "./utils/autobind.ts";
 
 // Register components
 import "@shoelace-style/shoelace/dist/components/button/button.js";
@@ -31,7 +31,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
 
   protected override render() {
     return html`
-      <sl-dialog label="Preferences" @sl-change=${this.handleSettingsChange}>
+      <sl-dialog label="Preferences">
         ${this.renderPuzzleSection()}
         ${this.renderAppearanceSection()}
         ${this.renderMouseButtonsSection()}
@@ -104,21 +104,18 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             toggle</sl-checkbox>
         <sl-checkbox 
             help-text="For right drag, long hold then move finger"
-            data-setting="rightButtonLongPress"
-            ?checked=${settings.rightButtonLongPress}
+            ?checked=${autoBind(settings, "rightButtonLongPress")}
           >Long press for right click</sl-checkbox>
         <sl-checkbox 
             help-text="For right drag, lift second finger then move first finger"
-            data-setting="rightButtonTwoFingerTap"
-            ?checked=${settings.rightButtonTwoFingerTap}
+            ?checked=${autoBind(settings, "rightButtonTwoFingerTap")}
           >Two finger tap for right click</sl-checkbox>
         <sl-checkbox
             help-text="Click sound on long press or two finger tap"
           >Audio feedback</sl-checkbox>
         <sl-range
             label="Detection time"
-            data-setting="rightButtonTimeout"
-            value=${settings.rightButtonTimeout}
+            value=${autoBind(settings, "rightButtonTimeout")}
             min="100"
             max="1000"
             step="25"
@@ -145,51 +142,6 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       // Persist only the changed preferences to the DB
       await settings.setPuzzlePreferences(this.puzzle.puzzleId, event.detail.changes);
     }
-  }
-
-  private handleSettingsChange(event: Event) {
-    // Generic sl-change handler binding controls with data-setting to settings store.
-    const target = event.target as HTMLInputElement; // same API as sl form controls
-    const setting = target.getAttribute("data-setting");
-
-    if (!setting) {
-      // Controls that handle their own change events
-      // (e.g., within puzzle-preferences-form)
-      return;
-    }
-
-    assertHasWritableProperty(
-      settings,
-      setting,
-      () => `Invalid data-setting="${setting}"`,
-    );
-
-    let value: boolean | number;
-    const tag = target.tagName.toLowerCase();
-    switch (tag) {
-      case "sl-checkbox":
-        value = target.checked ?? false;
-        break;
-      case "sl-range":
-        value = Number.parseInt(String(target.value));
-        break;
-      default:
-        throw new Error(`Unsupported tag in <${tag} data-setting="${setting}">`);
-    }
-
-    if (import.meta.env.DEV) {
-      // Double check value type in development
-      const oldType = typeof settings[setting];
-      const newType = typeof value;
-      if (oldType !== "undefined" && oldType !== newType) {
-        throw new Error(
-          `Mismatched type in <${tag} data-setting="${setting}">:
-          expected ${oldType} got ${newType} for ${value}`,
-        );
-      }
-    }
-
-    settings[setting] = value;
   }
 
   get open() {
