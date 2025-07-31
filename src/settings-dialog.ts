@@ -7,6 +7,7 @@ import { puzzleContext } from "./puzzle/contexts.ts";
 import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import { settings } from "./store/settings.ts";
+import { assertHasWritableProperty } from "./utils/types.ts";
 
 // Register components
 import "@shoelace-style/shoelace/dist/components/button/button.js";
@@ -30,7 +31,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
 
   protected override render() {
     return html`
-      <sl-dialog label="Preferences">
+      <sl-dialog label="Preferences" @sl-change=${this.handleSettingsChange}>
         ${this.renderPuzzleSection()}
         ${this.renderAppearanceSection()}
         ${this.renderMouseButtonsSection()}
@@ -62,13 +63,6 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     `;
   }
 
-  private async handlePuzzlePreferencesChange(event: PuzzleConfigChangeEvent) {
-    if (this.puzzle) {
-      // Persist only the changed preferences to the DB
-      await settings.setPuzzlePreferences(this.puzzle.puzzleId, event.detail.changes);
-    }
-  }
-
   private renderAppearanceSection() {
     return html`
       <sl-details summary="Appearance">
@@ -88,6 +82,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             help-text="Make the puzzle as large as possible"
             ?checked=${settings.maximizePuzzleSize !== 0}
             @sl-change=${(event: Event) => {
+              // (Special case for non-standard handling; no data-setting attr.)
               const checked = (event.target as HTMLInputElement).checked;
               settings.maximizePuzzleSize = checked ? 999 : 0;
             }}
@@ -109,38 +104,26 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             toggle</sl-checkbox>
         <sl-checkbox 
             help-text="For right drag, long hold then move finger"
+            data-setting="rightButtonLongPress"
             ?checked=${settings.rightButtonLongPress}
-            @sl-change=${(event: Event) => {
-              settings.rightButtonLongPress = (
-                event.target as HTMLInputElement
-              ).checked;
-            }}
           >Long press for right click</sl-checkbox>
         <sl-checkbox 
             help-text="For right drag, lift second finger then move first finger"
+            data-setting="rightButtonTwoFingerTap"
             ?checked=${settings.rightButtonTwoFingerTap}
-            @sl-change=${(event: Event) => {
-              settings.rightButtonTwoFingerTap = (
-                event.target as HTMLInputElement
-              ).checked;
-            }}
           >Two finger tap for right click</sl-checkbox>
         <sl-checkbox
             help-text="Click sound on long press or two finger tap"
           >Audio feedback</sl-checkbox>
         <sl-range
-          label="Detection time"
-          value=${settings.rightButtonTimeout}
-          min="100"
-          max="1000"
-          step="25"
-          help-text="Long press length/​maximum delay for two finger tap"
-          .tooltipFormatter=${(value: number) => `${value} ms`}
-          @sl-change=${(event: Event) => {
-            settings.rightButtonTimeout = Number.parseInt(
-              (event.target as HTMLInputElement).value,
-            );
-          }}
+            label="Detection time"
+            data-setting="rightButtonTimeout"
+            value=${settings.rightButtonTimeout}
+            min="100"
+            max="1000"
+            step="25"
+            help-text="Long press length/​maximum delay for two finger tap"
+            .tooltipFormatter=${(value: number) => `${value} ms`}
           ></sl-range>
       </sl-details>
     `;
@@ -155,6 +138,58 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
           >Show unfinished puzzles</sl-checkbox>
       </sl-details>
     `;
+  }
+
+  private async handlePuzzlePreferencesChange(event: PuzzleConfigChangeEvent) {
+    if (this.puzzle) {
+      // Persist only the changed preferences to the DB
+      await settings.setPuzzlePreferences(this.puzzle.puzzleId, event.detail.changes);
+    }
+  }
+
+  private handleSettingsChange(event: Event) {
+    // Generic sl-change handler binding controls with data-setting to settings store.
+    const target = event.target as HTMLInputElement; // same API as sl form controls
+    const setting = target.getAttribute("data-setting");
+
+    if (!setting) {
+      // Controls that handle their own change events
+      // (e.g., within puzzle-preferences-form)
+      return;
+    }
+
+    assertHasWritableProperty(
+      settings,
+      setting,
+      () => `Invalid data-setting="${setting}"`,
+    );
+
+    let value: boolean | number;
+    const tag = target.tagName.toLowerCase();
+    switch (tag) {
+      case "sl-checkbox":
+        value = target.checked ?? false;
+        break;
+      case "sl-range":
+        value = Number.parseInt(String(target.value));
+        break;
+      default:
+        throw new Error(`Unsupported tag in <${tag} data-setting="${setting}">`);
+    }
+
+    if (import.meta.env.DEV) {
+      // Double check value type in development
+      const oldType = typeof settings[setting];
+      const newType = typeof value;
+      if (oldType !== "undefined" && oldType !== newType) {
+        throw new Error(
+          `Mismatched type in <${tag} data-setting="${setting}">:
+          expected ${oldType} got ${newType} for ${value}`,
+        );
+      }
+    }
+
+    settings[setting] = value;
   }
 
   get open() {
