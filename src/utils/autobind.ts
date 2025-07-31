@@ -1,14 +1,14 @@
 import type { AttributePart } from "lit";
 import {
-  Directive,
+  AsyncDirective,
   type DirectiveResult,
   type PartInfo,
   PartType,
   directive,
-} from "lit/directive.js";
+} from "lit/async-directive.js";
 import { assertHasReadableProperty } from "./types";
 
-export interface AutoBindOptions<T, K extends keyof T> {
+export interface AutoBindOptions<T extends object, K extends keyof T> {
   /**
    * The name of the element's change event (default "sl-change")
    */
@@ -27,7 +27,7 @@ export interface AutoBindOptions<T, K extends keyof T> {
   convert?: (value: unknown) => T[K];
 }
 
-class AutoBindDirective<T, K extends keyof T> extends Directive {
+class AutoBindDirective<T extends object, K extends keyof T> extends AsyncDirective {
   constructor(partInfo: PartInfo) {
     super(partInfo);
     if (
@@ -38,17 +38,47 @@ class AutoBindDirective<T, K extends keyof T> extends Directive {
     }
   }
 
-  render(object: T, field: K, _options: AutoBindOptions<T, K> | undefined) {
+  private object?: T;
+  private field?: K;
+  private event = "";
+  private property = "";
+  private convert?: (value: unknown) => T[K];
+  private element?: HTMLElement;
+  private eventListenerInstalled = false;
+
+  private handleEvent = (event: Event) => {
+    // Listener for this.event (typically "change" or similar).
+    if (!this.object || !this.field) {
+      throw new Error("AutoBindDirective.handleEvent called before first update");
+    }
+    const target = event.target as HTMLElement;
+    assertHasReadableProperty(target, this.property);
+    const value = target[this.property];
+    this.object[this.field] = this.convert ? this.convert(value) : (value as T[K]);
+  };
+
+  private listen() {
+    if (!this.element) {
+      throw new Error("AutoBindDirective.listen called before first update");
+    }
+    if (!this.eventListenerInstalled) {
+      this.element.addEventListener(this.event, this.handleEvent);
+      this.eventListenerInstalled = true;
+    }
+  }
+
+  private unlisten() {
+    if (this.eventListenerInstalled && this.element) {
+      this.element.removeEventListener(this.event, this.handleEvent);
+    }
+    this.eventListenerInstalled = false;
+  }
+
+  override render(object: T, field: K, _options: AutoBindOptions<T, K> | undefined) {
     return object[field];
   }
 
-  private current?: {
-    element: HTMLElement;
-    event: string;
-    eventListener: EventListener;
-  };
-
-  update(
+  override update(
     part: AttributePart,
     [object, field, options]: [T, K, AutoBindOptions<T, K> | undefined],
   ) {
@@ -56,35 +86,34 @@ class AutoBindDirective<T, K extends keyof T> extends Directive {
 
     // Remove old listener if element or event is changing
     if (
-      this.current &&
-      (this.current.element !== part.element || this.current.event !== event)
+      this.eventListenerInstalled &&
+      (this.element !== part.element || this.event !== event)
     ) {
-      this.current.element.removeEventListener(
-        this.current.event,
-        this.current.eventListener,
-      );
-      this.current = undefined;
+      this.unlisten();
     }
 
-    // Add event listener if we didn't on an earlier render
-    if (!this.current) {
-      this.current = {
-        element: part.element,
-        event: event,
-        eventListener: (event) => {
-          const target = event.target as HTMLElement;
-          assertHasReadableProperty(target, property);
-          const value = target[property];
-          object[field] = convert ? convert(value) : (value as T[K]);
-        },
-      };
-      this.current.element.addEventListener(
-        this.current.event,
-        this.current.eventListener,
-      );
+    // Always capture latest values (for handleEvent)
+    this.element = part.element;
+    this.object = object;
+    this.field = field;
+    this.event = event;
+    this.property = property;
+    this.convert = convert;
+
+    // Add event listener if we didn't on an earlier update (and we're still connected)
+    if (this.isConnected && !this.eventListenerInstalled) {
+      this.listen();
     }
 
     return this.render(object, field, options);
+  }
+
+  override disconnected() {
+    this.unlisten();
+  }
+
+  override reconnected() {
+    this.listen();
   }
 }
 
@@ -103,7 +132,10 @@ class AutoBindDirective<T, K extends keyof T> extends Directive {
  *     }
  *   >
  */
-export const autoBind = directive(AutoBindDirective) as <T, K extends keyof T>(
+export const autoBind = directive(AutoBindDirective) as <
+  T extends object,
+  K extends keyof T,
+>(
   object: T,
   field: K,
   options?: AutoBindOptions<T, K>,
