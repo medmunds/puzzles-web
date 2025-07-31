@@ -1,7 +1,8 @@
 import type SlDrawer from "@shoelace-style/shoelace/dist/components/drawer/drawer.js";
-import { LitElement, css, html } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
+import { when } from "lit/directives/when.js";
 
 // Components
 import "@shoelace-style/shoelace/dist/components/drawer/drawer.js";
@@ -22,6 +23,15 @@ export class HelpViewer extends LitElement {
   @property({ type: String })
   label = "";
 
+  /**
+   * Show an "Open in new tab" header button, which opens the current url
+   * with target="_blank". (In an installed PWA, this generally opens
+   * an embedded web view rather than the user's browser, which probably
+   * isn't the desired behavior.)
+   */
+  @property({ type: Boolean, attribute: "show-popout" })
+  showPopout = false;
+
   @query("sl-drawer")
   private drawer?: SlDrawer;
 
@@ -34,17 +44,17 @@ export class HelpViewer extends LitElement {
   @state()
   private history: URL[] = [];
 
-  connectedCallback() {
+  override connectedCallback() {
     super.connectedCallback();
     this.shadowRoot?.addEventListener("click", this.handleDocumentClick);
   }
 
-  disconnectedCallback() {
+  override disconnectedCallback() {
     this.shadowRoot?.removeEventListener("click", this.handleDocumentClick);
     super.disconnectedCallback();
   }
 
-  protected willUpdate(changedProps: Map<string, unknown>) {
+  protected override willUpdate(changedProps: Map<string, unknown>) {
     if (changedProps.has("src")) {
       this.updateSrc();
     }
@@ -53,20 +63,25 @@ export class HelpViewer extends LitElement {
   // TODO: handle key events: arrows and page scrolling, back/forward navigation
   // TODO: allow resizing (add a dragger grip on left edge)
 
-  render() {
+  protected override render() {
     const currentSrc = this.history[this.historyIndex] ?? "";
     const title = this.currentTitle ?? this.label;
     // TODO: the new tab button (at least) needs a tooltip
     return html`
       <sl-drawer id="help" label=${title}>
         ${this.renderHistoryButtons()}
-        <sl-icon-button 
-            slot="header-actions"
-            label="Open in new tab"
-            name="offsite-link" 
-            href=${currentSrc}
-            target="_blank"
-        ></sl-icon-button>
+        ${when(
+          this.showPopout,
+          () => html`
+            <sl-icon-button 
+                slot="header-actions"
+                label="Open in new tab"
+                name="offsite-link" 
+                href=${currentSrc}
+                target="_blank"
+            ></sl-icon-button>
+          `,
+        )}
         <sl-include 
             src=${currentSrc}
             mode="same-origin"
@@ -80,7 +95,7 @@ export class HelpViewer extends LitElement {
   private renderHistoryButtons() {
     if (this.history.length <= 1) {
       // Don't bother showing the history buttons until there's history available.
-      return;
+      return nothing;
     }
     return html`
       <sl-icon-button
