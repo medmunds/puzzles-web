@@ -40,13 +40,13 @@ export class PuzzleViewInteractive extends PuzzleView {
    * Timeout for detecting long presses and two-finger taps
    */
   @property({ type: Number })
-  secondaryButtonTimeout = 350;
+  secondaryButtonHoldTime = 350;
 
   /**
    * Radius for detecting long presses and two-finger taps
    */
   @property({ type: Number })
-  secondaryButtonSlop = 8;
+  secondaryButtonDragThreshold = 8;
 
   /**
    * True if any touch gestures are enabled to emulate the right mouse button.
@@ -261,8 +261,8 @@ export class PuzzleViewInteractive extends PuzzleView {
     const { isSecondary, unhandledEvent } = await detectSecondaryButton(event, {
       longPress: this.longPress,
       twoFingerTap: this.twoFingerTap,
-      timeout: this.secondaryButtonTimeout,
-      dragThreshold: this.secondaryButtonSlop,
+      holdTime: this.secondaryButtonHoldTime,
+      dragThreshold: this.secondaryButtonDragThreshold,
     });
     if (isSecondary) {
       button = swapButtons(button);

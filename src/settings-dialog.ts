@@ -115,7 +115,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
           >Audio feedback</sl-checkbox>
         <sl-range
             label="Detection time"
-            value=${autoBind(settings, "rightButtonTimeout")}
+            value=${autoBind(settings, "rightButtonHoldTime")}
             min="100"
             max="1000"
             step="25"

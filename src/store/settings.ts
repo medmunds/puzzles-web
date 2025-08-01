@@ -10,8 +10,8 @@ import {
 const defaultSettings = {
   rightButtonLongPress: true,
   rightButtonTwoFingerTap: true,
-  rightButtonTimeout: 350,
-  rightButtonSlop: 8,
+  rightButtonHoldTime: 350,
+  rightButtonDragThreshold: 8,
   maximizePuzzleSize: 5,
 } as const;
 
@@ -21,8 +21,10 @@ class Settings {
   private _rightButtonTwoFingerTap = signal<boolean>(
     defaultSettings.rightButtonTwoFingerTap,
   );
-  private _rightButtonTimeout = signal<number>(defaultSettings.rightButtonTimeout);
-  private _rightButtonSlop = signal<number>(defaultSettings.rightButtonSlop);
+  private _rightButtonHoldTime = signal<number>(defaultSettings.rightButtonHoldTime);
+  private _rightButtonDragThreshold = signal<number>(
+    defaultSettings.rightButtonDragThreshold,
+  );
   private _maximizePuzzleSize = signal<number>(defaultSettings.maximizePuzzleSize);
 
   private constructor() {}
@@ -44,8 +46,8 @@ class Settings {
     if (commonSettings) {
       update(this._rightButtonLongPress, commonSettings.rightButtonLongPress);
       update(this._rightButtonTwoFingerTap, commonSettings.rightButtonTwoFingerTap);
-      update(this._rightButtonTimeout, commonSettings.rightButtonTimeout);
-      update(this._rightButtonSlop, commonSettings.rightButtonSlop);
+      update(this._rightButtonHoldTime, commonSettings.rightButtonHoldTime);
+      update(this._rightButtonDragThreshold, commonSettings.rightButtonDragThreshold);
       update(this._maximizePuzzleSize, commonSettings.maximizePuzzleSize);
     }
   }
@@ -68,20 +70,20 @@ class Settings {
     this.saveCommonSetting("rightButtonTwoFingerTap", value);
   }
 
-  get rightButtonTimeout(): number {
-    return this._rightButtonTimeout.get();
+  get rightButtonHoldTime(): number {
+    return this._rightButtonHoldTime.get();
   }
-  set rightButtonTimeout(value: number) {
-    this._rightButtonTimeout.set(value);
-    this.saveCommonSetting("rightButtonTimeout", value);
+  set rightButtonHoldTime(value: number) {
+    this._rightButtonHoldTime.set(value);
+    this.saveCommonSetting("rightButtonHoldTime", value);
   }
 
-  get rightButtonSlop(): number {
-    return this._rightButtonSlop.get();
+  get rightButtonDragThreshold(): number {
+    return this._rightButtonDragThreshold.get();
   }
-  set rightButtonSlop(value: number) {
-    this._rightButtonSlop.set(value);
-    this.saveCommonSetting("rightButtonSlop", value);
+  set rightButtonDragThreshold(value: number) {
+    this._rightButtonDragThreshold.set(value);
+    this.saveCommonSetting("rightButtonDragThreshold", value);
   }
 
   get maximizePuzzleSize(): number {
