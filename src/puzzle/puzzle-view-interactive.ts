@@ -1,12 +1,14 @@
 import { css, html } from "lit";
 import { customElement, eventOptions, property } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
+import { audioClick } from "../utils/audio.ts";
 import {
   DOMMouseButton,
   hasCtrlKey,
   isAppleDevice,
   swapButtons,
 } from "../utils/events.ts";
+import { clamp } from "../utils/math.ts";
 import { detectSecondaryButton } from "../utils/touch.ts";
 import { PuzzleView } from "./puzzle-view.ts";
 import { type Point, PuzzleButton } from "./types.ts";
@@ -49,11 +51,11 @@ export class PuzzleViewInteractive extends PuzzleView {
   secondaryButtonDragThreshold = 8;
 
   /**
-   * True if any touch gestures are enabled to emulate the right mouse button.
+   * Volume 0-100 for audio feedback on detecting long press or two-finger tap.
+   * Set to 0 to disable audio feedback.
    */
-  get secondaryButtonGestures(): boolean {
-    return this.longPress || this.twoFingerTap;
-  }
+  @property({ type: Number })
+  secondaryButtonAudioVolume = 40;
 
   override connectedCallback() {
     super.connectedCallback();
@@ -96,6 +98,16 @@ export class PuzzleViewInteractive extends PuzzleView {
       x: event.clientX - canvasRect.left,
       y: event.clientY - canvasRect.top,
     };
+  }
+
+  /**
+   * Generate (audio) feedback for secondary button detection
+   */
+  protected secondaryButtonFeedback() {
+    if (this.secondaryButtonAudioVolume > 0) {
+      const volume = clamp(0, this.secondaryButtonAudioVolume, 100);
+      audioClick({ volume }).then(/* nothing */);
+    }
   }
 
   //
@@ -266,7 +278,7 @@ export class PuzzleViewInteractive extends PuzzleView {
     });
     if (isSecondary) {
       button = swapButtons(button);
-      // TODO: audio/haptic feedback for emulated secondary button
+      this.secondaryButtonFeedback();
     }
 
     const { press, drag, release } = PuzzleViewInteractive.domToPuzzleButtons[button];

@@ -10,6 +10,7 @@ import {
 const defaultSettings = {
   rightButtonLongPress: true,
   rightButtonTwoFingerTap: true,
+  rightButtonAudioVolume: 40,
   rightButtonHoldTime: 350,
   rightButtonDragThreshold: 8,
   maximizePuzzleSize: 5,
@@ -20,6 +21,9 @@ class Settings {
   private _rightButtonLongPress = signal<boolean>(defaultSettings.rightButtonLongPress);
   private _rightButtonTwoFingerTap = signal<boolean>(
     defaultSettings.rightButtonTwoFingerTap,
+  );
+  private _rightButtonAudioVolume = signal<number>(
+    defaultSettings.rightButtonAudioVolume,
   );
   private _rightButtonHoldTime = signal<number>(defaultSettings.rightButtonHoldTime);
   private _rightButtonDragThreshold = signal<number>(
@@ -46,6 +50,7 @@ class Settings {
     if (commonSettings) {
       update(this._rightButtonLongPress, commonSettings.rightButtonLongPress);
       update(this._rightButtonTwoFingerTap, commonSettings.rightButtonTwoFingerTap);
+      update(this._rightButtonAudioVolume, commonSettings.rightButtonAudioVolume);
       update(this._rightButtonHoldTime, commonSettings.rightButtonHoldTime);
       update(this._rightButtonDragThreshold, commonSettings.rightButtonDragThreshold);
       update(this._maximizePuzzleSize, commonSettings.maximizePuzzleSize);
@@ -68,6 +73,14 @@ class Settings {
   set rightButtonTwoFingerTap(value: boolean) {
     this._rightButtonTwoFingerTap.set(value);
     this.saveCommonSetting("rightButtonTwoFingerTap", value);
+  }
+
+  get rightButtonAudioVolume(): number {
+    return this._rightButtonAudioVolume.get();
+  }
+  set rightButtonAudioVolume(value: number) {
+    this._rightButtonAudioVolume.set(value);
+    this.saveCommonSetting("rightButtonAudioVolume", value);
   }
 
   get rightButtonHoldTime(): number {

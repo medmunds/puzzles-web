@@ -110,9 +110,15 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             help-text="For right drag, lift second finger then move first finger"
             ?checked=${autoBind(settings, "rightButtonTwoFingerTap")}
           >Two finger tap for right click</sl-checkbox>
-        <sl-checkbox
+        <sl-range
+            label="Audio feedback volume"
+            value=${autoBind(settings, "rightButtonAudioVolume")}
+            min="0"
+            max="100"
+            step="5"
             help-text="Click sound on long press or two finger tap"
-          >Audio feedback</sl-checkbox>
+            .tooltipFormatter=${(value: number) => (value > 0 ? value : "Off")}
+          ></sl-range>
         <sl-range
             label="Detection time"
             value=${autoBind(settings, "rightButtonHoldTime")}

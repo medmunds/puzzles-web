@@ -17,6 +17,7 @@ export interface CommonPuzzleSettings {
   // Secondary button emulation
   rightButtonLongPress?: boolean;
   rightButtonTwoFingerTap?: boolean;
+  rightButtonAudioVolume?: number; // 0-100; 0 disables
   rightButtonHoldTime?: number; // milliseconds
   rightButtonDragThreshold?: number; // css pixel radius
 

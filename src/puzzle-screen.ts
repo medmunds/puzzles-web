@@ -157,6 +157,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
               aria-label="interactive puzzle displayed as an image"
               ?longPress=${settings.rightButtonLongPress}
               ?twoFingerTap=${settings.rightButtonTwoFingerTap}
+              secondaryButtonAudioVolume=${settings.rightButtonAudioVolume}
               secondaryButtonHoldTime=${settings.rightButtonHoldTime}
               secondaryButtonDragThreshold=${settings.rightButtonDragThreshold}
               ?maximize=${settings.maximizePuzzleSize !== 0}
