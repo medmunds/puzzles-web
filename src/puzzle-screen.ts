@@ -12,10 +12,9 @@ import { settings } from "./store/settings.ts";
 import { debounced } from "./utils/timing.ts";
 
 // Register components
-import "@shoelace-style/shoelace/dist/components/button/button.js";
-import "@shoelace-style/shoelace/dist/components/divider/divider.js";
-import "@shoelace-style/shoelace/dist/components/menu-label/menu-label.js";
-import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/divider/divider.js";
+import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "./head-matter.ts";
 import "./help-viewer.ts";
 import "./puzzle/puzzle-checkpoints.ts";
@@ -130,25 +129,25 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           </header>
 
           <div class="toolbar">
-            <puzzle-game-menu @sl-select=${this.handleGameMenuCommand}>
-              <sl-menu-item value="preferences">
-                <sl-icon slot="prefix" name="settings"></sl-icon>
+            <puzzle-game-menu @wa-select=${this.handleGameMenuCommand}>
+              <wa-dropdown-item value="preferences">
+                <wa-icon slot="icon" name="settings"></wa-icon>
                 Preferences…
-              </sl-menu-item>
-              <sl-divider></sl-divider>
-              <sl-menu-item value="catalog">
-                <sl-icon slot="prefix" name="back-to-catalog"></sl-icon>
+              </wa-dropdown-item>
+              <wa-divider></wa-divider>
+              <wa-dropdown-item value="catalog">
+                <wa-icon slot="icon" name="back-to-catalog"></wa-icon>
                 Other puzzles
-              </sl-menu-item>
-              <sl-divider></sl-divider>
-              <sl-menu-item value="redraw">Redraw puzzle</sl-menu-item>
-              <sl-menu-label class="version">v${version}</sl-menu-label>
+              </wa-dropdown-item>
+              <wa-divider></wa-divider>
+              <wa-dropdown-item value="redraw">Redraw puzzle</wa-dropdown-item>
+              <h3 class="version">v${version}</h3>
             </puzzle-game-menu>
             <puzzle-preset-menu></puzzle-preset-menu>
-            <sl-button href=${helpUrl} @click=${this.showHelp}>
-              <sl-icon slot="prefix" name="help"></sl-icon>
+            <wa-button href=${helpUrl} @click=${this.showHelp}>
+              <wa-icon slot="start" name="help"></wa-icon>
               Help
-            </sl-button>
+            </wa-button>
           </div>
 
           <puzzle-view-interactive 
@@ -171,20 +170,20 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           <!-- Directly after puzzle-view so it's next in the tab order
                after completing a game via physical keyboard -->
           <puzzle-end-notification>
-            <sl-button 
+            <wa-button 
                 slot="extra-actions-solved" 
                 @click=${this.handleChangeType}
-              >
-              <sl-icon slot="prefix" name="puzzle-type"></sl-icon>
+            >
+              <wa-icon slot="start" name="puzzle-type"></wa-icon>
               Change type
-            </sl-button>
-            <sl-button 
+            </wa-button>
+            <wa-button 
                 slot="extra-actions-solved" 
                 href=${otherPuzzlesUrl}
-              >
-              <sl-icon slot="prefix" name="back-to-catalog"></sl-icon>
+            >
+              <wa-icon slot="start" name="back-to-catalog"></wa-icon>
               Other puzzles
-            </sl-button>
+            </wa-button>
           </puzzle-end-notification>
 
           <puzzle-keys>
@@ -311,12 +310,12 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     }
     
     .app {
-      --app-padding: var(--sl-spacing-x-large);
-      --app-spacing: var(--sl-spacing-large);
+      --app-padding: var(--wa-space-xl);
+      --app-spacing: var(--wa-space-l);
 
       @container (max-width: 40rem) {
-        --app-padding: var(--sl-spacing-large);
-        --app-spacing: var(--sl-spacing-medium);
+        --app-padding: var(--wa-space-l);
+        --app-spacing: var(--wa-space-m);
       }
 
       height: 100%;
@@ -343,28 +342,28 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
       @media (prefers-reduced-motion: no-preference) {
         transition:
-            gap var(--sl-transition-fast) ease-in-out,
-            padding var(--sl-transition-fast) ease-in-out;
+          gap var(--wa-transition-fast)  var(--wa-transition-easing),
+          padding var(--wa-transition-fast)  var(--wa-transition-easing);
         & > * {
-          transition: margin var(--sl-transition-fast) ease-in-out;
+          transition: margin var(--wa-transition-fast) var(--wa-transition-easing);
         }
       }
 
-      background-color: var(--sl-color-neutral-200);
-      color: var(--sl-color-neutral-900);
+      background-color: var(--wa-color-neutral-90);
+      color: var(--wa-color-text-normal);
     }
 
     h1 {
       margin: 0;
-      color: var(--sl-color-neutral-800);
-      font-weight: var(--sl-font-weight-bold);
-      font-size: var(--sl-font-size-x-large);
-      line-height: var(--sl-line-height-dense);
+      color: var(--wa-color-neutral-20);
+      font-weight: var(--wa-font-weight-bold);
+      font-size: var(--wa-font-size-xl);
+      line-height: var(--wa-line-height-condensed);
     }
     .subtitle {
-      font-size: var(--sl-font-size-medium);
-      font-weight: var(--sl-font-weight-normal);
-      color: var(--sl-color-neutral-700);
+      font-size: var(--wa-font-size-m);
+      font-weight: var(--wa-font-weight-normal);
+      color: var(--wa-color-text-quiet);
     }
     @container (max-width: 36rem) {
       /* This sizing is just kind of eyeballed with "Same Game",
@@ -388,7 +387,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       display: flex;
       justify-content: flex-start;
       align-items: baseline;
-      gap: var(--sl-spacing-small);
+      gap: var(--wa-space-s);
     }
 
     puzzle-preset-menu {
@@ -403,9 +402,9 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       flex: 0 1 auto;
       min-height: 5rem; /* allows flexing */
       overflow: auto; /* scrollbars if it still can't fit */
-      background-color: var(--sl-color-neutral-50);
-      border-radius: var(--sl-border-radius-medium);
-      --padding: var(--sl-spacing-medium);
+      background-color: var(--wa-color-neutral-95);
+      border-radius: var(--wa-form-control-border-radius);
+      --padding: var(--wa-space-m);
     }
     
     @container (max-width: 25rem) {
@@ -413,11 +412,11 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         margin: 0;
         border-radius: 0;
         min-width: 100%;
-        --padding: var(--sl-spacing-large); /* --app-padding */
+        --padding: var(--wa-space-l); /* --app-padding */
       }
     }
 
-    sl-menu-label.version::part(base) {
+    .version {
       /* Allow selecting the version info */
       -moz-user-select: all;
       -webkit-user-select: all;

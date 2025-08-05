@@ -1,6 +1,6 @@
+import WaButton from "@awesome.me/webawesome/dist/components/button/button.js";
 import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import SlButton from "@shoelace-style/shoelace/dist/components/button/button.js";
 import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
@@ -9,8 +9,8 @@ import type { Puzzle } from "./puzzle.ts";
 import type { KeyLabel } from "./types.ts";
 
 // Components
-import "@shoelace-style/shoelace/dist/components/button/button.js";
-import "@shoelace-style/shoelace/dist/components/icon/icon.js";
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
 
 interface LabelIcons {
   [label: string]: string;
@@ -25,7 +25,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
   @state()
   private puzzle?: Puzzle;
 
-  // Maps KeyLabel.label to sl-icon name
+  // Maps KeyLabel.label to wa-icon name
   static defaultLabelIcons: LabelIcons = {
     Clear: "key-clear",
     Marks: "key-marks",
@@ -51,8 +51,8 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
   }
 
   private preventDoubleTapZoom = (event: MouseEvent) => {
-    if (event.composedPath().some((target) => target instanceof SlButton)) {
-      // Prevent double-tap zoom (on iOS) for all sl-buttons.
+    if (event.composedPath().some((target) => target instanceof WaButton)) {
+      // Prevent double-tap zoom (on iOS) for all wa-buttons.
       // (Sadly, CSS `touch-action: ...` doesn't achieve this on iOS.)
       event.preventDefault();
     }
@@ -104,38 +104,38 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     const icon = this.labelIcons[label];
     const classes = { single: icon || label.length === 1 };
     const content = icon
-      ? html`<sl-icon name=${icon} label=${label}></sl-icon>`
+      ? html`<wa-icon name=${icon} label=${label}></wa-icon>`
       : label;
     return html`            
-      <sl-button 
+      <wa-button 
           class=${classMap(classes)}
           @click=${() => this.puzzle?.processKey(key.button)}
-        >${content}</sl-button>
+        >${content}</wa-button>
     `;
   };
 
   private renderUndoRedo() {
     return html`
       <div class="group">
-        <sl-button
+        <wa-button
             ?disabled=${!this.puzzle?.canUndo}
             @click=${() => this.puzzle?.undo()}>
-          <sl-icon slot="prefix" name="undo"></sl-icon>
+          <wa-icon slot="start" name="undo"></wa-icon>
           Undo
-        </sl-button>
-        <sl-button
+        </wa-button>
+        <wa-button
             ?disabled=${!this.puzzle?.canRedo}
             @click=${() => this.puzzle?.redo()}>
           Redo
-          <sl-icon slot="prefix" name="redo"></sl-icon>
-        </sl-button>
+          <wa-icon slot="start" name="redo"></wa-icon>
+        </wa-button>
       </div>
     `;
   }
 
   static styles = css`
     :host {
-      --gap: var(--sl-spacing-small); 
+      --gap: var(--wa-space-s); 
 
       display: flex;
       flex-wrap: wrap;
@@ -150,10 +150,10 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     .single {
       /* Make all single-char buttons the same width, for uniform layout.
        * (This cheats the horizontal padding just a bit.) */
-      width: var(--sl-input-height-medium);
+      width: var(--wa-input-height-medium);
     }
     
-    sl-button {
+    wa-button {
       /* Disable double-tap to zoom on keys that might be tapped quickly.
        * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.)
        */

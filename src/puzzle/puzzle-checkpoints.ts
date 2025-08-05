@@ -1,19 +1,17 @@
+import type WaDropdownItem from "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import type SlMenuItem from "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
 import { LitElement, html, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 
 // Component registration
-import "@shoelace-style/shoelace/dist/components/button/button.js";
-import "@shoelace-style/shoelace/dist/components/divider/divider.js";
-import "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";
-import "@shoelace-style/shoelace/dist/components/icon/icon.js";
-import "@shoelace-style/shoelace/dist/components/menu/menu.js";
-import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
-import "@shoelace-style/shoelace/dist/components/menu-label/menu-label.js";
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/divider/divider.js";
+import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
+import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
 
 @customElement("puzzle-checkpoints")
 export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
@@ -36,18 +34,16 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
     const hasCheckpoints = checkpoints.length > 0;
 
     return html`
-      <sl-dropdown hoist placement="top-start">
-        <sl-button slot="trigger" caret>
-          <sl-icon slot="prefix" name="checkpoint"></sl-icon>
+      <wa-dropdown placement="top-start" @wa-select=${this.handleSelectCheckpoint}>
+        <wa-button slot="trigger" with-caret>
+          <wa-icon slot="start" name="checkpoint"></wa-icon>
           Checkpoints
-        </sl-button>
-        <sl-menu @sl-select=${this.handleSelectCheckpoint}>
-          ${hasCheckpoints ? html`<sl-menu-label>Return to checkpoint</sl-menu-label>` : nothing}
+        </wa-button>
+          ${hasCheckpoints ? html`<h3>Return to checkpoint</h3>` : nothing}
           ${checkpoints.map((checkpoint) => this.renderCheckpointItem(checkpoint))}
-          ${hasCheckpoints ? html`<sl-divider></sl-divider>` : nothing}
-          <sl-menu-item @click=${this.handleSaveCheckpoint}>Save checkpoint</sl-menu-item>
-        </sl-menu>
-      </sl-dropdown>
+          ${hasCheckpoints ? html`<wa-divider></wa-divider>` : nothing}
+          <wa-dropdown-item @click=${this.handleSaveCheckpoint}>Save checkpoint</wa-dropdown-item>
+      </wa-dropdown>
     `;
   }
 
@@ -57,15 +53,15 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
     const label =
       ago === 0 ? "Last move" : ago === 1 ? "1 move ago" : `${ago} moves ago`;
     return html`
-      <sl-menu-item 
+      <wa-dropdown-item 
           value=${checkpoint} 
           type="checkbox" 
           ?checked=${checked}
-        >${label}</sl-menu-item>
+        >${label}</wa-dropdown-item>
     `;
   }
 
-  private handleSelectCheckpoint(event: CustomEvent<{ item: SlMenuItem }>) {
+  private handleSelectCheckpoint(event: CustomEvent<{ item: WaDropdownItem }>) {
     const value = event.detail.item.value;
     const checkpoint = Number.parseInt(value);
     if (Number.isFinite(checkpoint)) {

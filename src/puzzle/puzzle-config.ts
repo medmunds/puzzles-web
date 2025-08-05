@@ -1,6 +1,6 @@
+import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import { SignalWatcher, signal } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import type SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.js";
 import { LitElement, type TemplateResult, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
@@ -10,15 +10,15 @@ import type { Puzzle } from "./puzzle.ts";
 import type { ConfigDescription, ConfigItem, ConfigValues } from "./types.ts";
 
 // Register components
-import "@shoelace-style/shoelace/dist/components/button/button.js";
-import "@shoelace-style/shoelace/dist/components/checkbox/checkbox.js";
-import "@shoelace-style/shoelace/dist/components/dialog/dialog.js";
-import "@shoelace-style/shoelace/dist/components/divider/divider.js";
-import "@shoelace-style/shoelace/dist/components/input/input.js";
-import "@shoelace-style/shoelace/dist/components/option/option.js";
-import "@shoelace-style/shoelace/dist/components/select/select.js";
-import "@shoelace-style/shoelace/dist/components/radio-button/radio-button.js";
-import "@shoelace-style/shoelace/dist/components/radio-group/radio-group.js";
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
+import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
+import "@awesome.me/webawesome/dist/components/divider/divider.js";
+import "@awesome.me/webawesome/dist/components/input/input.js";
+import "@awesome.me/webawesome/dist/components/option/option.js";
+import "@awesome.me/webawesome/dist/components/select/select.js";
+import "@awesome.me/webawesome/dist/components/radio/radio.js";
+import "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
 
 const isNumeric = (value: unknown) =>
   typeof value === "number" || (typeof value === "string" && /[0-9]+/.test(value));
@@ -101,55 +101,58 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
     switch (config.type) {
       case "string":
         return html`
-          <sl-input
+          <wa-input
             id=${id}
             inputmode=${isNumeric(value) ? "decimal" : "text"}
             label=${config.name}
             value=${value}
-            @sl-focus=${this.autoSelectInput}
-            @sl-change=${this.updateTextValue}
-          ></sl-input>
+            @focus=${this.autoSelectInput}
+            @change=${this.updateTextValue}
+          ></wa-input>
         `;
 
       case "boolean":
         return html`
-          <sl-checkbox 
+          <wa-checkbox 
             id=${id}
             ?checked=${value}
-            @sl-change=${this.updateCheckboxValue}
-          >${config.name}</sl-checkbox>
+            @change=${this.updateCheckboxValue}
+          >${config.name}</wa-checkbox>
         `;
 
       case "choices":
         if (config.choicenames.length <= 3) {
-          // Render small option sets as a radio button group rather than a select popup
+          // Render small option sets as a radio button group rather than a select popup.
+          // Bind to .value (property) rather than value (attribute) to work
+          // around a wa-radio-group bug where the initial value isn't shown.
           return html`
-            <sl-radio-group
+            <wa-radio-group
               id=${id}
               label=${config.name}
-              value=${value}
-              @sl-change=${this.updateSelectValue}
+              .value=${value}
+              orientation="horizontal"
+              @change=${this.updateSelectValue}
             >
               ${config.choicenames.map(
                 (choice, value) => html`
-                <sl-radio-button value=${value}>${choice}</sl-radio-button>`,
+                <wa-radio value=${value} appearance="button">${choice}</wa-radio>`,
               )}
-            </sl-radio-group>
+            </wa-radio-group>
           `;
         }
         return html`
-          <sl-select
+          <wa-select
             id=${id}
             label=${config.name}
             value=${value}
-            @sl-change=${this.updateSelectValue}
+            @change=${this.updateSelectValue}
           >
             ${config.choicenames.map(
               (choice, value) => html`
-              <sl-option value=${value}>${choice}</sl-option>
+              <wa-option value=${value}>${choice}</wa-option>
             `,
             )}
-          </sl-select>
+          </wa-select>
         `;
 
       default:
@@ -250,7 +253,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
   static styles = css`
     :host {
       display: contents;
-      --item-spacing: var(--sl-spacing-medium);
+      --item-spacing: var(--wa-space-l);
     }
 
     [part="form"] {
@@ -260,7 +263,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
     }
 
     [part="error"] {
-      color: var(--sl-color-danger-600);
+      color: var(--wa-color-danger-on-normal);
       margin-bottom: var(--item-spacing);
     }
   `;
@@ -342,24 +345,21 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
   @property({ type: String, attribute: "dialog-title" })
   dialogTitle = "Configuration";
 
-  @query("sl-dialog", true)
-  protected dialog?: SlDialog;
+  @query("wa-dialog", true)
+  protected dialog?: WaDialog;
 
   protected abstract form?: PuzzleConfigForm;
 
   protected override render() {
     return html`
-      <sl-dialog
-          label=${this.dialogTitle}
-          @sl-request-close=${this.handleDialogRequestClose}
-      >
+      <wa-dialog label=${this.dialogTitle}>
         ${this.renderConfigForm()}
 
         <div slot="footer" part="footer">
-          <sl-button variant="primary" @click=${this.handleSubmit}>${this.submitLabel}</sl-button>
-          <sl-button @click=${this.handleCancel}>${this.cancelLabel}</sl-button>
+          <wa-button variant="brand" @click=${this.handleSubmit}>${this.submitLabel}</wa-button>
+          <wa-button @click=${this.handleCancel}>${this.cancelLabel}</wa-button>
         </div>
-      </sl-dialog>
+      </wa-dialog>
     `;
   }
 
@@ -374,13 +374,6 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
   }
 
   protected abstract renderConfigForm(): TemplateResult;
-
-  protected handleDialogRequestClose(event: CustomEvent<{ source: string }>) {
-    // Prevent the dialog from closing when the user clicks on the overlay
-    if (event.detail.source === "overlay") {
-      event.preventDefault();
-    }
-  }
 
   protected async handleSubmit() {
     await this.form?.submit();
@@ -399,19 +392,17 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
     return this.dialog?.open ?? false;
   }
   set open(isOpen: boolean) {
-    if (isOpen) {
-      this.dialog?.show();
-    } else {
-      this.dialog?.hide();
+    if (this.dialog) {
+      this.dialog.open = isOpen;
     }
   }
 
-  async show(): Promise<void> {
-    return this.dialog?.show();
+  show() {
+    this.open = true;
   }
 
-  async hide(): Promise<void> {
-    return this.dialog?.hide();
+  hide() {
+    this.open = false;
   }
 
   async reloadValues(): Promise<void> {
@@ -426,7 +417,7 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
     [part="footer"] {
       display: flex;
       justify-content: flex-end;
-      gap: var(--sl-spacing-small);
+      gap: var(--wa-space-s);
     }
   `;
 }

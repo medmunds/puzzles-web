@@ -10,7 +10,7 @@ import { assertHasReadableProperty } from "./types";
 
 export interface AutoBindOptions<T extends object, K extends keyof T> {
   /**
-   * The name of the element's change event (default "sl-change")
+   * The name of the element's change event (default "change")
    */
   event?: string;
 
@@ -32,7 +32,8 @@ class AutoBindDirective<T extends object, K extends keyof T> extends AsyncDirect
     super(partInfo);
     if (
       partInfo.type !== PartType.ATTRIBUTE &&
-      partInfo.type !== PartType.BOOLEAN_ATTRIBUTE
+      partInfo.type !== PartType.BOOLEAN_ATTRIBUTE &&
+      partInfo.type !== PartType.PROPERTY
     ) {
       throw new Error("autoBind can only be used in attribute position");
     }
@@ -82,7 +83,7 @@ class AutoBindDirective<T extends object, K extends keyof T> extends AsyncDirect
     part: AttributePart,
     [object, field, options]: [T, K, AutoBindOptions<T, K> | undefined],
   ) {
-    const { event = "sl-change", convert, property = part.name } = options ?? {};
+    const { event = "change", convert, property = part.name } = options ?? {};
 
     // Remove old listener if element or event is changing
     if (

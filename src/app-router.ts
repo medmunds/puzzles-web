@@ -210,7 +210,7 @@ export class AppRouter extends LitElement {
       return;
     }
 
-    // If the click was within an element with an href (`<a>`, sl-button, etc.),
+    // If the click was within an element with an href (`<a>`, wa-button, etc.),
     // and the href matches a route, intercept it.
     for (const target of event.composedPath()) {
       const href = target instanceof HTMLElement && target.getAttribute("href");

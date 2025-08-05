@@ -1,6 +1,6 @@
+import type WaDropdownItem from "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import type SlMenuItem from "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
 import { LitElement, type TemplateResult, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
@@ -10,13 +10,11 @@ import type { Puzzle } from "./puzzle.ts";
 import type { PresetMenuEntry } from "./types.ts";
 
 // Register components
-import "@shoelace-style/shoelace/dist/components/button/button.js";
-import "@shoelace-style/shoelace/dist/components/divider/divider.js";
-import "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";
-import "@shoelace-style/shoelace/dist/components/icon/icon.js";
-import "@shoelace-style/shoelace/dist/components/menu/menu.js";
-import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
-import "@shoelace-style/shoelace/dist/components/menu-label/menu-label.js";
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/divider/divider.js";
+import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
+import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "./puzzle-config.ts";
 
 @customElement("puzzle-preset-menu")
@@ -78,24 +76,24 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
 
   override render(): TemplateResult {
     return html`
-      <sl-dropdown 
-          hoist
-          @sl-show=${this.handleDropdownShow}
-          @sl-after-show=${this.handleDropdownAfterShow}
-          @sl-hide=${this.handleDropdownHide}
+      <wa-dropdown 
+          @wa-show=${this.handleDropdownShow}
+          @wa-after-show=${this.handleDropdownAfterShow}
+          @wa-hide=${this.handleDropdownHide}
+          @wa-select=${this.handleDropdownSelect}
       >
-        <sl-button slot="trigger" caret>
-          <sl-icon slot="prefix" name="puzzle-type"></sl-icon>
-          <div class=${classMap({ "dropdown-label": true, open: this.open })}>
-            ${this.label}<br>
-            ${this.currentGameTypeLabel}
+        <wa-button slot="trigger" with-caret>
+          <wa-icon slot="start" name="puzzle-type"></wa-icon>
+          <div class="dropdown-label">
+            <div class=${classMap({ "dropdown-label-content": true, open: this.open })}>
+              ${this.label}<br>
+              ${this.currentGameTypeLabel}
+            </div>
           </div>
-        </sl-button>
-        <sl-menu @sl-select=${this.handleDropdownSelect}>
-          ${this.renderPresetMenuItems()}
-          <slot></slot>
-        </sl-menu>
-      </sl-dropdown>
+        </wa-button>
+        ${this.renderPresetMenuItems()}
+        <slot></slot>
+      </wa-dropdown>
     `;
   }
 
@@ -109,28 +107,28 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
 
     for (const { submenu, title, params } of this.presets) {
       if (submenu) {
-        result.push(html`<sl-divider></sl-divider>`);
-        result.push(html`<sl-menu-label>${title}</sl-menu-label>`);
+        result.push(html`<wa-divider></wa-divider>`);
+        result.push(html`<h3>${title}</h3>`);
       } else {
         result.push(html`
-          <sl-menu-item
+          <wa-dropdown-item
               type="checkbox"
               role="menuitemradio"
               ?checked=${params === checkedParams}
               value=${params}
-            >${title}</sl-menu-item>
+            >${title}</wa-dropdown-item>
         `);
       }
     }
 
-    result.push(html`<sl-divider></sl-divider>`);
+    result.push(html`<wa-divider></wa-divider>`);
     result.push(html`
-      <sl-menu-item 
+      <wa-dropdown-item 
           type="checkbox"
           role="menuitemradio"
           ?checked=${isCustom} 
           value="#custom"
-        >Custom type…</sl-menu-item>
+        >Custom type…</wa-dropdown-item>
     `);
 
     return result;
@@ -145,14 +143,17 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   }
 
   private async handleDropdownAfterShow() {
-    // Set the current preset's sl-menu-item as the menu's current item. This scrolls
-    // it into view and makes it the starting point for arrow key navigation.
-    const menu = this.shadowRoot?.querySelector("sl-menu");
-    const selectedItem = this.shadowRoot?.querySelector<SlMenuItem>(
-      "sl-menu-item[checked]",
+    const selectedItem = this.shadowRoot?.querySelector<WaDropdownItem>(
+      "wa-dropdown-item[checked]",
     );
-    if (menu && selectedItem) {
-      menu.setCurrentItem(selectedItem); // (@internal, but not private, SlMenuItem API.)
+    if (selectedItem) {
+      // Make sure the selectedItem is the only active one,
+      // which makes it the starting point for key nav.
+      // (WaDropdownItem.active is an @internal, but not private, property.)
+      for (const item of this.shadowRoot?.querySelectorAll("wa-dropdown-item") ?? []) {
+        item.active = item === selectedItem;
+      }
+      // Focus scrolls the item into view (without actually showing it focused).
       selectedItem.focus();
     }
   }
@@ -161,11 +162,11 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
     if (!this.puzzle) return;
     const value = event.detail.item.value;
     if (value === "#custom") {
-      // sl-menu automatically toggles checked, which results in custom getting
+      // wa-dropdown automatically toggles checked, which results in custom getting
       // stuck in checked state even if user cancels dialog or matches some other
       // preset. Undo the automatic checked to prevent that.
-      const customItem = this.shadowRoot?.querySelector<SlMenuItem>(
-        'sl-menu-item[value="#custom"]',
+      const customItem = this.shadowRoot?.querySelector<WaDropdownItem>(
+        'wa-dropdown-item[value="#custom"]',
       );
       if (customItem) {
         customItem.checked = false;
@@ -209,73 +210,64 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
     return this.customDialog.show();
   }
 
-  show(): Promise<void> {
-    const menu =
-      this.shadowRoot?.querySelector("sl-dropdown") ??
-      this.shadowRoot?.querySelector("sl-select");
-    return menu?.show() ?? Promise.resolve();
+  show() {
+    const menu = this.shadowRoot?.querySelector("wa-dropdown");
+    if (menu) {
+      menu.open = true;
+    }
   }
 
-  hide(): Promise<void> {
-    const menu =
-      this.shadowRoot?.querySelector("sl-dropdown") ??
-      this.shadowRoot?.querySelector("sl-select");
-    return menu?.hide() ?? Promise.resolve();
+  hide() {
+    const menu = this.shadowRoot?.querySelector("wa-dropdown");
+    if (menu) {
+      menu.open = false;
+    }
   }
 
   //
   // Styles
   //
+  // TODO: investigate styling active wa-dropdown-item like an sl-select option
   static styles = css`
     :host {
       display: block;
     }
     
-    /* Highlight selected item unless keyboard navigation in use.
-     * (See sl-menu-item css.) */
-    sl-menu:not(:has(sl-menu-item:focus-visible)) sl-menu-item[checked]::part(base) {
-      background-color: var(--sl-color-primary-600);
-      color: var(--sl-color-neutral-0) !important;
-    }
-    
     /* Allow flexing */
-    sl-dropdown, sl-button {
+    wa-dropdown, wa-button {
       width: 100%;
     }
-    sl-button::part(label) {
+    wa-button::part(label) {
       flex: 0 1 auto;
       min-width: 1rem;
     }
-    sl-button::part(prefix), sl-button::part(suffix), sl-button::part(caret) {
+    wa-button::part(start), wa-button::part(end), wa-button::part(caret) {
       flex: none;
     }
-    .dropdown-label {
-      width: 100%;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-    
+
     /* Crop the trigger button's two-line label to display either only one
      * of the menu label or the or its current value at any given time.
      * (Both are always rendered for accessibility.)
       */
-    sl-button::part(label) {
-      /*height: calc(var(--sl-input-height-medium) - var(--sl-input-border-width) * 2);*/
+    .dropdown-label {
       height: 1lh;
       overflow: hidden;
     }
-    .dropdown-label {
+    .dropdown-label-content {
+      width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+
       text-align: start;
       transform: translateY(-50%); /* second line: current value */
       &.open {
         transform: translateY(0); /* first line: menu label */
       }
       @media (prefers-reduced-motion: no-preference) {
-        transition: transform 100ms ease; /* match sl-dropdown animation timing */
+        transition: transform 50ms ease; /* match wa-dropdown animation timing */
       }
     }
-    
   `;
 }
 

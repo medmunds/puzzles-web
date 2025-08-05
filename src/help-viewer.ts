@@ -1,19 +1,19 @@
-import type SlDrawer from "@shoelace-style/shoelace/dist/components/drawer/drawer.js";
+import type WaDrawer from "@awesome.me/webawesome/dist/components/drawer/drawer.js";
 import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
 import { when } from "lit/directives/when.js";
 
 // Components
-import "@shoelace-style/shoelace/dist/components/drawer/drawer.js";
-import "@shoelace-style/shoelace/dist/components/icon/icon.js";
-import "@shoelace-style/shoelace/dist/components/icon-button/icon-button.js";
-import "@shoelace-style/shoelace/dist/components/include/include.js";
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/drawer/drawer.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
+import "@awesome.me/webawesome/dist/components/include/include.js";
 
 /**
- * Essentially a miniature browser in an sl-drawer, constrained to subpaths
+ * Essentially a miniature browser in an wa-drawer, constrained to subpaths
  * of its initial src (other links open a new tab/window). Renders content
- * using sl-include with a local style sheet.
+ * using wa-include with a local style sheet.
  */
 @customElement("help-viewer")
 export class HelpViewer extends LitElement {
@@ -32,8 +32,8 @@ export class HelpViewer extends LitElement {
   @property({ type: Boolean, attribute: "show-popout" })
   showPopout = false;
 
-  @query("sl-drawer")
-  private drawer?: SlDrawer;
+  @query("wa-drawer")
+  private drawer?: WaDrawer;
 
   @state()
   private currentTitle?: string;
@@ -68,27 +68,28 @@ export class HelpViewer extends LitElement {
     const title = this.currentTitle ?? this.label;
     // TODO: the new tab button (at least) needs a tooltip
     return html`
-      <sl-drawer id="help" label=${title}>
+      <wa-drawer id="help" label=${title}>
         ${this.renderHistoryButtons()}
         ${when(
           this.showPopout,
           () => html`
-            <sl-icon-button 
+            <wa-button 
                 slot="header-actions"
-                label="Open in new tab"
-                name="offsite-link" 
                 href=${currentSrc}
                 target="_blank"
-            ></sl-icon-button>
+                appearance="plain"
+            >
+              <wa-icon label="Open in new tab" name="offsite-link"></wa-icon>
+            </wa-button>
           `,
         )}
-        <sl-include 
+        <wa-include 
             src=${currentSrc}
             mode="same-origin"
-            @sl-error=${this.handleDocumentError}
-            @sl-load=${this.handleDocumentLoad}
-        ></sl-include>
-      </sl-drawer>
+            @wa-error=${this.handleDocumentError}
+            @wa-load=${this.handleDocumentLoad}
+        ></wa-include>
+      </wa-drawer>
     `;
   }
 
@@ -98,24 +99,30 @@ export class HelpViewer extends LitElement {
       return nothing;
     }
     return html`
-      <sl-icon-button
+      <wa-button
           slot="header-actions"
-          label="Back to start"
-          name="history-back-to-start"
+          appearance="plain"
           ?disabled=${this.historyIndex < 1}
-          @click=${this.goHome}></sl-icon-button>
-      <sl-icon-button
+          @click=${this.goHome}
+      >
+        <wa-icon label="Back to start" name="history-back-to-start"></wa-icon>
+      </wa-button>
+      <wa-button
           slot="header-actions"
-          label="Back"
-          name="history-back"
+          appearance="plain"
           ?disabled=${this.historyIndex < 1}
-          @click=${this.goBack}></sl-icon-button>
-      <sl-icon-button
+          @click=${this.goBack}
+      >
+        <wa-icon label="Back" name="history-back"></wa-icon>
+      </wa-button>
+      <wa-button
           slot="header-actions"
-          label="Forward"
-          name="history-forward"
+          appearance="plain"
           ?disabled=${this.historyIndex >= this.history.length - 1}
-          @click=${this.goForward}></sl-icon-button>
+          @click=${this.goForward}
+      >
+        <wa-icon label="Forward" name="history-forward"></wa-icon>
+      </wa-button>
     `;
   }
 
@@ -142,10 +149,10 @@ export class HelpViewer extends LitElement {
   }
 
   private handleDocumentLoad() {
-    // sl-include fetches its src and displays it in this (light) dom.
+    // wa-include fetches its src and displays it in this (light) dom.
     // This breaks any relative links in the src, as they resolve relative
     // to our current location rather than the src's location. Patch them up.
-    const doc = this.shadowRoot?.querySelector("sl-include");
+    const doc = this.shadowRoot?.querySelector("wa-include");
     if (!doc) {
       return;
     }
@@ -167,8 +174,8 @@ export class HelpViewer extends LitElement {
 
       if (this.isOffsite(resolved)) {
         anchor.target = "_blank";
-        if (!anchor.querySelector("sl-icon")) {
-          const offsiteIcon = document.createElement("sl-icon");
+        if (!anchor.querySelector("wa-icon")) {
+          const offsiteIcon = document.createElement("wa-icon");
           offsiteIcon.classList.add("offsite");
           offsiteIcon.setAttribute("name", "offsite-link");
           offsiteIcon.setAttribute("label", "Opens in new tab");
@@ -215,11 +222,15 @@ export class HelpViewer extends LitElement {
   //
 
   show() {
-    this.drawer?.show();
+    if (this.drawer) {
+      this.drawer.open = true;
+    }
   }
 
   hide() {
-    this.drawer?.hide();
+    if (this.drawer) {
+      this.drawer.open = false;
+    }
   }
 
   goHome() {
@@ -247,46 +258,46 @@ export class HelpViewer extends LitElement {
       display: contents;
     }
     
-    sl-drawer {
+    wa-drawer {
       --size: max(50cqi, 25rem);
     }
-    sl-drawer::part(title) {
+    wa-drawer::part(title) {
       overflow: hidden;
       text-overflow: ellipsis;
       text-wrap: nowrap;
     }
-    sl-drawer::part(header-actions) {
+    wa-drawer::part(header-actions) {
       padding-inline-start: 0;
     }
-    sl-drawer::part(header) {
-      border-bottom: 1px solid var(--sl-color-neutral-200);
+    wa-drawer::part(header) {
+      border-bottom: 1px solid var(--wa-color-neutral-80);
     }
     
     /* TODO: share the base page styles somehow */
-    sl-include {
+    wa-include {
       /* try to avoid horizontal scrolling on small screens */
       overflow-wrap: break-word;
 
       h1, h2, h3 {
-        color: var(--sl-color-neutral-800);
-        line-height: var(--sl-line-height-dense);
+        color: var(--wa-color-text-normal);
+        line-height: var(--wa-line-height-condensed);
       }
       h1 {
-        font-weight: var(--sl-font-weight-bold);
-        font-size: var(--sl-font-size-x-large);
+        font-weight: var(--wa-font-weight-bold);
+        font-size: var(--wa-font-size-xl);
       }
       h2 {
-        font-weight: var(--sl-font-weight-semibold);
-        font-size: var(--sl-font-size-large);
+        font-weight: var(--wa-font-weight-semibold);
+        font-size: var(--wa-font-size-l);
       }
       h3 {
-        font-weight: var(--sl-font-weight-semibold);
-        font-size: var(--sl-font-size-medium);
+        font-weight: var(--wa-font-weight-semibold);
+        font-size: var(--wa-font-size-m);
       }
       
       hr {
         border: none;
-        border-top: 1px solid var(--sl-color-neutral-200);
+        border-top: 1px solid var(--wa-color-neutral-80);
       }
       
       a > code {
@@ -299,7 +310,7 @@ export class HelpViewer extends LitElement {
         white-space: pre-wrap;
       }
       
-      sl-icon.offsite {
+      wa-icon.offsite {
         margin-inline-start: 0.1em;
         vertical-align: -2px; /* visual baseline alignment*/
       }

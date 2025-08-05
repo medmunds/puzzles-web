@@ -1,6 +1,6 @@
+import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import type SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.js";
 import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { puzzleContext } from "./puzzle/contexts.ts";
@@ -10,12 +10,12 @@ import { settings } from "./store/settings.ts";
 import { autoBind } from "./utils/autobind.ts";
 
 // Register components
-import "@shoelace-style/shoelace/dist/components/button/button.js";
-import "@shoelace-style/shoelace/dist/components/checkbox/checkbox.js";
-import "@shoelace-style/shoelace/dist/components/details/details.js";
-import "@shoelace-style/shoelace/dist/components/dialog/dialog.js";
-import "@shoelace-style/shoelace/dist/components/icon/icon.js";
-import "@shoelace-style/shoelace/dist/components/range/range.js";
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
+import "@awesome.me/webawesome/dist/components/details/details.js";
+import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
+import "@awesome.me/webawesome/dist/components/slider/slider.js";
 
 @customElement("settings-dialog")
 export class SettingsDialog extends SignalWatcher(LitElement) {
@@ -26,17 +26,17 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
   @property({ type: String, attribute: "puzzle-name" })
   puzzleName = "";
 
-  @query("sl-dialog", true)
-  private dialog?: SlDialog;
+  @query("wa-dialog", true)
+  private dialog?: WaDialog;
 
   protected override render() {
     return html`
-      <sl-dialog label="Preferences">
+      <wa-dialog label="Preferences" light-dismiss>
         ${this.renderPuzzleSection()}
         ${this.renderAppearanceSection()}
         ${this.renderMouseButtonsSection()}
         ${this.renderAdvancedSection()}
-      </sl-dialog>
+      </wa-dialog>
     `;
   }
 
@@ -53,93 +53,101 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     // Use autosubmit on the puzzle-preferences-form to apply changes immediately.
     // (settings-dialog does not use OK/Cancel flow.)
     return html`
-      <sl-details open>
+      <wa-details open>
         <div slot="summary">Options for <cite>${puzzleName}</cite></div>
         <puzzle-preferences-form 
             autosubmit
             @puzzle-preferences-change=${this.handlePuzzlePreferencesChange}
           ></puzzle-preferences-form>
-      </sl-details>
+      </wa-details>
     `;
   }
 
   private renderAppearanceSection() {
     return html`
-      <sl-details summary="Appearance">
-        <sl-checkbox
+      <wa-details summary="Appearance">
+        <wa-checkbox
             checked
-            help-text="Victory message with “New game” button"
-          >Show popup when solved</sl-checkbox>
-        <sl-checkbox 
+            hint="Victory message with “New game” button"
+          >Show popup when solved</wa-checkbox>
+        <wa-checkbox 
             checked
-            help-text="On-screen buttons for puzzles that need keyboard input"
-          >Show virtual keyboard</sl-checkbox>
-        <sl-checkbox 
+            hint="On-screen buttons for puzzles that need keyboard input"
+          >Show virtual keyboard</wa-checkbox>
+        <wa-checkbox 
             checked
-            help-text="Text below some puzzles (you might need it to solve them)"
-          >Show status bar</sl-checkbox>
-        <sl-checkbox
-            help-text="Make the puzzle as large as possible"
+            hint="Text below some puzzles (you might need it to solve them)"
+          >Show status bar</wa-checkbox>
+        <wa-checkbox
+            hint="Make the puzzle as large as possible"
             ?checked=${settings.maximizePuzzleSize !== 0}
-            @sl-change=${(event: Event) => {
+            @change=${(event: Event) => {
               // (Special case for non-standard handling; no data-setting attr.)
               const checked = (event.target as HTMLInputElement).checked;
               settings.maximizePuzzleSize = checked ? 999 : 0;
             }}
-          >Stretch puzzle to fit</sl-checkbox>
-      </sl-details>
+          >Stretch puzzle to fit</wa-checkbox>
+      </wa-details>
     `;
   }
 
   private renderMouseButtonsSection() {
     return html`
-      <sl-details summary="Mouse buttons">
+      <wa-details summary="Mouse buttons">
         <div class="help">
           Options for emulating the right mouse button on touch devices
         </div>
-        <sl-checkbox
-            help-text="Swaps left and right mouse buttons (allows tap for right click)"
-          >Show <sl-icon name="mouse-left-button" label="left button"></sl-icon>
-            ⁄ <sl-icon name="mouse-right-button" label="right button"></sl-icon>
-            toggle</sl-checkbox>
-        <sl-checkbox 
-            help-text="For right drag, long hold then move finger"
+        <wa-checkbox
+            hint="Swaps left and right mouse buttons (allows tap for right click)"
+          >Show <wa-icon name="mouse-left-button" label="left button"></wa-icon>
+            ⁄ <wa-icon name="mouse-right-button" label="right button"></wa-icon>
+            toggle</wa-checkbox>
+        <wa-checkbox 
+            hint="For right drag, long hold then move finger"
             ?checked=${autoBind(settings, "rightButtonLongPress")}
-          >Long press for right click</sl-checkbox>
-        <sl-checkbox 
-            help-text="For right drag, lift second finger then move first finger"
+          >Long press for right click</wa-checkbox>
+        <wa-checkbox 
+            hint="For right drag, lift second finger then move first finger"
             ?checked=${autoBind(settings, "rightButtonTwoFingerTap")}
-          >Two finger tap for right click</sl-checkbox>
-        <sl-range
+          >Two finger tap for right click</wa-checkbox>
+        <wa-slider
             label="Audio feedback volume"
-            value=${autoBind(settings, "rightButtonAudioVolume")}
+            .value=${autoBind(settings, "rightButtonAudioVolume")}
             min="0"
             max="100"
             step="5"
-            help-text="Click sound on long press or two finger tap"
-            .tooltipFormatter=${(value: number) => (value > 0 ? value : "Off")}
-          ></sl-range>
-        <sl-range
+            hint="Click sound on long press or two finger tap"
+            with-tooltip
+            .valueFormatter=${(value: number) => (value > 0 ? value : "Off")}
+        >
+          <span slot="reference">Off</span>
+          <span slot="reference">Max</span>
+        </wa-slider>
+        <wa-slider
             label="Detection time"
-            value=${autoBind(settings, "rightButtonHoldTime")}
+            .value=${autoBind(settings, "rightButtonHoldTime")}
             min="100"
             max="1000"
             step="25"
-            help-text="Long press length/​maximum delay for two finger tap"
-            .tooltipFormatter=${(value: number) => `${value} ms`}
-          ></sl-range>
-      </sl-details>
+            hint="Long press length/​maximum delay for two finger tap"
+            with-tooltip
+            .valueFormatter=${(value: number) => `${value} ms`}
+        >
+          <span slot="reference">100 ms</span>
+          <span slot="reference">1 s</span>
+        </wa-slider>
+      </wa-details>
     `;
   }
 
   private renderAdvancedSection() {
     return html`
-      <sl-details summary="Advanced">
-        <div><sl-button>Clear data</sl-button></div>
-        <sl-checkbox
-            help-text="Experimental puzzles in development (may have lots of bugs!)"
-          >Show unfinished puzzles</sl-checkbox>
-      </sl-details>
+      <wa-details summary="Advanced">
+        <div><wa-button>Clear data</wa-button></div>
+        <wa-checkbox
+            hint="Experimental puzzles in development (may have lots of bugs!)"
+          >Show unfinished puzzles</wa-checkbox>
+      </wa-details>
     `;
   }
 
@@ -154,10 +162,8 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     return this.dialog?.open ?? false;
   }
   set open(isOpen: boolean) {
-    if (isOpen) {
-      this.dialog?.show();
-    } else {
-      this.dialog?.hide();
+    if (this.dialog) {
+      this.dialog.open = isOpen;
     }
   }
 
@@ -166,11 +172,15 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       // Make sure puzzle-preferences-form is displaying current values
       await this.shadowRoot?.querySelector("puzzle-preferences-form")?.reloadValues();
     }
-    return this.dialog?.show();
+    if (this.dialog) {
+      this.dialog.open = true;
+    }
   }
 
-  async hide() {
-    return this.dialog?.hide();
+  hide() {
+    if (this.dialog) {
+      this.dialog.open = false;
+    }
   }
 
   static styles = css`
@@ -178,31 +188,41 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       display: contents;
     }
 
-    sl-dialog::part(body) {
+    wa-dialog::part(body) {
       display: flex;
       flex-direction: column;
-      gap: var(--sl-spacing-large);
-      padding-block-start: 0; /* header is also padded */
+      gap: var(--wa-space-l);
     }
     
-    sl-dialog::part(panel) {
-      background-color: var(--sl-color-neutral-50);
+    wa-dialog::part(dialog) {
+      background-color: var(--wa-color-neutral-95);
     }
     
-    sl-details[open]::part(header) {
-      border-block-end: 1px solid var(--sl-color-neutral-200);
+    wa-details[open]::part(header) {
+      border-block-end: 
+          var(--wa-panel-border-width) 
+          var(--wa-color-surface-border) 
+          var(--wa-panel-border-style);
     }
     
-    sl-details::part(content) {
+    wa-details::part(content) {
       display: flex;
       flex-direction: column;
-      gap: var(--sl-spacing-medium);
+      gap: var(--wa-space-l);
     }
     
     .help {
-      /* match help-text in various controls */
-      font-size: var(--sl-input-help-text-font-size-medium);
-      color: var(--sl-input-help-text-color);
+      /* match hint in various controls */
+      color: var(--wa-form-control-hint-color);
+      font-size: var(--wa-font-size-smaller);
+      font-weight: var(--wa-form-control-hint-font-weight);
+      line-height: var(--wa-form-control-hint-line-height);
+    }
+    
+    wa-checkbox::part(label) {
+      /* Work around WebAwesome bug where label is displayed as flex
+       * so loses space between icons and text*/
+      display: block;
     }
   `;
 }

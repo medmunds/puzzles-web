@@ -2,25 +2,49 @@
 import { escapeHtml } from "./html.ts";
 
 /**
- * Display an sl-alert toast with an error message.
+ * Display a wa-callout toast with an error message.
  * Returned promise resolves when alert is dismissed.
  */
 export async function notifyError(message: string): Promise<void> {
-  const alert = Object.assign(document.createElement("sl-alert"), {
-    variant: "danger",
-    closable: true,
-    innerHTML: `
-      <sl-icon name="error" slot="icon"></sl-icon>
-      ${escapeHtml(message).replace("\n", "<br>")}
-    `,
+  // Register components (in main thread only)
+  await import("@awesome.me/webawesome/dist/components/callout/callout.js");
+  await import("@awesome.me/webawesome/dist/components/icon/icon.js");
+
+  // WebAwesome doesn't yet have toasts. Hack up a toast stack using wa-callout.
+  let toastStack = document.getElementById("toasts");
+  if (!toastStack) {
+    toastStack = Object.assign(document.createElement("div"), {
+      id: "toasts",
+      style:
+        "position: absolute; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 1rem; padding: 1rem;",
+    });
+    document.body.append(toastStack);
+  }
+
+  return new Promise((resolve) => {
+    const alert = Object.assign(document.createElement("wa-callout"), {
+      variant: "danger",
+      closable: true,
+      innerHTML: `
+        <wa-icon name="error" slot="icon"></wa-icon>
+        ${escapeHtml(message).replace("\n", "<br>")}
+      `,
+    });
+    alert.addEventListener(
+      "click",
+      () => {
+        alert.remove();
+        resolve();
+      },
+      { once: true },
+    );
+    toastStack.append(alert);
   });
-  document.body.append(alert);
-  return alert.toast();
 }
 
 /**
  * Install last-resort error handlers on the main thread.
- * These will report unhandled exceptions and promise rejections via sl-alert notifications.
+ * These will report unhandled exceptions and promise rejections via wa-callout notifications.
  */
 export function installErrorHandlers() {
   if (typeof window === "undefined") {

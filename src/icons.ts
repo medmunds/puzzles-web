@@ -1,4 +1,4 @@
-import { registerIconLibrary } from "@shoelace-style/shoelace/dist/utilities/icon-library.js";
+import { registerIconLibrary } from "@awesome.me/webawesome/dist/webawesome.js";
 import arrowLeftToLineIcon from "lucide-static/icons/arrow-left-to-line.svg";
 import arrowLeftIcon from "lucide-static/icons/arrow-left.svg";
 import arrowRightIcon from "lucide-static/icons/arrow-right.svg";
@@ -89,5 +89,9 @@ registerIconLibrary("default", {
       throw new Error(`Missing icon ${name}`);
     }
     return icon ?? missingIcon;
+  },
+  mutator: (svg) => {
+    // wa-icon css has `svg { fill: currentColor; }` -- need to reset that
+    svg.style.fill = "none";
   },
 });

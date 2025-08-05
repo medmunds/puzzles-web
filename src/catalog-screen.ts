@@ -114,8 +114,8 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
       width: 100%;
       height: 100%;
 
-      --app-padding: var(--sl-spacing-x-large);
-      --app-spacing: var(--sl-spacing-large);
+      --app-padding: var(--wa-space-xl);
+      --app-spacing: var(--wa-space-l);
 
       box-sizing: border-box;
       max-width: 75rem;
@@ -130,43 +130,46 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
 
       @media (prefers-reduced-motion: no-preference) {
         transition:
-            gap var(--sl-transition-fast) ease-in-out,
-            padding var(--sl-transition-fast) ease-in-out;
+            gap var(--wa-transition-fast)  var(--wa-transition-easing),
+            padding var(--wa-transition-fast)  var(--wa-transition-easing);
       }
+
+      background-color: var(--wa-color-neutral-90);
+      color: var(--wa-color-text-normal);
     }
 
     @container (max-width: 40rem) {
       .app {
-        --app-padding: var(--sl-spacing-large);
-        --app-spacing: var(--sl-spacing-medium);
+        --app-padding: var(--wa-space-l);
+        --app-spacing: var(--wa-space-m);
       }
     }
 
     h1,
     h2 {
       margin: 0;
-      color: var(--sl-color-neutral-800);
+      color: var(--wa-color-text-normal);
     }
 
     h1 {
-      font-weight: var(--sl-font-weight-bold);
-      font-size: var(--sl-font-size-x-large);
+      font-weight: var(--wa-font-weight-bold);
+      font-size: var(--wa-font-size-xl);
     }
     h2 {
-      font-weight: var(--sl-font-weight-semibold);
-      font-size: var(--sl-font-size-large);
+      font-weight: var(--wa-font-weight-semibold);
+      font-size: var(--wa-font-size-l);
     }
 
     p {
-      margin: var(--sl-spacing-medium) 0 0 0;
-      font-size: var(--sl-font-size-medium);
-      font-weight: var(--sl-font-weight-normal);
+      margin: var(--wa-space-m) 0 0 0;
+      font-size: var(--wa-font-size-m);
+      font-weight: var(--wa-font-weight-normal);
     }
 
     .subtitle {
-      font-size: var(--sl-font-size-medium);
-      font-weight: var(--sl-font-weight-normal);
-      color: var(--sl-color-neutral-700);
+      font-size: var(--wa-font-size-m);
+      font-weight: var(--wa-font-weight-normal);
+      color: var(--wa-color-text-quiet);
     }
 
     header {
@@ -176,7 +179,7 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
     }
     header h1 {
       margin-inline-end: 0.5em;
-      line-height: var(--sl-line-height-dense);    
+      line-height: var(--wa-line-height-condensed);    
     }
 
     .puzzle-grid {
@@ -189,13 +192,13 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
 
       @media (prefers-reduced-motion: no-preference) {
         transition:
-            gap var(--sl-transition-fast) ease-in-out;
+            gap var(--wa-transition-fast)  var(--wa-transition-easing);
       }
     }
 
     .version {
-      font-size: var(--sl-font-size-small);
-      color: var(--sl-color-neutral-500);
+      font-size: var(--wa-font-size-s);
+      color: var(--wa-color-text-quiet);
       
       /* Allow selecting the version info */
       -moz-user-select: all;

@@ -421,8 +421,8 @@ export class PuzzleViewInteractive extends PuzzleView {
       }
       
       :host(:focus-visible) {
-        outline: var(--sl-focus-ring);
-        outline-offset: var(--sl-focus-ring-offset);
+        outline: var(--wa-focus-ring);
+        outline-offset: var(--wa-focus-ring-offset);
       }
 
       [part="puzzle"] {

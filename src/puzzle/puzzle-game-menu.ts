@@ -9,12 +9,11 @@ import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 
 // Component registration
-import "@shoelace-style/shoelace/dist/components/button/button.js";
-import "@shoelace-style/shoelace/dist/components/divider/divider.js";
-import "@shoelace-style/shoelace/dist/components/dropdown/dropdown.js";
-import "@shoelace-style/shoelace/dist/components/icon/icon.js";
-import "@shoelace-style/shoelace/dist/components/menu/menu.js";
-import "@shoelace-style/shoelace/dist/components/menu-item/menu-item.js";
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/divider/divider.js";
+import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
+import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
 
 @customElement("puzzle-game-menu")
 export class PuzzleGameMenu extends SignalWatcher(LitElement) {
@@ -24,43 +23,41 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
 
   render(): TemplateResult {
     return html`
-      <sl-dropdown hoist>
-        <sl-button slot="trigger" caret>Game</sl-button>
-        <sl-menu @sl-select=${this.handleGameMenuCommand}>
-          <sl-menu-item value="new">
-            <sl-icon slot="prefix" name="new-game"></sl-icon>
-            New game
-          </sl-menu-item>
-          <sl-menu-item value="restart">
-            <sl-icon slot="prefix" name="restart-game"></sl-icon>
-            Restart game
-          </sl-menu-item>
-          ${when(
-            this.puzzle?.canSolve,
-            () =>
-              html`
-                <sl-menu-item value="solve" ?disabled=${this.puzzle?.status === "solved"}>
-                  <sl-icon slot="prefix" name="show-solution"></sl-icon>
-                  Solve
-                </sl-menu-item>
-              `,
-          )}
-          <sl-divider></sl-divider>
-          <sl-menu-item value="share" disabled>
-            <sl-icon slot="prefix" name="share"></sl-icon>
-            Share…
-          </sl-menu-item>
-          <sl-menu-item value="save">
-            <sl-icon slot="prefix" name="save-game"></sl-icon>
-            Save…
-          </sl-menu-item>
-          <sl-menu-item value="load">
-            <sl-icon slot="prefix" name="load-game"></sl-icon>
-            Load…
-          </sl-menu-item>
-          <slot></slot>
-        </sl-menu>
-      </sl-dropdown>
+      <wa-dropdown @wa-select=${this.handleGameMenuCommand}>
+        <wa-button slot="trigger" with-caret>Game</wa-button>
+        <wa-dropdown-item value="new">
+          <wa-icon slot="icon" name="new-game"></wa-icon>
+          New game
+        </wa-dropdown-item>
+        <wa-dropdown-item value="restart">
+          <wa-icon slot="icon" name="restart-game"></wa-icon>
+          Restart game
+        </wa-dropdown-item>
+        ${when(
+          this.puzzle?.canSolve,
+          () =>
+            html`
+              <wa-dropdown-item value="solve" ?disabled=${this.puzzle?.status === "solved"}>
+                <wa-icon slot="icon" name="show-solution"></wa-icon>
+                Solve
+              </wa-dropdown-item>
+            `,
+        )}
+        <wa-divider></wa-divider>
+        <wa-dropdown-item value="share" disabled>
+          <wa-icon slot="icon" name="share"></wa-icon>
+          Share…
+        </wa-dropdown-item>
+        <wa-dropdown-item value="save">
+          <wa-icon slot="icon" name="save-game"></wa-icon>
+          Save…
+        </wa-dropdown-item>
+        <wa-dropdown-item value="load">
+          <wa-icon slot="icon" name="load-game"></wa-icon>
+          Load…
+        </wa-dropdown-item>
+        <slot></slot>
+      </wa-dropdown>
     `;
   }
 

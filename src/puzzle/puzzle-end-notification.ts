@@ -1,8 +1,6 @@
+import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import { zoomInUp, zoomOutDown } from "@shoelace-style/animations";
-import type SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.js";
-import { setAnimation } from "@shoelace-style/shoelace/dist/utilities/animation-registry.js";
 import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { query } from "lit/decorators/query.js";
@@ -12,9 +10,9 @@ import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 
 // Register components
-import "@shoelace-style/shoelace/dist/components/button/button.js";
-import "@shoelace-style/shoelace/dist/components/dialog/dialog.js";
-import "@shoelace-style/shoelace/dist/components/icon/icon.js";
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
 
 function randomItem<T>(array: ReadonlyArray<T>): T {
   return array[Math.floor(Math.random() * array.length)];
@@ -22,12 +20,15 @@ function randomItem<T>(array: ReadonlyArray<T>): T {
 
 @customElement("puzzle-end-notification")
 export class PuzzleEndNotification extends SignalWatcher(LitElement) {
+  // TODO: consider reworking this component as completely custom rendered,
+  //   rather than hacking up a wa-dialog. (Would simplify animations and css.)
+
   @consume({ context: puzzleContext, subscribe: true })
   @state()
   private puzzle?: Puzzle;
 
-  @query("sl-dialog")
-  private dialog?: SlDialog;
+  @query("wa-dialog")
+  private dialog?: WaDialog;
 
   protected override render() {
     if (!this.puzzle || this.puzzle.status === "ongoing") {
@@ -38,10 +39,10 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     let icon: string | undefined;
     const actions = [
       html`
-        <sl-button variant="primary" @click=${this.newGame}>
-          <sl-icon slot="prefix" name="new-game"></sl-icon>
+        <wa-button variant="brand" @click=${this.newGame}>
+          <wa-icon slot="start" name="new-game"></wa-icon>
           New game
-        </sl-button>
+        </wa-button>
       `,
     ];
 
@@ -68,66 +69,78 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     actions.push(html`<slot name="extra-actions"></slot>`);
 
     return html`
-      <sl-dialog 
+      <wa-dialog light-dismiss
           class=${this.puzzle.status}
-          @sl-show=${() => this.dialog?.classList.add("showing")}
-          @sl-after-show=${() => this.dialog?.classList.remove("showing")}
+          @wa-after-hide=${this.handleAfterHide}
       >
-        ${when(icon, () => html`<sl-icon slot="label" name=${icon}></sl-icon>`)}
+        ${when(icon, () => html`<wa-icon slot="label" name=${icon}></wa-icon>`)}
         <div slot="label">${message}</div>
         <div slot="footer">${actions}</div>
-      </sl-dialog>
+      </wa-dialog>
     `;
   }
 
   private renderLostActions() {
     const actions = [
       html`
-        <sl-button @click=${this.restartGame}>
-          <sl-icon slot="prefix" name="restart-game"></sl-icon>
+        <wa-button @click=${this.restartGame}>
+          <wa-icon slot="start" name="restart-game"></wa-icon>
           Restart
-        </sl-button>
+        </wa-button>
       `,
     ];
     if (this.puzzle?.canUndo) {
       actions.push(html`
-        <sl-button @click=${this.undo}>
-          <sl-icon slot="prefix" name="undo"></sl-icon>
+        <wa-button @click=${this.undo}>
+          <wa-icon slot="start" name="undo"></wa-icon>
           Undo
-        </sl-button>
+        </wa-button>
       `);
     }
     if (this.puzzle?.canSolve) {
       // TODO: && !usedSolveButton
       actions.push(html`
-        <sl-button @click=${this.showSolution}>
-          <sl-icon slot="prefix" name="show-solution"></sl-icon>
+        <wa-button @click=${this.showSolution}>
+          <wa-icon slot="start" name="show-solution"></wa-icon>
           Show solution
-        </sl-button>
+        </wa-button>
       `);
     }
     return actions;
   }
 
   protected override async updated() {
-    // Run the sl-dialog's "show" animation after it's in the DOM.
+    // Run the wa-dialog's "show" animation after it's in the DOM.
     // (Including the "open" attribute at render time skips the animation.)
     if (this.dialog) {
-      // Use different animations, just for this sl-alert
-      for (const [name, animation] of Object.entries(
-        PuzzleEndNotification.animations,
-      )) {
-        setAnimation(this.dialog, name, animation);
-      }
       // Wait for any game animations/flashes to finish before showing dialog
       await sleep(10); // ensure timer start notification arrives from worker
       await Promise.all([this.updateComplete, this.puzzle?.timerComplete]);
-      await this.dialog.show();
+      this.dialog.open = true;
     }
   }
 
-  hide(): Promise<void> {
-    return this.dialog?.hide() ?? Promise.resolve();
+  private hidingPromise = Promise.resolve();
+  private hidingPromiseResolve?: () => void;
+
+  private handleAfterHide() {
+    if (this.hidingPromiseResolve) {
+      this.hidingPromiseResolve();
+      this.hidingPromiseResolve = undefined;
+    }
+  }
+
+  hide() {
+    if (this.dialog?.open) {
+      // Resolve old promise in case anyone awaiting it.
+      this.handleAfterHide();
+
+      this.dialog.open = false;
+      this.hidingPromise = new Promise((resolve) => {
+        this.hidingPromiseResolve = resolve;
+      });
+    }
+    return this.hidingPromise;
   }
 
   private async newGame() {
@@ -191,47 +204,41 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     // "Out of options",
   ] as const;
 
-  static animations = {
-    "dialog.show": {
-      keyframes: zoomInUp,
-      options: {
-        duration: 500,
-      },
-    },
-    "dialog.hide": {
-      keyframes: zoomOutDown,
-      options: {
-        duration: 250,
-      },
-    },
-  } as const;
-
+  // TODO: investigate whether we need the equivalent of `pointer-events: none`
+  //   on wa-dialog's backdrop while the dialog is animating in. (iOS touch issue.)
   static styles = css`
-    sl-dialog.showing::part(overlay) {
-      /* Don't dismiss the dialog before it's fully animated in */
-      pointer-events: none;
+    wa-dialog {
+      --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
     }
     
-    sl-dialog::part(title) {
+    @media(prefers-reduced-motion: no-preference) {
+      wa-dialog {
+        --show-duration: 500ms;
+        --hide-duration: 250ms;
+        /* See enableCustomWaDialogAnimations in webawesomehacks.ts */
+        --show-dialog-animation: zoom-in-up 500ms ease;
+        --hide-dialog-animation: zoom-out-down 250ms ease;
+      }
+    }
+    
+    wa-dialog::part(title) {
       display: flex;
       align-items: center;
-      gap: var(--sl-spacing-medium);
+      gap: var(--wa-space-m);
     }
-    sl-dialog::part(body) {
+    wa-dialog::part(body) {
       display: none;
     }
-    sl-dialog::part(footer) {
-      padding-block-start: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--sl-spacing-medium);
+    wa-dialog::part(footer) {
+      margin-block-start: var(--wa-space-l);
+      gap: var(--wa-space-m);
     }
     div[slot="footer"] {
       display: contents;
     }
     
-    sl-dialog.solved sl-icon[slot="label"] {
-      color: var(--sl-color-primary-600);
+    wa-dialog.solved wa-icon[slot="label"] {
+      color: var(--wa-color-brand-fill-loud);
     }
   `;
 }

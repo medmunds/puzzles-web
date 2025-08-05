@@ -337,7 +337,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     css`
       :host {
         /* Spacing between canvas and statusbar */
-        --gap: var(--sl-spacing-small);
+        --gap: var(--wa-space-s);
 
         max-width: 100%;
         max-height: 100%;

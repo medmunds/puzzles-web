@@ -2,9 +2,9 @@ import { LitElement, css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
 // Register components
-import "@shoelace-style/shoelace/dist/components/badge/badge.js";
-import "@shoelace-style/shoelace/dist/components/button/button.js";
-import "@shoelace-style/shoelace/dist/components/card/card.js";
+import "@awesome.me/webawesome/dist/components/badge/badge.js";
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/card/card.js";
 
 @customElement("catalog-card")
 export class CatalogCard extends LitElement {
@@ -52,25 +52,25 @@ export class CatalogCard extends LitElement {
 
   render() {
     return html`
-      <sl-card>
+      <wa-card>
         <div class="card-body">
           ${this.renderIcon()}
           <div class="text">
-            ${this.unfinished ? html`<sl-badge pill variant="warning">Unfinished</sl-badge>` : undefined}
+            ${this.unfinished ? html`<wa-badge pill variant="warning">Unfinished</wa-badge>` : undefined}
             <h2>${this.name}</h2>
             <p>${this.objective}</p>
           </div>
         </div>
 
         <footer slot="footer">
-          <sl-button 
+          <wa-button 
               id="play" 
               href="${this.href}" 
               aria-label=${`Play ${this.name}`} 
-              variant="primary"
-          >${this.resume ? "Resume" : "Play"}</sl-button>
+              variant="brand"
+          >${this.resume ? "Resume" : "Play"}</wa-button>
         </footer>
-      </sl-card>
+      </wa-card>
     `;
   }
 
@@ -83,36 +83,37 @@ export class CatalogCard extends LitElement {
 
     @media (hover: hover) {
       @media (prefers-reduced-motion: no-preference) {
-        sl-card {
-          transition: transform var(--sl-transition-medium) ease-in-out,
-          box-shadow var(--sl-transition-medium) ease-in-out;
+        wa-card {
+          transition: 
+            transform var(--wa-transition-normal) var(--wa-transition-easing),
+            box-shadow var(--wa-transition-normal) var(--wa-transition-easing);
         }
 
-        sl-card:hover {
-          transform: translateY(calc(-1 * var(--sl-spacing-2x-small)));
-          box-shadow: var(--sl-shadow-large);
+        wa-card:hover {
+          transform: translateY(calc(-1 * var(--wa-space-2xs)));
+          box-shadow: var(--wa-shadow-l);
         }
       }
     }
 
-    sl-card {
+    wa-card {
       height: 100%;
       width: 100%;
       position: relative;
-      --padding: var(--sl-spacing-medium);
+      --padding: var(--wa-space-m);
 
       cursor: pointer;
     }
 
-    sl-card::part(base) {
+    wa-card::part(base) {
       height: 100%;
     }
 
-    sl-card::part(body) {
+    wa-card::part(body) {
       flex-grow: 1;
     }
 
-    sl-card::part(footer) {
+    wa-card::part(footer) {
       /* Remove the separator line */
       border-block-start: none;
       padding-block-start: 0;
@@ -121,14 +122,14 @@ export class CatalogCard extends LitElement {
     .card-body {
       display: flex;
       flex-direction: row;
-      gap: var(--sl-spacing-medium);
+      gap: var(--wa-space-m);
     }
 
     .icon {
       display: block;
       width: var(--icon-size);
       height: var(--icon-size);
-      border-radius: var(--sl-border-radius-small);
+      border-radius: var(--wa-border-radius-s);
     }
 
     .icon.unfinished {
@@ -137,27 +138,27 @@ export class CatalogCard extends LitElement {
       font-size: calc(0.8 * var(--icon-size));
     }
 
-    sl-badge {
+    wa-badge {
       /* WEB-56239: */ /*noinspection CssInvalidPropertyValue*/ 
       float: inline-end;
-      margin-inline-start: var(--sl-spacing-2x-small);
-      margin-block-end: var(--sl-spacing-2x-small);
+      margin-inline-start: var(--wa-space-2xs);
+      margin-block-end: var(--wa-space-2xs);
     }
 
     h2 {
       margin: 0;
       line-height: 1;
-      color: var(--sl-color-neutral-800);
-      font-size: var(--sl-font-size-large);
-      font-weight: var(--sl-font-weight-semibold);
+      color: var(--wa-color-text-normal);
+      font-size: var(--wa-font-size-l);
+      font-weight: var(--wa-font-weight-semibold);
     }
 
     p {
-      margin: var(--sl-spacing-small) 0 0 0;
-      color: var(--sl-color-neutral-700);
-      font-size: var(--sl-font-size-medium);
-      font-weight: var(--sl-font-weight-normal);
-      line-height: var(--sl-line-height-dense);
+      margin: var(--wa-space-s) 0 0 0;
+      color: var(--wa-color-text-quiet);
+      font-size: var(--wa-font-size-m);
+      font-weight: var(--wa-font-weight-normal);
+      line-height: var(--wa-line-height-normal);
     }
 
     footer {
