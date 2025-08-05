@@ -205,67 +205,67 @@ export class Puzzle {
   }
 
   public async solve(): Promise<string | undefined> {
-    return await this.workerPuzzle.solve();
+    return this.workerPuzzle.solve();
   }
 
   public async processKey(key: number): Promise<boolean> {
-    return await this.workerPuzzle.processKey(key);
+    return this.workerPuzzle.processKey(key);
   }
 
   public async processMouse({ x, y }: Point, button: number): Promise<boolean> {
-    return await this.workerPuzzle.processMouse({ x, y }, button);
+    return this.workerPuzzle.processMouse({ x, y }, button);
   }
 
   public async requestKeys(): Promise<KeyLabel[]> {
-    return await this.workerPuzzle.requestKeys();
+    return this.workerPuzzle.requestKeys();
   }
 
   public async getParams(): Promise<string> {
-    return await this.workerPuzzle.getParams();
+    return this.workerPuzzle.getParams();
   }
 
   public async setParams(params: string): Promise<string | undefined> {
-    return await this.workerPuzzle.setParams(params);
+    return this.workerPuzzle.setParams(params);
   }
 
   public async getPresets(): Promise<PresetMenuEntry[]> {
-    return await this.workerPuzzle.getPresets();
+    return this.workerPuzzle.getPresets();
   }
 
   public async getCustomParamsConfig(): Promise<ConfigDescription> {
-    return await this.workerPuzzle.getCustomParamsConfig();
+    return this.workerPuzzle.getCustomParamsConfig();
   }
 
   public async getCustomParams(): Promise<ConfigValues> {
-    return await this.workerPuzzle.getCustomParams();
+    return this.workerPuzzle.getCustomParams();
   }
 
   public async setCustomParams(values: ConfigValues): Promise<string | undefined> {
-    return await this.workerPuzzle.setCustomParams(values);
+    return this.workerPuzzle.setCustomParams(values);
   }
 
   public async encodeCustomParams(values: ConfigValues): Promise<string> {
-    return await this.workerPuzzle.encodeCustomParams(values);
+    return this.workerPuzzle.encodeCustomParams(values);
   }
 
   public async getPreferencesConfig(): Promise<ConfigDescription> {
-    return await this.workerPuzzle.getPreferencesConfig();
+    return this.workerPuzzle.getPreferencesConfig();
   }
 
   public async getPreferences(): Promise<ConfigValues> {
-    return await this.workerPuzzle.getPreferences();
+    return this.workerPuzzle.getPreferences();
   }
 
   public async savePreferences(): Promise<Uint8Array> {
-    return await this.workerPuzzle.savePreferences();
+    return this.workerPuzzle.savePreferences();
   }
 
   public async loadPreferences(data: Uint8Array): Promise<string | undefined> {
-    return await this.workerPuzzle.loadPreferences(transfer(data, [data.buffer]));
+    return this.workerPuzzle.loadPreferences(transfer(data, [data.buffer]));
   }
 
   public async setPreferences(values: ConfigValues): Promise<string | undefined> {
-    return await this.workerPuzzle.setPreferences(values);
+    return this.workerPuzzle.setPreferences(values);
   }
 
   public async redraw(): Promise<void> {
@@ -273,7 +273,7 @@ export class Puzzle {
   }
 
   public async getColourPalette(defaultBackground: Colour): Promise<Colour[]> {
-    return await this.workerPuzzle.getColourPalette(defaultBackground);
+    return this.workerPuzzle.getColourPalette(defaultBackground);
   }
 
   public async size(
@@ -281,23 +281,23 @@ export class Puzzle {
     isUserSize: boolean,
     devicePixelRatio: number,
   ): Promise<Size> {
-    return await this.workerPuzzle.size(maxSize, isUserSize, devicePixelRatio);
+    return this.workerPuzzle.size(maxSize, isUserSize, devicePixelRatio);
   }
 
   public async formatAsText(): Promise<string | undefined> {
-    return await this.workerPuzzle.formatAsText();
+    return this.workerPuzzle.formatAsText();
   }
 
   public async setGameId(id: string): Promise<string | undefined> {
-    return await this.workerPuzzle.setGameId(id);
+    return this.workerPuzzle.setGameId(id);
   }
 
-  public async loadGame(data: Uint8Array): Promise<string | undefined> {
-    return await this.workerPuzzle.loadGame(transfer(data, [data.buffer]));
+  public async loadGame(data: Uint8Array<ArrayBuffer>): Promise<string | undefined> {
+    return this.workerPuzzle.loadGame(transfer(data, [data.buffer]));
   }
 
-  public async saveGame(): Promise<Uint8Array> {
-    return await this.workerPuzzle.saveGame();
+  public async saveGame(): Promise<Uint8Array<ArrayBuffer>> {
+    return this.workerPuzzle.saveGame();
   }
 
   //

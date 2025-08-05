@@ -191,12 +191,12 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
     return this.frontend.setGameId(id);
   }
 
-  loadGame(data: Uint8Array): string | undefined {
+  loadGame(data: Uint8Array<ArrayBuffer>): string | undefined {
     return this.frontend.loadGame(data);
   }
 
-  saveGame(): Uint8Array {
-    const data = this.frontend.saveGame();
+  saveGame(): Uint8Array<ArrayBuffer> {
+    const data = this.frontend.saveGame() as Uint8Array<ArrayBuffer>;
     return transfer(data, [data.buffer]);
   }
 
