@@ -1,6 +1,6 @@
 import { registerIconLibrary } from "@awesome.me/webawesome/dist/webawesome.js";
-import arrowLeftToLineIcon from "lucide-static/icons/arrow-left-to-line.svg";
 import arrowLeftIcon from "lucide-static/icons/arrow-left.svg";
+import arrowLeftToLineIcon from "lucide-static/icons/arrow-left-to-line.svg";
 import arrowRightIcon from "lucide-static/icons/arrow-right.svg";
 import awardIcon from "lucide-static/icons/award.svg";
 import badgeQuestionMarkIcon from "lucide-static/icons/badge-question-mark.svg";

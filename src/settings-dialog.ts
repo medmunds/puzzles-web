@@ -1,11 +1,11 @@
 import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
-import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import { LitElement, css, html, nothing } from "lit";
+import { SignalWatcher } from "@lit-labs/signals";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { puzzleContext } from "./puzzle/contexts.ts";
-import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
+import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
 import { settings } from "./store/settings.ts";
 import { autoBind } from "./utils/autobind.ts";
 

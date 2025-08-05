@@ -1,6 +1,6 @@
-import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import { LitElement, type TemplateResult, html } from "lit";
+import { SignalWatcher } from "@lit-labs/signals";
+import { html, LitElement, type TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { notifyError } from "../utils/errors.ts";

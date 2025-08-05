@@ -1,5 +1,5 @@
 import { Signal, signal } from "@lit-labs/signals";
-import { type Subscription, liveQuery } from "dexie";
+import { liveQuery, type Subscription } from "dexie";
 
 /**
  * Creates a signal that automatically manages a Dexie liveQuery subscription.

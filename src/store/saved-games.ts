@@ -2,14 +2,14 @@ import type { Puzzle } from "../puzzle/puzzle.ts";
 import { equalSet } from "../utils/equal.ts";
 import { liveQuerySignal } from "../utils/signals.ts";
 import {
+  db,
   PUZZLE_ID_MAX,
   PUZZLE_ID_MIN,
   type PuzzleId,
-  SaveType,
   type SavedGameMetadata,
+  SaveType,
   TIMESTAMP_MAX,
   TIMESTAMP_MIN,
-  db,
 } from "./db.ts";
 
 class SavedGames {

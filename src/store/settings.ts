@@ -2,9 +2,9 @@ import { type Signal, signal } from "@lit-labs/signals";
 import type { ConfigValues } from "../puzzle/types.ts";
 import {
   type CommonPuzzleSettings,
+  db,
   type PuzzleId,
   type PuzzleSettings,
-  db,
 } from "./db.ts";
 
 const defaultSettings = {

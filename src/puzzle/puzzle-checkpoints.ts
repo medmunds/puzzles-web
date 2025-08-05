@@ -1,7 +1,7 @@
 import type WaDropdownItem from "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
-import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import { LitElement, html, nothing } from "lit";
+import { SignalWatcher } from "@lit-labs/signals";
+import { html, LitElement, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";

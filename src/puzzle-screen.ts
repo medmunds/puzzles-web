@@ -1,7 +1,7 @@
 import { SignalWatcher } from "@lit-labs/signals";
-import { LitElement, css, html } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { css, html, LitElement } from "lit";
 import { query } from "lit/decorators/query.js";
+import { customElement, property, state } from "lit/decorators.js";
 import type { AppRouter } from "./app-router.ts";
 import { type PuzzleData, puzzleDataMap, version } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";

@@ -23,11 +23,11 @@ export type {
   DrawTextOptions,
   Frontend,
   FrontendConstructorArgs,
+  KeyLabel,
   NotifyGameIdChange,
   NotifyGameStateChange,
   NotifyParamsChange,
   NotifyStatusBarChange,
-  KeyLabel,
   Point,
   PresetMenuEntry,
   Rect,
@@ -46,7 +46,6 @@ export type ChangeNotification =
 
 export type GameStatus = NotifyGameStateChange["status"];
 
-// biome-ignore lint/style/useEnumInitializers: verbatim from puzzles.h
 export enum PuzzleButton {
   LEFT_BUTTON = 0x0200,
   MIDDLE_BUTTON,

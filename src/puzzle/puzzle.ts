@@ -1,4 +1,4 @@
-import { type Signal, computed, signal } from "@lit-labs/signals";
+import { computed, type Signal, signal } from "@lit-labs/signals";
 import * as Comlink from "comlink";
 import { transfer } from "comlink";
 import {

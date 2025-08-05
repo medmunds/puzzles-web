@@ -8,10 +8,7 @@ import type { Connect, Plugin } from "vite";
  * catalogFile must point to catalog.json relative to projectRoot.
  */
 export const getKnownPuzzleIds = (
-  options: {
-    catalogFile?: string;
-    projectRoot?: string;
-  } = {},
+  options: { catalogFile?: string; projectRoot?: string } = {},
 ): string[] => {
   const { catalogFile = "src/assets/puzzles/catalog.json", projectRoot = "." } =
     options;

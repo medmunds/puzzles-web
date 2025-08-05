@@ -118,7 +118,7 @@ export class PuzzleViewInteractive extends PuzzleView {
     if (!this.puzzle) {
       return;
     }
-    let button: number | undefined = undefined;
+    let button: number | undefined;
     switch (event.key) {
       case "ArrowDown":
         button = PuzzleButton.CURSOR_DOWN;
@@ -287,7 +287,7 @@ export class PuzzleViewInteractive extends PuzzleView {
       this.pointerTracking = { drag, release, pointerId };
       try {
         this.canvas.setPointerCapture(pointerId);
-      } catch (error) {
+      } catch (_error) {
         // The pointer is already up (pointerId is no longer active).
         // Probably a tap that's completed -- pointer capture isn't needed.
       }

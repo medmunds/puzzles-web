@@ -1,7 +1,7 @@
 import WaButton from "@awesome.me/webawesome/dist/components/button/button.js";
-import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import { LitElement, css, html, nothing } from "lit";
+import { SignalWatcher } from "@lit-labs/signals";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { puzzleContext } from "./contexts.ts";

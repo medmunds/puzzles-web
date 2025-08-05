@@ -1,9 +1,9 @@
 import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
-import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import { LitElement, css, html } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { SignalWatcher } from "@lit-labs/signals";
+import { css, html, LitElement } from "lit";
 import { query } from "lit/decorators/query.js";
+import { customElement, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { sleep } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";

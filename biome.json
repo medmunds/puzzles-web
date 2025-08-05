@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.5.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.1.3/schema.json",
   "linter": {
     "rules": {
       "recommended": true,
@@ -14,12 +14,14 @@
     "lineWidth": 88
   },
   "files": {
-    "ignore": [
-      "puzzles/**",
-      "dist/**",
-      "node_modules/**",
-      "build/**",
-      "src/assets/js/**"
+    "includes": [
+      "**",
+      "!**/puzzles/**",
+      "!**/build/**",
+      "!**/dev-dist/**",
+      "!**/dist/**",
+      "!**/node_modules/**",
+      "!**/src/assets/puzzles/**"
     ]
   }
 }

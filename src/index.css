@@ -14,7 +14,7 @@
   -webkit-font-smoothing: antialiased;
 
   /* Related to fixWaButtonAccentBorder */
-  --wa-color-neutral-border-loud: var(--wa-color-neutral-fill-loud);
+  /*--wa-color-neutral-border-loud: var(--wa-color-neutral-fill-loud);*/
   --wa-color-brand-border-loud: var(--wa-color-brand-fill-loud);
   --wa-color-success-border-loud: var(--wa-color-success-fill-loud);
   --wa-color-warning-border-loud: var(--wa-color-warning-fill-loud);

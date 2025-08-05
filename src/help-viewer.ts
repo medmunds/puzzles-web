@@ -1,7 +1,7 @@
 import type WaDrawer from "@awesome.me/webawesome/dist/components/drawer/drawer.js";
-import { LitElement, css, html, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 
 // Components

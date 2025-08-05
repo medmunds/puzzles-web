@@ -1,6 +1,6 @@
-import { SignalWatcher } from "@lit-labs/signals";
 import { provide } from "@lit/context";
-import { LitElement, css, html } from "lit";
+import { SignalWatcher } from "@lit-labs/signals";
+import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { puzzleContext } from "./contexts.ts";
 import { Puzzle } from "./puzzle.ts";

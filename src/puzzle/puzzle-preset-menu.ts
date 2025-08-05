@@ -1,12 +1,12 @@
 import type WaDropdownItem from "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
-import { SignalWatcher } from "@lit-labs/signals";
 import { consume } from "@lit/context";
-import { LitElement, type TemplateResult, css, html } from "lit";
+import { SignalWatcher } from "@lit-labs/signals";
+import { css, html, LitElement, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { puzzleContext } from "./contexts.ts";
-import type { PuzzleCustomParamsDialog } from "./puzzle-config.ts";
 import type { Puzzle } from "./puzzle.ts";
+import type { PuzzleCustomParamsDialog } from "./puzzle-config.ts";
 import type { PresetMenuEntry } from "./types.ts";
 
 // Register components

@@ -1,10 +1,10 @@
+import { consume } from "@lit/context";
 import { ResizeController } from "@lit-labs/observers/resize-controller.js";
 import { SignalWatcher } from "@lit-labs/signals";
-import { consume } from "@lit/context";
-import { ColorSpace, OKLCH, to as convert, display, parse, sRGB } from "colorjs.io/fn";
-import { LitElement, css, html } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { ColorSpace, to as convert, display, OKLCH, parse, sRGB } from "colorjs.io/fn";
+import { css, html, LitElement } from "lit";
 import { query } from "lit/decorators/query.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { coordsToColour, equalColour } from "../utils/colour.ts";
 import { isSafari } from "../utils/events.ts";

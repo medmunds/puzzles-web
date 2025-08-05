@@ -2,9 +2,9 @@ import type { AttributePart } from "lit";
 import {
   AsyncDirective,
   type DirectiveResult,
+  directive,
   type PartInfo,
   PartType,
-  directive,
 } from "lit/async-directive.js";
 import { assertHasReadableProperty } from "./types";
 

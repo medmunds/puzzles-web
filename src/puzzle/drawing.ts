@@ -1,7 +1,7 @@
 import type {
-  DrawTextOptions,
   Drawing as DrawingHandle,
   DrawingImpl,
+  DrawTextOptions,
   FontInfo,
   Point,
   PuzzleModule,
@@ -236,7 +236,11 @@ export class Drawing implements DrawingImpl<Blitter> {
     strokeColor,
     fillColor,
     lineWidth,
-  }: { strokeColor?: number; fillColor?: number; lineWidth?: number }): void {
+  }: {
+    strokeColor?: number;
+    fillColor?: number;
+    lineWidth?: number;
+  }): void {
     this.context.lineWidth = lineWidth ?? 1;
     if (strokeColor !== undefined) {
       const strokeStyle = this.palette[strokeColor];
