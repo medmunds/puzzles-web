@@ -7,6 +7,7 @@ import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
 import { settings } from "./store/settings.ts";
+import { audioClick } from "./utils/audio.ts";
 import { autoBind } from "./utils/autobind.ts";
 
 // Register components
@@ -119,6 +120,14 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             hint="Click sound on long press or two finger tap"
             with-tooltip
             .valueFormatter=${(value: number) => (value > 0 ? value : "Off")}
+            @click=${async (event: Event) => {
+              // Audition click sound
+              const slider: HTMLInputElement = event.target as HTMLInputElement;
+              const volume = Number.parseInt(slider.value);
+              if (volume > 0) {
+                await audioClick({ volume });
+              }
+            }}
         >
           <span slot="reference">Off</span>
           <span slot="reference">Max</span>
