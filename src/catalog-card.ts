@@ -100,7 +100,7 @@ export class CatalogCard extends LitElement {
       height: 100%;
       width: 100%;
       position: relative;
-      --padding: var(--wa-space-m);
+      --spacing: var(--wa-space-m);
 
       cursor: pointer;
     }
