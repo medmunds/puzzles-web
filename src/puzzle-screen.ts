@@ -167,29 +167,27 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
               }
           ></puzzle-view-interactive>
 
-          <!-- Directly after puzzle-view so it's next in the tab order
-               after completing a game via physical keyboard -->
-          <puzzle-end-notification>
-            <wa-button 
-                slot="extra-actions-solved" 
-                @click=${this.handleChangeType}
-            >
-              <wa-icon slot="start" name="puzzle-type"></wa-icon>
-              Change type
-            </wa-button>
-            <wa-button 
-                slot="extra-actions-solved" 
-                href=${otherPuzzlesUrl}
-            >
-              <wa-icon slot="start" name="back-to-catalog"></wa-icon>
-              Other puzzles
-            </wa-button>
-          </puzzle-end-notification>
-
           <puzzle-keys>
             <puzzle-checkpoints slot="after"></puzzle-checkpoints>
           </puzzle-keys>
         </div>
+
+        <puzzle-end-notification>
+          <wa-button
+              slot="extra-actions-solved"
+              @click=${this.handleChangeType}
+          >
+            <wa-icon slot="start" name="puzzle-type"></wa-icon>
+            Change type
+          </wa-button>
+          <wa-button
+              slot="extra-actions-solved"
+              href=${otherPuzzlesUrl}
+          >
+            <wa-icon slot="start" name="back-to-catalog"></wa-icon>
+            Other puzzles
+          </wa-button>
+        </puzzle-end-notification>
 
         <settings-dialog puzzle-name=${this.puzzleData.name}></settings-dialog>
       </puzzle-context>
