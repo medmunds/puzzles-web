@@ -2,7 +2,7 @@ import { consume } from "@lit/context";
 import { ResizeController } from "@lit-labs/observers/resize-controller.js";
 import { SignalWatcher } from "@lit-labs/signals";
 import { ColorSpace, to as convert, display, OKLCH, parse, sRGB } from "colorjs.io/fn";
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
@@ -65,8 +65,11 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   @query("canvas", true)
   protected canvas?: HTMLCanvasElement;
 
+  @query("#canvasWrap", true)
+  protected canvasWrap?: HTMLDivElement;
+
   @query("[part=puzzle]", true)
-  protected puzzleElement?: HTMLElement;
+  protected puzzlePart?: HTMLElement;
 
   protected resizeController = new ResizeController(this, {
     callback: throttle(() => this.resize(false), 10),
@@ -186,16 +189,21 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     return result;
   }
 
-  protected renderCanvasStyle() {
+  protected renderCanvas(part?: string) {
     const { w, h } = this.canvasSize;
-    return styleMap({
+    const style = styleMap({
       width: `${w}px`,
       height: `${h}px`,
     });
+    return html`
+      <div part=${part || nothing} id="canvasWrap">
+        <canvas style=${style}></canvas>
+      </div>
+    `;
   }
 
   protected renderPuzzle() {
-    return html`<canvas part="puzzle" style=${this.renderCanvasStyle()}></canvas>`;
+    return this.renderCanvas("puzzle");
   }
 
   protected renderStatusbar() {
@@ -228,8 +236,8 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   protected async resize(isUserSize = true): Promise<boolean> {
     if (
       !this.hasUpdated ||
-      !this.canvas ||
-      !this.puzzleElement ||
+      !this.canvasWrap ||
+      !this.puzzlePart ||
       !this.puzzle?.currentGameId
     ) {
       // midend_size() is only valid while there's a game.
@@ -237,17 +245,16 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       // (We can end up in here before the first update thanks to resize observers.)
       return false;
     }
-    // const current = this.canvas.getBoundingClientRect();
 
     const classes = ["resizing"];
     if (!isUserSize && this.maximize) {
-      // Make the canvas full page size, and getBoundingClientRect() should
-      // tell us the maximum size we're able to grow within our container.
+      // Make the puzzlePart full page size, and getBoundingClientRect() should
+      // tell us the maximum size the canvas is able to grow within our container.
       classes.push("maximize");
     }
-    this.puzzleElement.classList.add(...classes);
-    const available = this.canvas.getBoundingClientRect();
-    this.puzzleElement.classList.remove(...classes);
+    this.puzzlePart.classList.add(...classes);
+    const available = this.canvasWrap.getBoundingClientRect();
+    this.puzzlePart.classList.remove(...classes);
 
     // TODO: unclear if we should pass dpr to midend as 1 or actual dpr
     //   (since we use css pixels and scale to dpr in the drawing context)
@@ -339,8 +346,6 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         /* Spacing between canvas and statusbar */
         --gap: var(--wa-space-s);
 
-        max-width: 100%;
-        max-height: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -352,12 +357,18 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
       canvas {
         display: block;
-
+      }
+      
+      canvas, #canvasWrap {
         /* Required for accurate sizing calculations */
         padding: 0 !important;
         border-width: 0 !important;
       }
 
+      [part="puzzle"] {
+        box-sizing: border-box;
+      }
+      
       [part="puzzle"].resizing {
         /* Allow full flexing during resize calculations, but disable
          * otherwise to prevent vertical stretching */
@@ -370,11 +381,12 @@ export class PuzzleView extends SignalWatcher(LitElement) {
           max-height: 100%;
         }
 
-        /* See how big canvas can get -- overrides canvas inline style.
-         * The puzzle part either _is_ or _contains_ the canvas. */
-        &.maximize:is(canvas), &.maximize canvas {
-          width: 100vw !important;
-          height: 100vh !important;
+        /* See how big canvas can get. */
+        #canvasWrap {
+          width: 100vw;
+          height: 100vh;
+          max-width: 100%;
+          max-height: 100%;
         }
       }
 

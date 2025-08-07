@@ -332,12 +332,9 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       padding: var(--app-padding) 0;
       & > * {
         margin: 0 var(--app-padding);
-      }
-      
-      .toolbar {
         max-width: calc(100% - 2 * var(--app-padding));
       }
-
+      
       @media (prefers-reduced-motion: no-preference) {
         transition:
           gap var(--wa-transition-fast)  var(--wa-transition-easing),

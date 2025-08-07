@@ -83,7 +83,7 @@ export class PuzzleViewInteractive extends PuzzleView {
         @pointercancel=${this.handlePointerCancel}
         @click=${when(isAppleDevice, () => this.handleClick)}
         @touchstart=${when(isAppleDevice, () => this.handleTouchStart)}
-      ><canvas style=${this.renderCanvasStyle()}></canvas></div>
+      >${this.renderCanvas()}</div>
     `;
   }
 
@@ -429,12 +429,7 @@ export class PuzzleViewInteractive extends PuzzleView {
         padding: var(--padding);
       }
       [part="statusbar"] {
-        margin-block-end: var(--padding);
-      }
-
-      canvas {
-        max-width: 100%;
-        max-height: 100%;
+        padding: 0 var(--padding) var(--padding);
       }
 
       [part="puzzle"], 
