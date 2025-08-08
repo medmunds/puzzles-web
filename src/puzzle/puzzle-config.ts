@@ -124,7 +124,8 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
         if (config.choicenames.length <= 3) {
           // Render small option sets as a radio button group rather than a select popup.
           // Bind to .value (property) rather than value (attribute) to work
-          // around a wa-radio-group bug where the initial value isn't shown.
+          // around a wa-radio-group bug where attribute changes aren't rendered.
+          // https://github.com/shoelace-style/webawesome/issues/1273
           return html`
             <wa-radio-group
               id=${id}

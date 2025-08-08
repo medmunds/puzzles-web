@@ -1,4 +1,5 @@
 import WaButton from "@awesome.me/webawesome/dist/components/button/button.js";
+import WaCheckbox from "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
 import WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import WaDropdown from "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import { css } from "lit";
@@ -6,6 +7,9 @@ import { css } from "lit";
 /**
  * <wa-button appearance=accent> (the default) uses border-color: transparent,
  * which breaks if wa-color-fill-loud needs wa-color-border loud to stand out.
+ *
+ * https://github.com/shoelace-style/webawesome/issues/1278
+ * https://github.com/shoelace-style/webawesome/discussions/1285
  */
 function fixWaButtonAccentBorder() {
   WaButton.elementStyles.push(
@@ -20,10 +24,33 @@ function fixWaButtonAccentBorder() {
 }
 
 /**
+ * wa-button and wa-checkbox lose spacing between elements in their
+ * default slot (e.g., `<wa-button>This is <b>bold</b></wa-button>`
+ * renders as "This isbold"). Override their styles to fix.
+ *
+ * https://github.com/shoelace-style/webawesome/issues/1272
+ * https://github.com/shoelace-style/webawesome/pull/1274
+ */
+function fixWaButtonAndCheckboxLabelLayout() {
+  WaButton.elementStyles.push(css`
+    :not(.is-icon-button) .label {
+      display: inline-block;
+    }
+  `);
+  WaCheckbox.elementStyles.push(css`
+    [part~='label'] {
+      display: inline-block;
+    }
+  `);
+}
+
+/**
  * wa-dropdown doesn't handle content that is too large to fit.
  * Monkey patch its wa-popup to enable auto-size="both", which calculates
  * available size and sets css custom properties for max width and height.
  * (Shoelace sl-dropdown handled this the same way via sl-menu.)
+ *
+ * https://github.com/shoelace-style/webawesome/issues/1268
  */
 function fixWaDropdownOverflow() {
   const oldFirstUpdated = WaDropdown.prototype.firstUpdated;
@@ -31,6 +58,10 @@ function fixWaDropdownOverflow() {
     const popup = this.shadowRoot?.querySelector("wa-popup");
     if (!popup) {
       throw new Error("fixWaDropdownOverflow monkeypatch is no longer valid");
+    }
+    if (popup.autoSize !== undefined) {
+      // Presumably it's been fixed
+      throw new Error("fixWaDropdownOverflow monkeypatch is no longer necessary");
     }
     popup.autoSize = "both";
     return oldFirstUpdated.call(this);
@@ -155,6 +186,7 @@ function flipWaDropdownCaretForTopPlacement() {
 
 export function installWebAwesomeHacks() {
   fixWaButtonAccentBorder();
+  fixWaButtonAndCheckboxLabelLayout();
   fixWaDropdownOverflow();
   enableCustomWaDialogAnimations();
   rotateWaButtonCaretWhenExpanded();

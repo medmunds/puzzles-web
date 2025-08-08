@@ -93,6 +93,9 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
   }
 
   private renderMouseButtonsSection() {
+    // The wa-sliders use .value prop rather than value attr binding
+    // to work around a bug where changes to the value attr aren't rendered.
+    // https://github.com/shoelace-style/webawesome/issues/1273
     return html`
       <wa-details summary="Mouse buttons">
         <div class="help">
@@ -226,12 +229,6 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       font-size: var(--wa-font-size-smaller);
       font-weight: var(--wa-form-control-hint-font-weight);
       line-height: var(--wa-form-control-hint-line-height);
-    }
-    
-    wa-checkbox::part(label) {
-      /* Work around WebAwesome bug where label is displayed as flex
-       * so loses space between icons and text*/
-      display: block;
     }
   `;
 }
