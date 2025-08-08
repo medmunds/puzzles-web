@@ -15,6 +15,7 @@ import { debounced } from "./utils/timing.ts";
 import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
+import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
 import "./head-matter.ts";
 import "./help-viewer.ts";
 import "./puzzle/puzzle-checkpoints.ts";
@@ -165,7 +166,9 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
                 // when we're getting larger (without enabling flex-grow).
                 this
               }
-          ></puzzle-view-interactive>
+          >
+            <wa-skeleton slot="loading" effect="sheen"></wa-skeleton>
+          </puzzle-view-interactive>
 
           <puzzle-keys>
             <puzzle-checkpoints slot="after"></puzzle-checkpoints>
@@ -408,6 +411,14 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         border-radius: 0;
         min-width: 100%;
         --padding: var(--wa-space-l); /* --app-padding */
+      }
+    }
+
+    wa-skeleton {
+      --color: var(--wa-color-neutral-95);
+      --sheen-color: var(--wa-color-brand-95);
+      &::part(indicator) {
+        border-radius: 0;
       }
     }
 

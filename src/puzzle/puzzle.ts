@@ -136,6 +136,7 @@ export class Puzzle {
   private _randomSeed = signal<string | undefined>(undefined);
   private _canFormatAsText = signal(false);
   private _statusbarText = signal<string>("");
+  private _generatingGame = signal<boolean>(false);
 
   public get status(): GameStatus {
     return this._status.get();
@@ -187,9 +188,15 @@ export class Puzzle {
     return this._statusbarText.get();
   }
 
+  public get generatingGame(): boolean {
+    return this._generatingGame.get();
+  }
+
   // Methods
   public async newGame(): Promise<void> {
+    this._generatingGame.set(true);
     await this.workerPuzzle.newGame();
+    this._generatingGame.set(false);
   }
 
   public async restartGame(): Promise<void> {

@@ -5,6 +5,7 @@ import { ColorSpace, to as convert, display, OKLCH, parse, sRGB } from "colorjs.
 import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
+import { classMap } from "lit/directives/class-map.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { coordsToColour, equalColour } from "../utils/colour.ts";
 import { isSafari } from "../utils/events.ts";
@@ -191,13 +192,20 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   protected renderCanvas(part?: string) {
     const { w, h } = this.canvasSize;
-    const style = styleMap({
+    const canvasStyle = styleMap({
       width: `${w}px`,
       height: `${h}px`,
     });
+    const loadingClass = classMap({
+      loading: true,
+      active: !this.puzzle?.currentGameId || this.puzzle.generatingGame,
+    });
     return html`
       <div part=${part || nothing} id="canvasWrap">
-        <canvas style=${style}></canvas>
+        <canvas style=${canvasStyle}></canvas>
+        <div class=${loadingClass}>
+          <slot name="loading"></slot>
+        </div>
       </div>
     `;
   }
@@ -234,15 +242,9 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   // Returns true if canvasSize changed
   protected async resize(isUserSize = true): Promise<boolean> {
-    if (
-      !this.hasUpdated ||
-      !this.canvasWrap ||
-      !this.puzzlePart ||
-      !this.puzzle?.currentGameId
-    ) {
-      // midend_size() is only valid while there's a game.
-      // We'll get called again then (see renderingFirstGame in updated()).
-      // (We can end up in here before the first update thanks to resize observers.)
+    // (Resize observer may call this before first render,
+    // so avoid initializing cached @query props unless hasUpdated.)
+    if (!this.hasUpdated || !this.canvasWrap || !this.puzzlePart) {
       return false;
     }
 
@@ -253,22 +255,24 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       classes.push("maximize");
     }
     this.puzzlePart.classList.add(...classes);
-    const available = this.canvasWrap.getBoundingClientRect();
+    const { width, height } = this.canvasWrap.getBoundingClientRect();
+    const availableSize = { w: width, h: height };
     this.puzzlePart.classList.remove(...classes);
 
+    // midend_size() is only valid while there's a game;
+    // use a square fitting availableSize before that.
+    // We'll get called again once there's a game (see renderingFirstGame in updated()).
     // TODO: unclear if we should pass dpr to midend as 1 or actual dpr
     //   (since we use css pixels and scale to dpr in the drawing context)
-    const size = await this.puzzle.size(
-      { w: available.width, h: available.height },
-      isUserSize || this.maximize,
-      1,
-    );
+    const size = this.puzzle?.currentGameId
+      ? await this.puzzle.size(availableSize, isUserSize || this.maximize, 1)
+      : { w: Math.min(width, height), h: Math.min(width, height) };
     const changed = size.w !== this.canvasSize.w || size.h !== this.canvasSize.h;
 
     if (changed) {
       // console.log(
       //   `Resize: current ${this.canvasSize.w}x${this.canvasSize.h},` +
-      //     ` available ${available.width}x${available.height},` +
+      //     ` available ${width}x${height},` +
       //     ` used ${size.w}x${size.h}`,
       // );
       this.canvasSize = size;
@@ -359,6 +363,14 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         display: block;
       }
       
+      @media (prefers-reduced-motion: no-preference) {
+        canvas {
+          transition:
+              width 75ms ease-in-out,
+              height 75ms ease-in-out;
+        }
+      }
+      
       canvas, #canvasWrap {
         /* Required for accurate sizing calculations */
         padding: 0 !important;
@@ -367,6 +379,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
       [part="puzzle"] {
         box-sizing: border-box;
+        position: relative;
       }
       
       [part="puzzle"].resizing {
@@ -400,6 +413,23 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
         /* For puzzles with timers (e.g., Mines), variable width is distracting */
         font-variant-numeric: tabular-nums;
+      }
+      
+      .loading {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 75ms ease-in-out;
+        
+        &.active {
+          visibility: visible;
+          opacity: 1;
+        }
       }
     `,
   ];
