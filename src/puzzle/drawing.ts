@@ -103,6 +103,10 @@ export class Drawing implements DrawingImpl<Blitter> {
     colour: number,
     text: string,
   ): void {
+    if (size < 1) {
+      // console.warn(`Drawing.drawText ignoring size=${size}`);
+      return;
+    }
     this.context.font = [
       this.fontInfo["font-style"],
       this.fontInfo["font-weight"],
@@ -129,11 +133,19 @@ export class Drawing implements DrawingImpl<Blitter> {
   }
 
   drawRect({ x, y, w, h }: Rect, colour: number): void {
+    if (w < 1 || h < 1) {
+      // console.warn(`Drawing.drawRect ignoring w=${w} h=${h}`);
+      return;
+    }
     this.setUpContext({ fillColor: colour, strokeColor: colour, lineWidth: 1 });
     this.context.fillRect(x, y, w, h);
   }
 
   drawLine(p1: Point, p2: Point, colour: number, thickness: number): void {
+    if (thickness <= 0) {
+      // console.warn(`Drawing.drawLine ignoring thickness=${thickness}`);
+      return;
+    }
     this.context.beginPath();
     // Drawing API points are pixel center; canvas is pixel top left.
     this.context.moveTo(p1.x + 0.5, p1.y + 0.5);
@@ -169,6 +181,10 @@ export class Drawing implements DrawingImpl<Blitter> {
     fillcolour: number,
     outlinecolour: number,
   ): void {
+    if (radius <= 0) {
+      // console.warn(`Drawing.drawCircle ignoring radius=${radius}`);
+      return;
+    }
     this.context.beginPath();
     this.context.arc(cx + 0.5, cy + 0.5, radius, 0, Math.PI * 2, false);
     this.context.closePath();
@@ -193,6 +209,10 @@ export class Drawing implements DrawingImpl<Blitter> {
 
   clip({ x, y, w, h }: Rect): void {
     this.context.save();
+    if (w < 1 || h < 1) {
+      // console.warn(`Drawing.clip ignoring w=${w} h=${h}`);
+      return;
+    }
     this.context.beginPath();
     this.context.rect(x, y, w, h);
     this.context.clip();
@@ -211,16 +231,27 @@ export class Drawing implements DrawingImpl<Blitter> {
   }
 
   blitterSave(blitter: Blitter, { x, y }: Point): void {
+    const { w, h } = blitter;
+    if (w < 1 || h < 1) {
+      // console.warn(`Drawing.blitterSave ignoring w=${w} h=${h}`);
+      return;
+    }
+
     // getImageData ignores the transformation matrix, so must apply dpr scaling.
     blitter.imageData = this.context.getImageData(
       x * this.dpr,
       y * this.dpr,
-      blitter.w * this.dpr,
-      blitter.h * this.dpr,
+      w * this.dpr,
+      h * this.dpr,
     );
   }
 
   blitterLoad(blitter: Blitter, { x, y }: Point): void {
+    const { w, h } = blitter;
+    if (w < 1 || h < 1) {
+      // console.warn(`Drawing.blitterLoad ignoring w=${w} h=${h}`);
+      return;
+    }
     if (!blitter.imageData) {
       throw new Error("Blitter loaded before saved");
     }
