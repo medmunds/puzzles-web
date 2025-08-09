@@ -12,12 +12,6 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-
-  /* Make default buttons less loud, match form controls.
-   * See enableWaButtonDefaultStyling in webawesomehacks. */
-  --wa-color-button-fill-default: var(--wa-form-control-background-color);
-  --wa-color-button-on-default: var(--wa-form-control-label-color);
-  --wa-color-button-border-default: var(--wa-form-control-border-color);
 }
 
 @media (any-pointer: coarse) {
