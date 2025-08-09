@@ -280,6 +280,11 @@ export class Puzzle {
   }
 
   public async redraw(): Promise<void> {
+    if (!this.hasSize) {
+      // "Some back ends require that midend_size() is called before midend_redraw()."
+      console.error("Ignoring Puzzle.redraw() called before Puzzle.size()");
+      return;
+    }
     await this.workerPuzzle.redraw();
   }
 
@@ -287,12 +292,23 @@ export class Puzzle {
     return this.workerPuzzle.getColourPalette(defaultBackground);
   }
 
+  // Whether size() has been successfully called yet.
+  private hasSize = false;
+
   public async size(
     maxSize: Size,
     isUserSize: boolean,
     devicePixelRatio: number,
   ): Promise<Size> {
-    return this.workerPuzzle.size(maxSize, isUserSize, devicePixelRatio);
+    if (!this.currentGameId) {
+      // "The midend relies on the frontend calling midend_new_game() before calling
+      // midend_size()." (Or otherwise having a game, e.g., midend_deserialise().)
+      console.error("Ignoring Puzzle.size() called before game initialized");
+      return maxSize;
+    }
+    const result = await this.workerPuzzle.size(maxSize, isUserSize, devicePixelRatio);
+    this.hasSize = true;
+    return result;
   }
 
   public async formatAsText(): Promise<string | undefined> {

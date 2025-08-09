@@ -124,7 +124,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       // Recalculate canvas size for newly-attached puzzle. If somehow the current
       // size was already correct, we need to redraw immediately; else redraw when
       // the canvasSize change comes through.
-      if (!(await this.resize(false))) {
+      if (this.puzzle.currentGameId && !(await this.resize(false))) {
         await this.puzzle.redraw();
       }
     }
