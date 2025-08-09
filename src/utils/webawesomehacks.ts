@@ -5,18 +5,44 @@ import WaDropdown from "@awesome.me/webawesome/dist/components/dropdown/dropdown
 import { css } from "lit";
 
 /**
- * <wa-button appearance=accent> (the default) uses border-color: transparent,
- * which breaks if wa-color-fill-loud needs wa-color-border loud to stand out.
+ * wa-button defaults to appearance=accent variant=neutral, which uses the
+ * fill-loud and on-loud design tokens but _not_ border-loud. That prevents
+ * globally changing the default button appearance to anything that isn't loud-ish.
+ *
+ * This adds CSS properties that override the default wa-button appearance:
+ *    --wa-color-button-fill-default
+ *    --wa-color-button-on-default
+ *    --wa-color-button-border-default
+ * They default to using the fill-loud and on-loud tokens, except border
+ * which defaults to transparent, matching the current accent neutral look.
  *
  * https://github.com/shoelace-style/webawesome/issues/1278
  * https://github.com/shoelace-style/webawesome/discussions/1285
  */
-function fixWaButtonAccentBorder() {
+function enableWaButtonDefaultStyling() {
   WaButton.elementStyles.push(
     css`
-      :host([appearance~="accent"]) {
+      :host([appearance="accent"][variant="neutral"]) {
         .button {
-          border-color: var(--wa-color-border-loud, var(--wa-color-neutral-border-loud));
+          color: var(--wa-color-button-on-default, var(--wa-color-on-loud));
+          background-color: var(--wa-color-button-fill-default, var(--wa-color-fill-loud));
+          border-color: var(--wa-color-button-border-default, transparent);
+        }
+        @media (hover: hover) {
+          .button:not(.disabled):not(.loading):hover {
+            background-color: color-mix(
+                in oklab,
+                var(--wa-color-button-fill-default, var(--wa-color-fill-loud)),
+                var(--wa-color-mix-hover)
+            );
+          }
+        }
+        .button:not(.disabled):not(.loading):active {
+          background-color: color-mix(
+              in oklab,
+              var(--wa-color-button-fill-default, var(--wa-color-fill-loud)),
+              var(--wa-color-mix-active)
+          );
         }
       }
     `,
@@ -185,7 +211,7 @@ function flipWaDropdownCaretForTopPlacement() {
 }
 
 export function installWebAwesomeHacks() {
-  fixWaButtonAccentBorder();
+  enableWaButtonDefaultStyling();
   fixWaButtonAndCheckboxLabelLayout();
   fixWaDropdownOverflow();
   enableCustomWaDialogAnimations();
