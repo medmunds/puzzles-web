@@ -1,7 +1,7 @@
 import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import { consume } from "@lit/context";
 import { SignalWatcher, signal } from "@lit-labs/signals";
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
@@ -121,8 +121,15 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
         `;
 
       case "choices":
-        if (config.choicenames.length <= 3) {
+        if (config.choicenames.length <= 4) {
           // Render small option sets as a radio button group rather than a select popup.
+          // Use a horizontal button group for short options, otherwise vertical radio buttons.
+          const totalChars = config.choicenames.reduce(
+            (sum, name) => sum + name.length,
+            0,
+          );
+          const isShort = totalChars < 30;
+
           // Bind to .value (property) rather than value (attribute) to work
           // around a wa-radio-group bug where attribute changes aren't rendered.
           // https://github.com/shoelace-style/webawesome/issues/1273
@@ -131,12 +138,16 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
               id=${id}
               label=${config.name}
               .value=${value}
-              orientation="horizontal"
+              orientation=${isShort ? "horizontal" : "vertical"}
               @change=${this.updateSelectValue}
             >
               ${config.choicenames.map(
                 (choice, value) => html`
-                <wa-radio value=${value} appearance="button">${choice}</wa-radio>`,
+                  <wa-radio 
+                    value=${value} 
+                    appearance=${isShort ? "button" : nothing}
+                  >${choice}</wa-radio>
+                `,
               )}
             </wa-radio-group>
           `;
@@ -261,6 +272,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
       display: flex;
       flex-direction: column;
       gap: var(--item-spacing);
+      align-items: flex-start;
     }
 
     [part="error"] {
