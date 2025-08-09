@@ -366,7 +366,8 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
 
   protected override updated() {
     if (!this.hasAttribute("dialog-title")) {
-      // Get the dialog title from the form
+      // Get the dialog title from the form.
+      // This causes Lit changed-in-update warning.
       const title = this.form?.title;
       if (title && title !== this.dialogTitle) {
         this.dialogTitle = title;
@@ -422,6 +423,9 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
     }
   `;
 }
+// change-in-update is necessary because title is retrieved
+// from PuzzleConfigForm after first render.
+PuzzleConfigDialog.disableWarning?.("change-in-update");
 
 /**
  * Dialog for editing custom game params (custom puzzle type)
