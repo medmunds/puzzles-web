@@ -1376,14 +1376,13 @@ public:
         return custom_params.as_encoded_string().as_string();
     }
 
-    // Returns undefined if successful, else error message.
-    // (This is not a property setter.)
-    [[nodiscard]] std::optional<std::string> setGameId(const std::string &id) const {
+    // Return undefined if successful, else error message.
+    [[nodiscard]] std::optional<std::string> newGameFromId(const std::string &id) const {
         const static_char_ptr error(midend_game_id(me(), id.c_str()));
         if (!error) {
-            // (midend_game_id will notify about game id change.
-            // It deliberately does not alter the current params.)
-            notifyGameStateChange();
+            // (midend_game_id will notify about game id change, but does not
+            // alter the current params or initialize the game from the id.)
+            newGame();
         }
         return error.as_optional_string();
     }
@@ -1570,7 +1569,7 @@ EMSCRIPTEN_BINDINGS(frontend) {
         .function("getCustomParams()", &frontend::getCustomParams)
         .function("setCustomParams(values)", &frontend::setCustomParams)
         .function("encodeCustomParams(values)", &frontend::encodeCustomParams)
-        .function("setGameId(id)", &frontend::setGameId)
+        .function("newGameFromId(id)", &frontend::newGameFromId)
         .property("currentGameId", &frontend::getCurrentGameId)
         .property("randomSeed", &frontend::getRandomSeed)
         .property("canFormatAsText", &frontend::getCanFormatAsText)

@@ -199,6 +199,10 @@ export class Puzzle {
     this._generatingGame.set(false);
   }
 
+  public async newGameFromId(id: string): Promise<string | undefined> {
+    return this.workerPuzzle.newGameFromId(id);
+  }
+
   public async restartGame(): Promise<void> {
     await this.workerPuzzle.restartGame();
   }
@@ -293,10 +297,6 @@ export class Puzzle {
 
   public async formatAsText(): Promise<string | undefined> {
     return this.workerPuzzle.formatAsText();
-  }
-
-  public async setGameId(id: string): Promise<string | undefined> {
-    return this.workerPuzzle.setGameId(id);
   }
 
   public async loadGame(data: Uint8Array<ArrayBuffer>): Promise<string | undefined> {

@@ -94,6 +94,10 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
     this.frontend.newGame();
   }
 
+  newGameFromId(id: string): string | undefined {
+    return this.frontend.newGameFromId(id);
+  }
+
   restartGame(): void {
     this.frontend.restartGame();
   }
@@ -185,10 +189,6 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
 
   formatAsText(): string | undefined {
     return this.frontend.formatAsText();
-  }
-
-  setGameId(id: string): string | undefined {
-    return this.frontend.setGameId(id);
   }
 
   loadGame(data: Uint8Array<ArrayBuffer>): string | undefined {

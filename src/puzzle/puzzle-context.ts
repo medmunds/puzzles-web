@@ -103,7 +103,10 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
         // Just set up the midend but don't create a new game
       } else if (this.gameid) {
         // Use the specified game ID
-        await this._puzzle.setGameId(this.gameid);
+        const error = await this._puzzle.newGameFromId(this.gameid);
+        if (error) {
+          throw new Error(`Invalid puzzle-view gameid="${this.gameid}": ${error}`);
+        }
       } else {
         // Create a new random game
         await this._puzzle.newGame();
