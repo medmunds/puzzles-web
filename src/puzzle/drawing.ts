@@ -54,9 +54,6 @@ export class Drawing implements DrawingImpl<Blitter> {
       throw new Error("Failed to get canvas 2d context");
     }
     this.context = context;
-    // emcclib.js uses round for everything
-    this.context.lineCap = "round";
-    this.context.lineJoin = "round";
   }
 
   bind(module: PuzzleModule): DrawingHandle {
@@ -273,6 +270,8 @@ export class Drawing implements DrawingImpl<Blitter> {
     lineWidth?: number;
   }): void {
     this.context.lineWidth = lineWidth ?? 1;
+    this.context.lineCap = "round";
+    this.context.lineJoin = "round";
     if (strokeColor !== undefined) {
       const strokeStyle = this.palette[strokeColor];
       if (strokeStyle === undefined) {
