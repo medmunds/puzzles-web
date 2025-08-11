@@ -75,6 +75,10 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   }
 
   override render(): TemplateResult {
+    const labelContentClasses = classMap({
+      "dropdown-label-content": true,
+      "show-value": this.puzzle !== undefined && !this.open,
+    });
     return html`
       <wa-dropdown 
           @wa-show=${this.handleDropdownShow}
@@ -85,7 +89,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
         <wa-button slot="trigger" with-caret>
           <wa-icon slot="start" name="puzzle-type"></wa-icon>
           <div class="dropdown-label">
-            <div class=${classMap({ "dropdown-label-content": true, open: this.open })}>
+            <div class=${labelContentClasses}>
               ${this.label}<br>
               ${this.currentGameTypeLabel}
             </div>
@@ -260,9 +264,9 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
       text-overflow: ellipsis;
 
       text-align: start;
-      transform: translateY(-50%); /* second line: current value */
-      &.open {
-        transform: translateY(0); /* first line: menu label */
+      transform: translateY(0); /* first line: menu label */
+      &.show-value {
+        transform: translateY(-50%); /* second line: current value */
       }
       @media (prefers-reduced-motion: no-preference) {
         transition: transform 50ms ease; /* match wa-dropdown animation timing */
