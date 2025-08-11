@@ -109,12 +109,10 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       this.puzzle
     ) {
       this.isAttachingToPuzzle = true;
-      const computedStyle = window.getComputedStyle(this.canvas);
-      const fontInfo: FontInfo = {
-        "font-family": computedStyle.fontFamily,
-        "font-weight": computedStyle.fontWeight,
-        "font-style": computedStyle.fontStyle,
-      };
+      const { fontFamily, fontWeight, fontStyle } = window.getComputedStyle(
+        this.canvas,
+      );
+      const fontInfo: FontInfo = { fontFamily, fontWeight, fontStyle };
       const offscreenCanvas = this.canvas.transferControlToOffscreen();
       await this.puzzle.attachCanvas(offscreenCanvas, fontInfo);
       this.isAttachedToPuzzle = true;

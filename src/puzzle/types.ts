@@ -116,7 +116,7 @@ export interface PuzzleModule extends MainModule {
  * Drawing font selection
  */
 export interface FontInfo {
-  "font-family": string;
-  "font-weight": string;
-  "font-style": string;
+  fontFamily: string;
+  fontWeight: string;
+  fontStyle: string;
 }

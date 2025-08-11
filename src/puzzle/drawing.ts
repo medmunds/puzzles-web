@@ -12,9 +12,9 @@ import type {
 // Type definitions
 
 export const defaultFontInfo: FontInfo = {
-  "font-family": "sans-serif",
-  "font-weight": "normal",
-  "font-style": "normal",
+  fontFamily: "sans-serif",
+  fontWeight: "normal",
+  fontStyle: "normal",
 } as const;
 
 interface Blitter {
@@ -108,10 +108,10 @@ export class Drawing implements DrawingImpl<Blitter> {
       return;
     }
     this.context.font = [
-      this.fontInfo["font-style"],
-      this.fontInfo["font-weight"],
+      this.fontInfo.fontStyle,
+      this.fontInfo.fontWeight,
       `${size}px`,
-      fontType === "variable" ? this.fontInfo["font-family"] : "monospace",
+      fontType === "variable" ? this.fontInfo.fontFamily : "monospace",
     ].join(" ");
     this.context.textAlign = align;
     if (baseline === "mathematical") {
