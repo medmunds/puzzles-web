@@ -6,9 +6,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
-import { styleMap } from "lit/directives/style-map.js";
 import { coordsToColour, equalColour } from "../utils/colour.ts";
-import { isSafari } from "../utils/events.ts";
 import { almostEqual } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
@@ -57,15 +55,6 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   @state()
   protected renderedPuzzleParams?: string;
 
-  @state()
-  protected canvasDpr = window.devicePixelRatio ?? 1;
-
-  @state()
-  protected canvasSize: Size = { w: 150, h: 150 };
-
-  @query("canvas", true)
-  protected canvas?: HTMLCanvasElement;
-
   @query("#canvasWrap", true)
   protected canvasWrap?: HTMLDivElement;
 
@@ -73,11 +62,10 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   protected puzzlePart?: HTMLElement;
 
   protected resizeController = new ResizeController(this, {
-    callback: throttle(() => this.resize(false), 10),
+    // Throttle to at least the canvas size transition time,
+    // to avoid multiple resizes while resizing.
+    callback: throttle(() => this.resize(), 100),
   });
-
-  private isAttachedToPuzzle = false;
-  private isAttachingToPuzzle = false;
 
   protected override willUpdate(changedProperties: Map<string, unknown>) {
     // Since lit signals doesn't yet support effects on reactive properties, copy the
@@ -101,58 +89,40 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   }
 
   protected override async updated(changedProperties: Map<string, unknown>) {
-    // Initialize drawing when dependencies become available
-    if (
-      !this.isAttachedToPuzzle &&
-      !this.isAttachingToPuzzle &&
-      this.canvas &&
-      this.puzzle
-    ) {
-      this.isAttachingToPuzzle = true;
-      const { fontFamily, fontWeight, fontStyle } = window.getComputedStyle(
-        this.canvas,
-      );
-      const fontInfo: FontInfo = { fontFamily, fontWeight, fontStyle };
-      const offscreenCanvas = this.canvas.transferControlToOffscreen();
-      await this.puzzle.attachCanvas(offscreenCanvas, fontInfo);
-      this.isAttachedToPuzzle = true;
-      this.isAttachingToPuzzle = false;
-
-      await this.updateColorPalette();
-      // Recalculate canvas size for newly-attached puzzle. If somehow the current
-      // size was already correct, we need to redraw immediately; else redraw when
-      // the canvasSize change comes through.
-      if (this.puzzle.currentGameId && !(await this.resize(false))) {
-        await this.puzzle.redraw();
-      }
+    if (changedProperties.has("puzzle") && this.canvas) {
+      // Changing Puzzle: any existing canvas belongs to another (probably deleted) worker.
+      this.destroyCanvas();
     }
 
-    if (this.isAttachedToPuzzle && this.canvas && this.puzzle) {
+    if (!this.canvas && this.puzzle && this.puzzle.currentGameId) {
+      await this.createCanvas();
+    } else if (this.puzzle && this.canvasReady) {
+      let needsResize = false;
       let needsRedraw = false;
-      const renderingFirstGame =
-        changedProperties.has("renderedPuzzleGameId") &&
-        changedProperties.get("renderedPuzzleGameId") === undefined;
 
       if (
         changedProperties.has("maximize") ||
-        changedProperties.has("renderedPuzzleParams") ||
-        renderingFirstGame
+        changedProperties.has("renderedPuzzleParams")
       ) {
         // Changing game params may alter desired canvas size.
         // (Since game id has probably also changed, we'll redraw either way.)
-        needsRedraw = !(await this.resize(false));
+        needsResize = true;
       }
 
       if (changedProperties.has("renderedPuzzleGameId")) {
-        // Current canvasSize should be fine, but we need to draw the new game.
+        if (changedProperties.get("renderedPuzzleGameId") === undefined) {
+          // First game rendered; need resize before redraw.
+          needsResize = true;
+        }
+        // Else current size should be fine. Need to draw the new game either way.
         needsRedraw = true;
       }
 
-      if (changedProperties.has("canvasSize") || changedProperties.has("canvasDpr")) {
-        await this.puzzle.resizeDrawing(this.canvasSize, this.canvasDpr);
-        needsRedraw = true;
+      if (needsResize) {
+        if (await this.resize()) {
+          needsRedraw = false;
+        }
       }
-
       if (needsRedraw) {
         await this.puzzle.redraw();
       }
@@ -161,49 +131,24 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   override connectedCallback() {
     super.connectedCallback();
-    if (isSafari) {
-      document.addEventListener("visibilitychange", this.kickSafariCanvas);
-      window.addEventListener("focus", this.kickSafariCanvas);
-    }
+    document.addEventListener("visibilitychange", this.redrawWhenVisible);
+    window.addEventListener("focus", this.redrawWhenVisible);
   }
 
   override async disconnectedCallback() {
     super.disconnectedCallback();
-    if (isSafari) {
-      document.removeEventListener("visibilitychange", this.kickSafariCanvas);
-      window.removeEventListener("focus", this.kickSafariCanvas);
-    }
-    if (this.isAttachedToPuzzle) {
-      await this.puzzle?.detachCanvas();
-      this.isAttachedToPuzzle = false;
-      this.isAttachingToPuzzle = false;
-    }
+    document.removeEventListener("visibilitychange", this.redrawWhenVisible);
+    window.removeEventListener("focus", this.redrawWhenVisible);
   }
 
   protected override render() {
-    const result = [this.renderPuzzle()];
-    if (this.statusbar && this.puzzle?.wantsStatusbar) {
-      result.push(this.renderStatusbar());
-    }
-    return result;
+    return [this.renderPuzzle(), this.renderStatusbar(), this.renderLoadingIndicator()];
   }
 
   protected renderCanvas(part?: string) {
-    const { w, h } = this.canvasSize;
-    const canvasStyle = styleMap({
-      width: `${w}px`,
-      height: `${h}px`,
-    });
-    const loadingClass = classMap({
-      loading: true,
-      active: !this.puzzle?.currentGameId || this.puzzle.generatingGame,
-    });
     return html`
       <div part=${part || nothing} id="canvasWrap">
-        <canvas style=${canvasStyle}></canvas>
-        <div class=${loadingClass}>
-          <slot name="loading"></slot>
-        </div>
+        <div id="canvasPlaceholder"></div>
       </div>
     `;
   }
@@ -213,33 +158,43 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   }
 
   protected renderStatusbar() {
-    return html`<div part="statusbar">${this.puzzle?.statusbarText}</div>`;
+    return this.statusbar && this.puzzle?.wantsStatusbar
+      ? html`<div part="statusbar">${this.puzzle?.statusbarText}</div>`
+      : nothing;
   }
 
-  protected kickSafariCanvas = async () => {
-    // Give Safari a good kick in the side to try to fix a randomly blank
-    // canvas after the tab has been hidden or occluded by another window,
-    // or the app has resumed. The OffscreenCanvas has the correct content,
-    // but Safari seems to fail to copy it onscreen. (Weirdly, the canvas
-    // appears correctly in Safari developer tools under both Graphics and
-    // Timelines: Screenshots.)
-    if (document.visibilityState === "visible" && this.canvas) {
-      // Something in resize() seems to help to get the canvas connection
-      // working again (usually), but I haven't been able to isolate it.
-      await this.resize(true);
-      await this.updateComplete;
+  protected renderLoadingIndicator() {
+    const classes = classMap({
+      loading:
+        !this.puzzle?.currentGameId || this.puzzle.generatingGame || !this.canvasReady,
+    });
+    return html`
+      <div id="loadingIndicator" class=${classes}>
+        <slot name="loading"></slot>
+      </div>
+    `;
+  }
+
+  protected redrawWhenVisible = async () => {
+    // Try to work around a Safari issue (?) where the onscreen canvas
+    // is randomly blank after the tab has been hidden/occluded or the app
+    // is resuming. The offscreen canvas has the correct content, but it
+    // isn't mirrored onscreen. (Although it seems Safari specific, redrawing
+    // on activation doesn't hurt in other browsers.)
+    if (document.visibilityState === "visible") {
       await this.redraw();
     }
   };
 
   async redraw() {
-    if (this.isAttachedToPuzzle) {
+    if (this.canvas && this.canvasReady) {
       await this.puzzle?.redraw();
     }
   }
 
-  // Returns true if canvasSize changed
-  protected async resize(isUserSize = true): Promise<boolean> {
+  // Returns true if canvasSize changed.
+  // If changed and canvasReady, redraws puzzle.
+  protected async resize(isUserSize = false): Promise<boolean> {
     // (Resize observer may call this before first render,
     // so avoid initializing cached @query props unless hasUpdated.)
     if (!this.hasUpdated || !this.canvasWrap || !this.puzzlePart) {
@@ -265,18 +220,115 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     const size = this.puzzle?.currentGameId
       ? await this.puzzle.size(availableSize, isUserSize || this.maximize, 1)
       : { w: Math.min(width, height), h: Math.min(width, height) };
-    const changed = size.w !== this.canvasSize.w || size.h !== this.canvasSize.h;
+    const changed = size.w !== this.canvasSize?.w || size.h !== this.canvasSize?.h;
 
     if (changed) {
+      // const { w: currentW, h: currentH } = this.canvasSize ?? { w: "---", h: "---" };
       // console.log(
-      //   `Resize: current ${this.canvasSize.w}x${this.canvasSize.h},` +
+      //   `Resize: current ${currentW}x${currentH},` +
       //     ` available ${width}x${height},` +
       //     ` used ${size.w}x${size.h}`,
       // );
       this.canvasSize = size;
+      await this.updateCanvasSize();
+      if (this.puzzle && this.canvasReady) {
+        await this.puzzle.redraw();
+      }
     }
 
     return changed;
+  }
+
+  //
+  // Canvas
+  //
+
+  @state()
+  protected canvasReady = false;
+
+  protected canvas?: HTMLCanvasElement;
+  protected canvasDpr = window.devicePixelRatio ?? 1;
+  protected canvasSize?: Size;
+  private inCreateCanvas = false;
+
+  protected async createCanvas() {
+    if (this.canvas) {
+      throw new Error("PuzzleView.createCanvas called when canvas already exists");
+    }
+    if (!this.canvasWrap) {
+      throw new Error("PuzzleView.createCanvas called before canvasWrap available");
+    }
+    if (!this.puzzle) {
+      throw new Error("PuzzleView.createCanvas called before puzzle available");
+    }
+    if (!this.puzzle.currentGameId) {
+      throw new Error("PuzzleView.createCanvas called before game set up");
+    }
+
+    if (this.inCreateCanvas) {
+      return;
+    }
+
+    this.inCreateCanvas = true;
+    this.canvasReady = false;
+    this.canvas = document.createElement("canvas");
+    // Safari wants the canvas in the dom before transferring it offscreen.
+    // (Else offscreen drawing doesn't always get mirrored onscreen.)
+    this.canvasWrap.insertBefore(this.canvas, this.canvasWrap.firstChild);
+    const offscreenCanvas = this.canvas.transferControlToOffscreen();
+
+    const { fontFamily, fontWeight, fontStyle } = window.getComputedStyle(this.canvas);
+    const fontInfo: FontInfo = { fontFamily, fontWeight, fontStyle };
+    await this.puzzle.attachCanvas(offscreenCanvas, fontInfo);
+    await this.updateColorPalette();
+
+    // resize() will updateCanvasSize() if changed...
+    if (!(await this.resize())) {
+      // ... or if not, we must:
+      await this.updateCanvasSize();
+    }
+    // resize() _didn't_ resizeDrawing or redraw (because not this.canvasReady).
+    if (!this.canvasSize) {
+      throw new Error("PuzzleView.createCanvas has no canvasSize");
+    }
+    await this.puzzle.resizeDrawing(this.canvasSize, this.canvasDpr);
+    await this.puzzle.redraw();
+
+    // Enable size transitions
+    this.canvas.classList.add("attached");
+
+    // (Wait to set canvasReady until after all async ops,
+    // to avoid updated() attempting competing changes.)
+    this.canvasReady = true;
+    this.inCreateCanvas = false;
+  }
+
+  protected destroyCanvas() {
+    if (this.canvas) {
+      // Puzzle.detachCanvas is actually a noop, so don't bother calling it.
+      // (We'd need to make sure we were calling it for the Puzzle in use
+      // during createCanvas, which isn't necessarily this.puzzle any more.)
+      this.canvas.remove();
+      this.canvas = undefined;
+    }
+  }
+
+  protected async updateCanvasSize() {
+    if (this.canvasSize) {
+      const { w, h } = this.canvasSize;
+      if (this.canvas) {
+        this.canvas.style.width = `${w}px`;
+        this.canvas.style.height = `${h}px`;
+      }
+      const placeholder = this.shadowRoot?.getElementById("canvasPlaceholder");
+      if (placeholder) {
+        placeholder.style.width = `${w}px`;
+        placeholder.style.height = `${h}px`;
+      }
+      if (this.puzzle && this.canvasReady) {
+        await this.puzzle.resizeDrawing(this.canvasSize, this.canvasDpr);
+      }
+    }
   }
 
   //
@@ -284,7 +336,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   //
 
   protected async updateColorPalette() {
-    if (!this.puzzle || !this.isAttachedToPuzzle) {
+    if (!this.puzzle || !this.canvas) {
       throw new Error("updateColorPalette called before puzzle ready");
     }
 
@@ -355,14 +407,22 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
         /* Necessary for getDefaultColour to access computed backgroundColor */
         background-color: inherit;
+
+        /* For sizing the loadingIndicator */
+        position: relative;
       }
 
       canvas {
         display: block;
       }
       
+      canvas + #canvasPlaceholder {
+        /* Hide the placeholder when the canvas is in the DOM */
+        display: none;
+      }
+      
       @media (prefers-reduced-motion: no-preference) {
-        canvas {
+        canvas.attached, #canvasPlaceholder {
           transition:
               width 75ms ease-in-out,
               height 75ms ease-in-out;
@@ -377,7 +437,6 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
       [part="puzzle"] {
         box-sizing: border-box;
-        position: relative;
       }
       
       [part="puzzle"].resizing {
@@ -413,7 +472,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         font-variant-numeric: tabular-nums;
       }
       
-      .loading {
+      #loadingIndicator {
         position: absolute;
         left: 0;
         right: 0;
@@ -424,7 +483,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         opacity: 0;
         transition: opacity 75ms ease-in-out;
         
-        &.active {
+        &.loading {
           visibility: visible;
           opacity: 1;
         }
