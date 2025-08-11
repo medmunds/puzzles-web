@@ -347,7 +347,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         }
       }
 
-      background-color: var(--wa-color-neutral-90);
+      background-color: var(--wa-color-surface-lowered);
       color: var(--wa-color-text-normal);
     }
 
@@ -400,8 +400,10 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       flex: 0 1 auto;
       min-height: 5rem; /* allows flexing */
       overflow: auto; /* scrollbars if it still can't fit */
-      background-color: var(--wa-color-neutral-95);
+      background-color: var(--wa-color-surface-default);
       border-radius: var(--wa-form-control-border-radius);
+      /*border: 1px solid var(--wa-form-control-border-color);*/
+      /*border: 1px solid var(--wa-color-surface-border);*/
       --spacing: var(--wa-space-m);
     }
     

@@ -6,7 +6,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
-import { coordsToColour, equalColour } from "../utils/colour.ts";
+import { coordsToColour } from "../utils/colour.ts";
 import { almostEqual } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
@@ -380,16 +380,10 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     await this.puzzle.setDrawingPalette(palette);
 
     // Update our own CSS background color to match (for any padding area).
-    let bgIndex = puzzlePalette.findIndex((colour) =>
-      equalColour(colour, defaultBackgroundColour),
-    );
-    if (bgIndex < 0) {
-      // The game altered our requested defaultBackgroundColour.
-      // Assume that index 0 is the background. (Only Untangle doesn't use 0,
-      // and it doesn't alter the requested background colour.)
-      bgIndex = 0;
-    }
-    this.style.backgroundColor = palette[bgIndex];
+    // Almost all puzzles use index 0 as the background.
+    // (Untangle is the exception, and it always uses the defaultBackground.)
+    const COL_BACKGROUND = this.puzzle.puzzleId === "untangle" ? 1 : 0;
+    this.style.backgroundColor = palette[COL_BACKGROUND];
   }
 
   //

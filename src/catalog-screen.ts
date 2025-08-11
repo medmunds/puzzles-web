@@ -134,7 +134,7 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
             padding var(--wa-transition-fast)  var(--wa-transition-easing);
       }
 
-      background-color: var(--wa-color-neutral-90);
+      background-color: var(--wa-color-surface-lowered);
       color: var(--wa-color-text-normal);
     }
 
