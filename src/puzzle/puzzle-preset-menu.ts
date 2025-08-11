@@ -248,6 +248,13 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
     wa-button::part(start), wa-button::part(end), wa-button::part(caret) {
       flex: none;
     }
+    
+    /* Style checked item like a wa-select, except when using keyboard nav. */
+    wa-dropdown:not(:has(:focus-visible)) wa-dropdown-item[checked] {
+      background-color: var(--wa-color-brand-fill-loud);
+      color: var(--wa-color-brand-on-loud);
+      opacity: 1;
+    }
 
     /* Crop the trigger button's two-line label to display either only one
      * of the menu label or the or its current value at any given time.
