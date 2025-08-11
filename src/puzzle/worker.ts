@@ -227,11 +227,13 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
   }
 
   detachCanvas(): void {
-    // Do nothing. Leave the existing Drawing in place, because the Frontend
+    // Leave the existing Drawing in place, because the Frontend
     // might call into it during Frontend.delete(). (E.g., midend_free
     // will call blitter_free in puzzles like Galaxies and Signpost.)
     // The resources are released either when some other canvas is ready
     // to be attached or in WorkerPuzzle.delete() after Frontend.delete().
+    // But resize the canvas to a minimal size to reduce memory usage.
+    this.drawing?.resize(1, 1, 1);
   }
 
   resizeDrawing({ w, h }: Size, dpr: number): void {
