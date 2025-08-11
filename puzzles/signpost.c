@@ -1750,7 +1750,7 @@ static const unsigned long bgcols[8] = {
     0xffa07a, /* lightsalmon */
     0x98fb98, /* green */
     0x7fffd4, /* aquamarine */
-    0x9370db, /* medium purple */
+    0xc3a6ff, /* medium purple, lightened for better contrast with black */
     0xffa500, /* orange */
     0x87cefa, /* lightskyblue */
     0xffff00, /* yellow */
