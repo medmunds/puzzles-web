@@ -402,7 +402,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       overflow: auto; /* scrollbars if it still can't fit */
       background-color: var(--wa-color-neutral-95);
       border-radius: var(--wa-form-control-border-radius);
-      --padding: var(--wa-space-m);
+      --spacing: var(--wa-space-m);
     }
     
     @container (max-width: 25rem) {
@@ -410,7 +410,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         margin: 0;
         border-radius: 0;
         min-width: 100%;
-        --padding: var(--wa-space-l); /* --app-padding */
+        --spacing: var(--wa-space-l); /* --app-padding */
       }
     }
 

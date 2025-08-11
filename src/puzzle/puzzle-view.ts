@@ -145,16 +145,18 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     return [this.renderPuzzle(), this.renderStatusbar(), this.renderLoadingIndicator()];
   }
 
-  protected renderCanvas(part?: string) {
+  protected renderPuzzle() {
     return html`
-      <div part=${part || nothing} id="canvasWrap">
-        <div id="canvasPlaceholder"></div>
-      </div>
+      <div part="puzzle">${this.renderCanvas()}</div>
     `;
   }
 
-  protected renderPuzzle() {
-    return this.renderCanvas("puzzle");
+  protected renderCanvas() {
+    return html`
+      <div id="canvasWrap">
+        <div id="canvasPlaceholder"></div>
+      </div>
+    `;
   }
 
   protected renderStatusbar() {
@@ -397,13 +399,12 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   static styles = [
     css`
       :host {
-        /* Spacing between canvas and statusbar */
-        --gap: var(--wa-space-s);
+        /* Padding around everything, spacing between puzzle and status bar */
+        --spacing: var(--wa-space-s);
 
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: var(--gap);
 
         /* Necessary for getDefaultColour to access computed backgroundColor */
         background-color: inherit;
@@ -437,6 +438,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
       [part="puzzle"] {
         box-sizing: border-box;
+        padding: var(--spacing);
       }
       
       [part="puzzle"].resizing {
@@ -461,6 +463,9 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       }
 
       [part="statusbar"] {
+        /* (Top spacing is redundant with [part="puzzle"] bottom) */
+        padding: 0 var(--spacing) var(--spacing);
+
         /* Don't collapse when no content (e.g., Rectangles) */
         min-height: 1em;
         max-height: 1em;
@@ -471,7 +476,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         /* For puzzles with timers (e.g., Mines), variable width is distracting */
         font-variant-numeric: tabular-nums;
       }
-      
+
       #loadingIndicator {
         position: absolute;
         left: 0;

@@ -413,23 +413,9 @@ export class PuzzleViewInteractive extends PuzzleView {
   static styles = [
     ...PuzzleView.styles,
     css`
-      :host {
-        /* Padding around canvas (and below status bar) */
-        --padding: var(--gap);
-        
-        gap: calc( max( 0, var(--gap) - var(--padding) ));
-      }
-      
       :host(:focus-visible) {
         outline: var(--wa-focus-ring);
         outline-offset: var(--wa-focus-ring-offset);
-      }
-
-      [part="puzzle"] {
-        padding: var(--padding);
-      }
-      [part="statusbar"] {
-        padding: 0 var(--padding) var(--padding);
       }
 
       [part="puzzle"], 
