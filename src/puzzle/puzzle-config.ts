@@ -369,8 +369,8 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
         ${this.renderConfigForm()}
 
         <div slot="footer" part="footer">
-          <wa-button variant="brand" @click=${this.handleSubmit}>${this.submitLabel}</wa-button>
           <wa-button @click=${this.handleCancel}>${this.cancelLabel}</wa-button>
+          <wa-button variant="brand" @click=${this.handleSubmit}>${this.submitLabel}</wa-button>
         </div>
       </wa-dialog>
     `;
@@ -429,8 +429,11 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
     }
 
     [part="footer"] {
-      display: flex;
-      justify-content: flex-end;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 1fr;
+      justify-content: end;
+      align-items: center;
       gap: var(--wa-space-s);
     }
   `;
