@@ -9,6 +9,9 @@
   color: var(--wa-color-text-normal);
   background-color: var(--wa-color-surface-default);
 
+  /* Lighten default buttons slightly (usually neutral-20) */
+  --wa-color-neutral-fill-loud: var(--wa-color-neutral-30);
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

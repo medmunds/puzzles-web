@@ -28,42 +28,6 @@ function disableWaChangedInUpdateWarnings() {
 }
 
 /**
- * wa-button defaults to appearance=accent variant=neutral.
- * We want something less loud, and more compatible with form controls.
- *
- * There's no appearance that achieves this. (Outlined doesn't render fill;
- * filled+outlined looks disabled in neutral; accent+filled+outlined is buggy.
- * Changing global design tokens for filled+outlined would break other controls.
- *
- * Instead, override accent-neutral styling in wa-button's CSS.
- * (This loses the ability to render a true accent-neutral button, but
- * means code can render a default wa-button without extra attributes.)
- *
- * https://github.com/shoelace-style/webawesome/issues/1278
- * https://github.com/shoelace-style/webawesome/discussions/1285
- */
-function adjustWaButtonDefaultStyling() {
-  WaButton.elementStyles.push(
-    // [appearance~="accent"] uses:
-    //   background-color: ...-fill-loud;
-    //   color: ...-on-loud;
-    //   border-color: transparent;
-    // Override the `fill` and `on` tokens that _are_ used
-    // (to retain calculations for hover and active colors).
-    // Must set border-color directly (since it doesn't use a token).
-    css`
-      :host([appearance="accent"][variant="neutral"]) {
-        --wa-color-fill-loud: var(--wa-form-control-background-color);
-        --wa-color-on-loud: var(--wa-form-control-label-color);
-        .button { /* ::part(base) */
-          border-color: var(--wa-form-control-border-color);
-        }
-      }
-    `,
-  );
-}
-
-/**
  * wa-button and wa-checkbox lose spacing between elements in their
  * default slot (e.g., `<wa-button>This is <b>bold</b></wa-button>`
  * renders as "This isbold"). Override their styles to fix.
@@ -226,7 +190,6 @@ function flipWaDropdownCaretForTopPlacement() {
 
 export function installWebAwesomeHacks() {
   disableWaChangedInUpdateWarnings();
-  adjustWaButtonDefaultStyling();
   fixWaButtonAndCheckboxLabelLayout();
   fixWaDropdownOverflow();
   enableCustomWaDialogAnimations();
