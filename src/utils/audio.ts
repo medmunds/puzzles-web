@@ -1,11 +1,37 @@
+import { sleep } from "./timing.ts";
+
 let audioContext: AudioContext | undefined;
 
 async function getAudioContext() {
-  if (!audioContext) {
+  let justCreated = false;
+  if (!audioContext || audioContext.state === "closed") {
     audioContext = new AudioContext();
+    justCreated = true;
   }
   if (audioContext.state === "suspended") {
-    await audioContext.resume();
+    try {
+      // "…When the audio is blocked by autoplay policy, the promise
+      // from AudioContext.resume() will neither resolve or reject…"
+      await Promise.race([audioContext.resume(), sleep(100)]);
+    } catch {
+      // If the AudioContext is "interrupted" it may have reported "suspended"
+      // for privacy reasons. The attempt to resume causes this error, and
+      // also transitions the reported state to "suspended".
+    }
+  }
+  if (
+    !justCreated &&
+    audioContext.state !== "running" &&
+    audioContext.state !== "interrupted"
+  ) {
+    // Possibly a zombie AudioContext on iOS. Attempt to recreate it.
+    if (audioContext.state !== "closed") {
+      // Make a best effort to release the dead resource first.
+      try {
+        await audioContext.close();
+      } catch {}
+    }
+    audioContext = new AudioContext();
   }
   return audioContext;
 }
