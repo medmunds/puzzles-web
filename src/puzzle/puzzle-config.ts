@@ -16,6 +16,7 @@ import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/input/input.js";
 import "@awesome.me/webawesome/dist/components/option/option.js";
+import "@awesome.me/webawesome/dist/components/scroller/scroller.js";
 import "@awesome.me/webawesome/dist/components/select/select.js";
 import "@awesome.me/webawesome/dist/components/radio/radio.js";
 import "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
@@ -366,8 +367,10 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
   protected override render() {
     return html`
       <wa-dialog label=${this.dialogTitle}>
-        ${this.renderConfigForm()}
-
+        <wa-scroller orientation="vertical">
+          ${this.renderConfigForm()}
+        </wa-scroller>
+        
         <div slot="footer" part="footer">
           <wa-button @click=${this.handleCancel}>${this.cancelLabel}</wa-button>
           <wa-button variant="brand" @click=${this.handleSubmit}>${this.submitLabel}</wa-button>
@@ -426,6 +429,23 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
   static styles = css`
     :host {
       display: contents;
+    }
+    
+    wa-dialog::part(body) {
+      /* Move overflow scrolling to wa-scroller; constrain size */
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    wa-scroller {
+      /* Make the shadow visibly larger than puzzle-config-form --item-spacing, 
+         but leave at least enough room for a full form control between shadows. 
+      */
+      --shadow-size: min(
+          calc(2.5 * var(--wa-space-l)),
+          calc((100% - var(--wa-form-control-height)) / 2) 
+      );
     }
 
     [part="footer"] {

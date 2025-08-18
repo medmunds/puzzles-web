@@ -6,6 +6,7 @@ import WaDropdown from "@awesome.me/webawesome/dist/components/dropdown/dropdown
 import WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
 import WaRadio from "@awesome.me/webawesome/dist/components/radio/radio.js";
 import WaRadioGroup from "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
+import WaScroller from "@awesome.me/webawesome/dist/components/scroller/scroller.js";
 import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
 import WaSlider from "@awesome.me/webawesome/dist/components/slider/slider.js";
 import { css } from "lit";
@@ -79,6 +80,20 @@ function fixWaDropdownOverflow() {
       }
     `,
   );
+}
+
+/**
+ * Fix problem where wa-scroller shadows are below form controls.
+ * https://github.com/shoelace-style/webawesome/issues/1326
+ */
+function fixWaScrollerShadowZIndex() {
+  WaScroller.elementStyles.push(css`
+    #start-shadow, #end-shadow {
+      /* Move shadows above form controls. 
+       * (wa-radio[checked] uses z-index 1.) */
+      z-index: 2;
+    }
+  `);
 }
 
 /**
@@ -192,6 +207,7 @@ export function installWebAwesomeHacks() {
   disableWaChangedInUpdateWarnings();
   fixWaButtonAndCheckboxLabelLayout();
   fixWaDropdownOverflow();
+  fixWaScrollerShadowZIndex();
   enableCustomWaDialogAnimations();
   rotateWaButtonCaretWhenExpanded();
   flipWaDropdownCaretForTopPlacement();
