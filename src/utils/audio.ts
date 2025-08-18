@@ -39,7 +39,8 @@ async function getAudioContext() {
 // Can't ramp exponentially down to or up from 0, so just get close.
 const zeroGain = 0.001;
 
-const C6 = 1046.5; // Hz
+const C5 = 523.251; // Hz
+// const C6 = 1046.5; // Hz
 
 /**
  * Play a "click" audio sound.
@@ -53,7 +54,7 @@ export async function audioClick(options?: {
 }): Promise<void> {
   const {
     duration = 7,
-    frequency = C6,
+    frequency = C5,
     volume = 50,
     referenceGain = 0.2,
   } = options ?? {};
@@ -71,7 +72,7 @@ export async function audioClick(options?: {
   const endTime = startTime + durationSec;
 
   const oscillator = audioContext.createOscillator();
-  oscillator.type = "sawtooth";
+  oscillator.type = "sine";
   oscillator.frequency.setValueAtTime(frequency, startTime);
 
   const gainNode = audioContext.createGain();
