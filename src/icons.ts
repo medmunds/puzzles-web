@@ -1,10 +1,13 @@
 import { registerIconLibrary } from "@awesome.me/webawesome/dist/webawesome.js";
+import arrowDownIcon from "lucide-static/icons/arrow-down.svg";
 import arrowLeftIcon from "lucide-static/icons/arrow-left.svg";
 import arrowLeftToLineIcon from "lucide-static/icons/arrow-left-to-line.svg";
 import arrowRightIcon from "lucide-static/icons/arrow-right.svg";
 import awardIcon from "lucide-static/icons/award.svg";
 import badgeQuestionMarkIcon from "lucide-static/icons/badge-question-mark.svg";
 import boxIcon from "lucide-static/icons/box.svg";
+import circleCheckIcon from "lucide-static/icons/circle-check.svg";
+import circlePlayIcon from "lucide-static/icons/circle-play.svg";
 import circleQuestionMarkIcon from "lucide-static/icons/circle-question-mark.svg";
 import crownIcon from "lucide-static/icons/crown.svg";
 import deleteIcon from "lucide-static/icons/delete.svg";
@@ -14,8 +17,10 @@ import gemIcon from "lucide-static/icons/gem.svg";
 import infoIcon from "lucide-static/icons/info.svg";
 import iterationCWIcon from "lucide-static/icons/iteration-cw.svg";
 import laughIcon from "lucide-static/icons/laugh.svg";
+import minusIcon from "lucide-static/icons/minus.svg";
 import octagonAlertIcon from "lucide-static/icons/octagon-alert.svg";
 import partyPopperIcon from "lucide-static/icons/party-popper.svg";
+import playIcon from "lucide-static/icons/play.svg";
 import plusIcon from "lucide-static/icons/plus.svg";
 import redo2Icon from "lucide-static/icons/redo-2.svg";
 import rocketIcon from "lucide-static/icons/rocket.svg";
@@ -27,6 +32,7 @@ import squareArrowOutUpRightIcon from "lucide-static/icons/square-arrow-out-up-r
 import squarePenIcon from "lucide-static/icons/square-pen.svg";
 import swatchBookIcon from "lucide-static/icons/swatch-book.svg";
 import thumbsUpIcon from "lucide-static/icons/thumbs-up.svg";
+import trash2Icon from "lucide-static/icons/trash-2.svg";
 import triangleAlertIcon from "lucide-static/icons/triangle-alert.svg";
 import undo2Icon from "lucide-static/icons/undo-2.svg";
 import uploadIcon from "lucide-static/icons/upload.svg";
@@ -42,7 +48,13 @@ import mouseRightButtonIcon from "./assets/mouse-right-button.svg";
 const icons: Record<string, string> = {
   // general
   "back-to-catalog": boxIcon,
-  "checkpoint": shieldCheckIcon,
+  "checkpoint-list": shieldCheckIcon,
+  "checkpoint": circleCheckIcon,
+  "checkpoint-add": circlePlayIcon,
+  "checkpoint-remove": trash2Icon,
+  "checkpoint-start": minusIcon,
+  "checkpoint-end": arrowDownIcon,
+  "checkpoint-current-move": playIcon,
   "help": circleQuestionMarkIcon,
   "new-game": plusIcon,
   "puzzle-type": swatchBookIcon,
