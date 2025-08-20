@@ -343,8 +343,6 @@ export class Puzzle {
     this._checkpoints.set(new Set(value));
   }
 
-  // TODO: checkpoint manipulation needs to emit some event causing autosave
-
   /**
    * Set a checkpoint at move (default the current move).
    */

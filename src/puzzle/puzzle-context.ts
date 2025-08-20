@@ -32,6 +32,10 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
   // For dispatching puzzle-game-state-change
   @state()
   protected currentMove?: number;
+  @state()
+  protected checkpoints?: ReadonlySet<number>;
+  @state()
+  protected statusbarText?: string; // for timed puzzles
 
   override async connectedCallback() {
     super.connectedCallback();
@@ -58,13 +62,19 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
       await this._unloadPuzzle();
       await this._loadPuzzle();
     }
-    // Observe gameid and currentMove for dispatching puzzle-game-state-change
+    // Observe several properties for dispatching puzzle-game-state-change
     if (this.puzzle) {
       if (this.puzzle.currentGameId) {
         this.gameid = this.puzzle.currentGameId;
       }
       if (this.puzzle.currentParams) {
         this.params = this.puzzle.currentParams;
+      }
+      this.checkpoints = this.puzzle.checkpoints;
+      if (this.puzzle.isTimed && this.puzzle.statusbarText !== null) {
+        // Timed puzzles (mines) use the statusbar to display time;
+        // this will dispatch puzzle-game-state-change when time is updated.
+        this.statusbarText = this.puzzle.statusbarText;
       }
     }
     this.currentMove = this.puzzle?.currentMove;
@@ -76,7 +86,10 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
     }
     if (
       this.puzzle?.currentGameId &&
-      (changedProps.has("gameid") || changedProps.has("currentMove"))
+      (changedProps.has("gameid") ||
+        changedProps.has("currentMove") ||
+        changedProps.has("checkpoints") ||
+        changedProps.has("statusbarText"))
     ) {
       this.dispatchPuzzleEvent("puzzle-game-state-change");
     }
