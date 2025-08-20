@@ -35,8 +35,8 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   /**
    * Whether to show the status bar.
    */
-  @property({ type: Boolean })
-  statusbar = true;
+  @property({ attribute: "hide-statusbar", type: Boolean })
+  hideStatusbar = false;
 
   /**
    * An additional element whose size can affect the puzzle-view.
@@ -160,7 +160,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   }
 
   protected renderStatusbar() {
-    return this.statusbar && this.puzzle?.wantsStatusbar
+    return !this.hideStatusbar && this.puzzle?.wantsStatusbar
       ? html`<div part="statusbar">${this.puzzle?.statusbarText}</div>`
       : nothing;
   }

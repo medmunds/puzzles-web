@@ -155,6 +155,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
               tabIndex="0"
               role="figure"
               aria-label="interactive puzzle displayed as an image"
+              ?hide-statusbar=${!settings.showStatusbar}
               ?longPress=${settings.rightButtonLongPress}
               ?twoFingerTap=${settings.rightButtonTwoFingerTap}
               secondaryButtonAudioVolume=${settings.rightButtonAudioVolume}

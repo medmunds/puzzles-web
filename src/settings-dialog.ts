@@ -75,8 +75,8 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             checked
             hint="On-screen buttons for puzzles that need keyboard input"
           >Show virtual keyboard</wa-checkbox>
-        <wa-checkbox 
-            checked
+        <wa-checkbox
+            ?checked=${autoBind(settings, "showStatusbar")}
             hint="Text below some puzzles (you might need it to solve them)"
           >Show status bar</wa-checkbox>
         <wa-checkbox

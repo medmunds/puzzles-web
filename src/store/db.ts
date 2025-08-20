@@ -21,7 +21,9 @@ export interface CommonPuzzleSettings {
   rightButtonHoldTime?: number; // milliseconds
   rightButtonDragThreshold?: number; // css pixel radius
 
+  // Appearance
   maximizePuzzleSize?: number;
+  showStatusbar?: boolean;
 }
 
 // PuzzleId-specific settings

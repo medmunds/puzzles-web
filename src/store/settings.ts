@@ -14,6 +14,7 @@ const defaultSettings = {
   rightButtonHoldTime: 350,
   rightButtonDragThreshold: 8,
   maximizePuzzleSize: 5,
+  showStatusbar: true,
 } as const;
 
 class Settings {
@@ -30,6 +31,7 @@ class Settings {
     defaultSettings.rightButtonDragThreshold,
   );
   private _maximizePuzzleSize = signal<number>(defaultSettings.maximizePuzzleSize);
+  private _showStatusbar = signal<boolean>(defaultSettings.showStatusbar);
 
   private constructor() {}
 
@@ -54,6 +56,7 @@ class Settings {
       update(this._rightButtonHoldTime, commonSettings.rightButtonHoldTime);
       update(this._rightButtonDragThreshold, commonSettings.rightButtonDragThreshold);
       update(this._maximizePuzzleSize, commonSettings.maximizePuzzleSize);
+      update(this._showStatusbar, commonSettings.showStatusbar);
     }
   }
 
@@ -105,6 +108,14 @@ class Settings {
   set maximizePuzzleSize(value: number) {
     this._maximizePuzzleSize.set(value);
     this.saveCommonSetting("maximizePuzzleSize", value);
+  }
+
+  get showStatusbar(): boolean {
+    return this._showStatusbar.get();
+  }
+  set showStatusbar(value: boolean) {
+    this._showStatusbar.set(value);
+    this.saveCommonSetting("showStatusbar", value);
   }
 
   // Settings methods
