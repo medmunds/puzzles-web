@@ -155,7 +155,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
   private renderAdvancedSection() {
     return html`
       <wa-details summary="Advanced">
-        <div><wa-button>Clear data</wa-button></div>
+        <div><wa-button appearance="filled outlined" variant="danger">Clear data</wa-button></div>
         <wa-checkbox
             hint="Experimental puzzles in development (may have lots of bugs!)"
           >Show unfinished puzzles</wa-checkbox>

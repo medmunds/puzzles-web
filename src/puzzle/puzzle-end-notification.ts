@@ -83,7 +83,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   private renderLostActions() {
     const actions = [
       html`
-        <wa-button @click=${this.restartGame}>
+        <wa-button appearance="filled outlined" @click=${this.restartGame}>
           <wa-icon slot="start" name="restart-game"></wa-icon>
           Restart
         </wa-button>
@@ -91,7 +91,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     ];
     if (this.puzzle?.canUndo) {
       actions.push(html`
-        <wa-button @click=${this.undo}>
+        <wa-button appearance="filled outlined" @click=${this.undo}>
           <wa-icon slot="start" name="undo"></wa-icon>
           Undo
         </wa-button>
@@ -100,7 +100,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     if (this.puzzle?.canSolve) {
       // TODO: && !usedSolveButton
       actions.push(html`
-        <wa-button @click=${this.showSolution}>
+        <wa-button appearance="filled outlined" @click=${this.showSolution}>
           <wa-icon slot="start" name="show-solution"></wa-icon>
           Show solution
         </wa-button>

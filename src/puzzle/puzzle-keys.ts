@@ -107,7 +107,8 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
       ? html`<wa-icon name=${icon} label=${label}></wa-icon>`
       : label;
     return html`            
-      <wa-button 
+      <wa-button
+          appearance="filled outlined"
           class=${classMap(classes)}
           @click=${() => this.puzzle?.processKey(key.button)}
         >${content}</wa-button>
@@ -118,12 +119,14 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     return html`
       <div class="group">
         <wa-button
+            appearance="filled outlined"
             ?disabled=${!this.puzzle?.canUndo}
             @click=${() => this.puzzle?.undo()}>
           <wa-icon slot="start" name="undo"></wa-icon>
           Undo
         </wa-button>
         <wa-button
+            appearance="filled outlined"
             ?disabled=${!this.puzzle?.canRedo}
             @click=${() => this.puzzle?.redo()}>
           Redo

@@ -86,7 +86,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
           @wa-hide=${this.handleDropdownHide}
           @wa-select=${this.handleDropdownSelect}
       >
-        <wa-button slot="trigger" with-caret>
+        <wa-button slot="trigger" appearance="filled outlined" with-caret>
           <wa-icon slot="start" name="puzzle-type"></wa-icon>
           <div class="dropdown-label">
             <div class=${labelContentClasses}>

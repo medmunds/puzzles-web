@@ -372,7 +372,7 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
         </wa-scroller>
         
         <div slot="footer" part="footer">
-          <wa-button @click=${this.handleCancel}>${this.cancelLabel}</wa-button>
+          <wa-button appearance="filled outlined" @click=${this.handleCancel}>${this.cancelLabel}</wa-button>
           <wa-button variant="brand" @click=${this.handleSubmit}>${this.submitLabel}</wa-button>
         </div>
       </wa-dialog>

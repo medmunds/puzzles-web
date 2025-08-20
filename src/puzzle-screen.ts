@@ -145,7 +145,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
               <h3 class="version">v${version}</h3>
             </puzzle-game-menu>
             <puzzle-preset-menu></puzzle-preset-menu>
-            <wa-button href=${helpUrl} @click=${this.showHelp}>
+            <wa-button appearance="filled outlined" href=${helpUrl} @click=${this.showHelp}>
               <wa-icon slot="start" name="help"></wa-icon>
               Help
             </wa-button>
@@ -178,6 +178,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         <puzzle-end-notification>
           <wa-button
               slot="extra-actions-solved"
+              appearance="filled outlined"
               @click=${this.handleChangeType}
           >
             <wa-icon slot="start" name="puzzle-type"></wa-icon>
@@ -185,6 +186,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           </wa-button>
           <wa-button
               slot="extra-actions-solved"
+              appearance="filled outlined"
               href=${otherPuzzlesUrl}
           >
             <wa-icon slot="start" name="back-to-catalog"></wa-icon>

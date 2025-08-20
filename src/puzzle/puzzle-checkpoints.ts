@@ -72,7 +72,7 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
   protected override render() {
     return html`
       <wa-dropdown placement="top-start" @wa-select=${this.handleSelectCheckpoint}>
-        <wa-button slot="trigger" with-caret>
+        <wa-button slot="trigger" appearance="filled outlined" with-caret>
           <wa-icon slot="start" name="checkpoint-list"></wa-icon>
           Checkpoints
         </wa-button>

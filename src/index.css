@@ -9,8 +9,14 @@
   color: var(--wa-color-text-normal);
   background-color: var(--wa-color-surface-default);
 
-  /* Lighten default buttons slightly (usually neutral-20) */
+  /* Lighten default accent buttons slightly (usually neutral-20) */
   --wa-color-neutral-fill-loud: var(--wa-color-neutral-30);
+
+  /* Render filled-outlined buttons like form controls.
+   * (Also affects avatar and tag, but we don't use those.) */
+  --wa-color-neutral-fill-normal: var(--wa-form-control-background-color);
+  --wa-color-neutral-on-normal: var(--wa-form-control-label-color);
+  --wa-color-neutral-border-normal: var(--wa-form-control-border-color);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;

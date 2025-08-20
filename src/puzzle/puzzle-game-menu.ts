@@ -24,7 +24,7 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
   render(): TemplateResult {
     return html`
       <wa-dropdown @wa-select=${this.handleGameMenuCommand}>
-        <wa-button slot="trigger" with-caret>Game</wa-button>
+        <wa-button slot="trigger" appearance="filled outlined" with-caret>Game</wa-button>
         <wa-dropdown-item value="new">
           <wa-icon slot="icon" name="new-game"></wa-icon>
           New game
