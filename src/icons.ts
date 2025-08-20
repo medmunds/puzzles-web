@@ -1,5 +1,4 @@
 import { registerIconLibrary } from "@awesome.me/webawesome/dist/webawesome.js";
-import arrowDownIcon from "lucide-static/icons/arrow-down.svg";
 import arrowLeftIcon from "lucide-static/icons/arrow-left.svg";
 import arrowLeftToLineIcon from "lucide-static/icons/arrow-left-to-line.svg";
 import arrowRightIcon from "lucide-static/icons/arrow-right.svg";
@@ -17,7 +16,6 @@ import gemIcon from "lucide-static/icons/gem.svg";
 import infoIcon from "lucide-static/icons/info.svg";
 import iterationCWIcon from "lucide-static/icons/iteration-cw.svg";
 import laughIcon from "lucide-static/icons/laugh.svg";
-import minusIcon from "lucide-static/icons/minus.svg";
 import octagonAlertIcon from "lucide-static/icons/octagon-alert.svg";
 import partyPopperIcon from "lucide-static/icons/party-popper.svg";
 import playIcon from "lucide-static/icons/play.svg";
@@ -52,8 +50,6 @@ const icons: Record<string, string> = {
   "checkpoint": circleCheckIcon,
   "checkpoint-add": circlePlayIcon,
   "checkpoint-remove": trash2Icon,
-  "checkpoint-start": minusIcon,
-  "checkpoint-end": arrowDownIcon,
   "checkpoint-current-move": playIcon,
   "help": circleQuestionMarkIcon,
   "new-game": plusIcon,

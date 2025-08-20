@@ -3,6 +3,8 @@ import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import timelineArrowSvg from "../assets/timeline-arrow.svg";
+import timelineDotSvg from "../assets/timeline-dot.svg";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 
@@ -18,6 +20,54 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
   @consume({ context: puzzleContext, subscribe: true })
   @state()
   private puzzle?: Puzzle;
+
+  private dynamicStyleSheet?: CSSStyleSheet;
+
+  private updateSVGDataUrls() {
+    // Build --timeline-arrow-image and --timeline-dot-image
+    // using color properties.
+    const timelineColor = getComputedStyle(this)
+      .getPropertyValue("--timeline-color")
+      .trim();
+    const backgroundColor = getComputedStyle(this)
+      .getPropertyValue("--background-color")
+      .trim();
+
+    const encodedTimelineColor = encodeURIComponent(timelineColor);
+    const encodedBackgroundColor = encodeURIComponent(backgroundColor);
+
+    const arrowImage = timelineArrowSvg
+      .replace("grey", encodedTimelineColor)
+      .replace("white", encodedBackgroundColor);
+    const dotImage = timelineDotSvg
+      .replace("grey", encodedTimelineColor)
+      .replace("white", encodedBackgroundColor);
+
+    if (!this.dynamicStyleSheet) {
+      if (!this.shadowRoot) {
+        throw new Error("Missing shadowRoot");
+      }
+      this.dynamicStyleSheet = new CSSStyleSheet();
+      this.shadowRoot.adoptedStyleSheets = [
+        ...this.shadowRoot.adoptedStyleSheets,
+        this.dynamicStyleSheet,
+      ];
+    }
+
+    const dynamicCSS = `
+      :host {
+        --timeline-arrow-image: url("${arrowImage}");
+        --timeline-dot-image: url("${dotImage}");
+      }
+    `;
+    this.dynamicStyleSheet.replaceSync(dynamicCSS);
+  }
+
+  protected override firstUpdated() {
+    // TODO: also need to updateSVGDataUrls on certain css changes
+    //   (e.g., dark mode)
+    this.updateSVGDataUrls();
+  }
 
   protected override render() {
     return html`
@@ -54,7 +104,6 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
         this.renderHistoryItem({
           label: "Start",
           move: startMove,
-          icon: "checkpoint-start",
         }),
       );
     }
@@ -79,7 +128,6 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
         this.renderHistoryItem({
           label: "Last move",
           move: endMove,
-          icon: "checkpoint-end",
         }),
       );
     }
@@ -95,12 +143,12 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
   }: {
     label: string | TemplateResult;
     move: number;
-    icon: string;
+    icon?: string;
     canDelete?: boolean;
   }) {
     const isCurrentMove =
       move === this.puzzle?.currentMove && this.puzzle?.totalMoves > 0;
-    const iconName = isCurrentMove ? "checkpoint-current-move" : icon;
+    const iconName = isCurrentMove ? "checkpoint-current-move" : (icon ?? nothing);
     const iconLabel = isCurrentMove ? "Current undo" : nothing;
 
     const deleteButton = canDelete
@@ -112,6 +160,8 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
         </wa-button>`
       : nothing;
 
+    // To simplify alignment, it's easier to render an empty <wa-icon name=nothing>
+    // (vs. suppressing the wa-icon here and patch up layout in css).
     return html`
       <wa-dropdown-item value=${move} role="listitem">
         <wa-icon slot="icon" name=${iconName} label=${iconLabel}></wa-icon>
@@ -187,9 +237,9 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
 
   static override styles = css`
     :host {
-      --timeline-width: 1px;
       --timeline-color: var(--wa-color-neutral-border-normal);
       --background-color: var(--wa-color-surface-default);
+      --dot-size: 5px;
     }
     
     label {
@@ -212,49 +262,50 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
       font-size: var(--wa-font-size-smaller);
       font-style: italic;
     }
-
-    #list > * {
+    
+    #list {
       position: relative;
 
-      /* Display a timeline on the left (underneath the items' icons) */
       &::before {
         display: block;
         content: "";
         position: absolute;
-        inset: 0 calc(1.5em - var(--timeline-width) / 2 - 1px); /* padding + icon-width/2 = 1em + 1em/2 */
-        border-inline-start: var(--timeline-width) solid var(--timeline-color);
-      }
-      &:first-child::before {
-        inset-block-start: 50%;
-      }
-      &:last-child::before {
-        inset-block-end: 50%;
-      }
+        inset: 0.75em calc(1.5em - 6px); /* padding + icon-width/2 = 1em + 1em/2 */
 
-      wa-icon[name="checkpoint-start"],
-      wa-icon[name="checkpoint-end"] {
-        color: var(--timeline-color); /* timeline terminators */
-      }
-      wa-icon[name="checkpoint"]::part(svg),
-      wa-icon[name="checkpoint-current-move"]::part(svg)
-      {
-        /* Use background fill on icons that overlap the timeline */
-        fill: var(--background-color) !important;
+        border-image-source: var(--timeline-arrow-image);
+        border-image-slice: 25% 0 25% 100%;
+        border-width: 10px;
+        border-style: solid;
+        
+        z-index: 1;
+        pointer-events: none;
       }
       
-    }
-    
-    #list > wa-dropdown-item::part(icon), 
-    #list > .undo-point wa-icon {
-      z-index: 1; /* above the timeline */
+      wa-icon {
+        position: relative;
+        z-index: 2; /* above the timeline */
+        min-width: 1em; /* for empty icons */
+      }
+      
+      wa-dropdown-item {
+        /* dropdown-item's "isolate" prevents our wa-icon z-index from working */
+        isolation: unset; 
+      }
     }
 
-    #list wa-button {
+    wa-icon[name="checkpoint"]::part(svg),
+    wa-icon[name="checkpoint-current-move"]::part(svg)
+    {
+      /* Use background fill on icons that overlap the timeline */
+      fill: var(--background-color) !important;
+    }
+    
+    wa-dropdown-item wa-button {
       /* Counteract doubled padding around delete buttons */
       margin: -0.5em;
     }
     
-    #list > .undo-point {
+    .undo-point {
       /* Mimic a wa-dropdown-item */
       box-sizing: border-box;
       padding: 0.5em 1em;
@@ -264,7 +315,6 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
       align-items: center;
 
       wa-icon {
-        z-index: 1;
         font-size: var(--wa-font-size-smaller);
         margin-inline-end: 0.75em;
       }
@@ -274,26 +324,59 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
       }
     }
 
-    #list > .spacer {
+    .spacer {
       box-sizing: border-box;
-      padding: 0.25em 1em;
+      padding: 0 1em;
       line-height: 1;
       
+      display: flex;
+      align-items: center;
+
       small {
-        margin-inline-start: 1.75em;
+        padding: 0.25em;
       }
-      
+
       &::before {
-        border-inline-start-style: dotted;
-        border-inline-start-width: calc(var(--timeline-width) * 4);
-        inset-inline-start: calc(1.5em - 2 * var(--timeline-width) - 1px);
+        display: block;
+        content: "";
+        height: 1.5em;
+        width: 1px;
+        font-size: var(--wa-font-size-smaller); /* match em calcs to slotted icon */
+        margin-inline-start: calc(0.5em - 1px);
+        margin-inline-end: calc(0.75em - 1px);
+        
+        border-image-source: var(--timeline-dot-image);
+        border-image-slice: 0 0 0 100%;
+        border-image-outset: 0 1.5px;
+        border-image-repeat: round;
+        border-inline-start: var(--dot-size) solid transparent;
+        
+        z-index: 2;
+        pointer-events: none;
       }
 
       &[data-moves="1"] {
         /* Try to size it to a single border dot */
         padding-block: 0;
-        height: calc(var(--timeline-width) * 4);
+        height: var(--dot-size);
+        &::before {
+          max-height: var(--dot-size);
+        }
       }
+      &[data-moves="2"]::before {
+        max-height: calc(2 * var(--dot-size));
+      }
+      &[data-moves="3"]::before {
+        max-height: calc(3 * var(--dot-size));
+      }
+      &[data-moves="4"]::before {
+        max-height: calc(4 * var(--dot-size));
+      }
+      /* This doesn't work yet:
+      &[data-moves] {
+        max-height: calc(attr(data-moves type(<number>)) * var(--dot-size));
+      }
+      */
     }
   `;
 }
