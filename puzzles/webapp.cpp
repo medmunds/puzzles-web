@@ -1034,6 +1034,10 @@ public:
         return midend_which_game(me())->flags & REQUIRE_RBUTTON;
     }
 
+    [[nodiscard]] bool getIsTimed() const {
+        return midend_which_game(me())->is_timed;
+    }
+
     [[nodiscard]] Size size(
         const Size &maxSize, bool isUserSize, double devicePixelRatio
     ) const {
@@ -1543,6 +1547,7 @@ EMSCRIPTEN_BINDINGS(frontend) {
         .property("canConfigure", &frontend::getCanConfigure)
         .property("canSolve", &frontend::getCanSolve)
         .property("needsRightButton", &frontend::getNeedsRightButton)
+        .property("isTimed", &frontend::getIsTimed)
         .function("size(maxSize, isUserSize, devicePixelRatio)", &frontend::size)
         .function("resetTileSize", &frontend::resetTileSize)
         .function("newGame", &frontend::newGame)

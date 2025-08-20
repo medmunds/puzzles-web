@@ -52,6 +52,7 @@ export class Puzzle {
       canConfigure,
       canSolve,
       needsRightButton,
+      isTimed,
       wantsStatusbar,
     }: PuzzleStaticAttributes,
   ) {
@@ -59,6 +60,7 @@ export class Puzzle {
     this.canConfigure = canConfigure;
     this.canSolve = canSolve;
     this.needsRightButton = needsRightButton;
+    this.isTimed = isTimed;
     this.wantsStatusbar = wantsStatusbar;
   }
 
@@ -117,6 +119,7 @@ export class Puzzle {
   public readonly canConfigure: boolean;
   public readonly canSolve: boolean;
   public readonly needsRightButton: boolean;
+  public readonly isTimed: boolean;
   public readonly wantsStatusbar: boolean;
 
   // Reactive properties

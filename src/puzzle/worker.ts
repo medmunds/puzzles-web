@@ -86,6 +86,7 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
       canConfigure: this.frontend.canConfigure,
       canSolve: this.frontend.canSolve,
       needsRightButton: this.frontend.needsRightButton,
+      isTimed: this.frontend.isTimed,
       wantsStatusbar: this.frontend.wantsStatusbar,
     };
   }
