@@ -4,6 +4,7 @@ import { customElement, eventOptions, property, query } from "lit/decorators.js"
 import type { AppRouter } from "./app-router.ts";
 import { puzzleDataMap, version } from "./catalog.ts";
 import { savedGames } from "./store/saved-games.ts";
+import { settings } from "./store/settings.ts";
 import { waitForStableSize } from "./utils/resize.ts";
 import { debounced } from "./utils/timing.ts";
 
@@ -14,9 +15,6 @@ import "./catalog-card.ts";
 export class CatalogScreen extends SignalWatcher(LitElement) {
   @property({ type: Object })
   router?: AppRouter;
-
-  @property({ type: Boolean, attribute: "show-unfinished" })
-  showUnfinished = false;
 
   @query(".app", true)
   private appElement?: HTMLDivElement;
@@ -32,7 +30,8 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
         <div class="puzzle-grid">
           ${Object.entries(puzzleDataMap)
             .filter(
-              ([_puzzleType, { unfinished }]) => this.showUnfinished || !unfinished,
+              ([_puzzleType, { unfinished }]) =>
+                settings.showUnfinishedPuzzles || !unfinished,
             )
             .map(
               ([puzzleType, { name, description, objective, unfinished }]) => html`

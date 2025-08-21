@@ -158,6 +158,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         <div><wa-button appearance="filled outlined" variant="danger">Clear data</wa-button></div>
         <wa-checkbox
             hint="Experimental puzzles in development (may have lots of bugs!)"
+            ?checked=${autoBind(settings, "showUnfinishedPuzzles")}
           >Show unfinished puzzles</wa-checkbox>
       </wa-details>
     `;

@@ -1,13 +1,11 @@
 import { type Signal, signal } from "@lit-labs/signals";
 import type { ConfigValues } from "../puzzle/types.ts";
-import {
-  type CommonPuzzleSettings,
-  db,
-  type PuzzleId,
-  type PuzzleSettings,
-} from "./db.ts";
+import { equalSet } from "../utils/equal.ts";
+import { type CommonSettings, db, type PuzzleId, type PuzzleSettings } from "./db.ts";
 
 const defaultSettings = {
+  favoritePuzzles: new Set<PuzzleId>(),
+  showUnfinishedPuzzles: false,
   rightButtonLongPress: true,
   rightButtonTwoFingerTap: true,
   rightButtonAudioVolume: 40,
@@ -19,6 +17,13 @@ const defaultSettings = {
 
 class Settings {
   // Reactive signals for individual settings
+  private _favoritePuzzles = signal<ReadonlySet<PuzzleId>>(
+    defaultSettings.favoritePuzzles,
+  );
+  private _showUnfinishedPuzzles = signal<boolean>(
+    defaultSettings.showUnfinishedPuzzles,
+  );
+
   private _rightButtonLongPress = signal<boolean>(defaultSettings.rightButtonLongPress);
   private _rightButtonTwoFingerTap = signal<boolean>(
     defaultSettings.rightButtonTwoFingerTap,
@@ -50,6 +55,11 @@ class Settings {
 
     const commonSettings = await this.getCommonSettings();
     if (commonSettings) {
+      const favoritePuzzles = new Set(commonSettings.favoritePuzzles);
+      if (!equalSet(favoritePuzzles, this._favoritePuzzles.get())) {
+        this._favoritePuzzles.set(favoritePuzzles);
+      }
+      update(this._showUnfinishedPuzzles, commonSettings.showUnfinishedPuzzles);
       update(this._rightButtonLongPress, commonSettings.rightButtonLongPress);
       update(this._rightButtonTwoFingerTap, commonSettings.rightButtonTwoFingerTap);
       update(this._rightButtonAudioVolume, commonSettings.rightButtonAudioVolume);
@@ -62,6 +72,38 @@ class Settings {
 
   // Accessors for reactive signals
   // TODO: promises are being dropped in setters
+  get favoritePuzzles(): ReadonlySet<PuzzleId> {
+    return this._favoritePuzzles.get();
+  }
+  set favoritePuzzles(value: ReadonlySet<PuzzleId>) {
+    this._favoritePuzzles.set(value);
+    this.saveCommonSetting("favoritePuzzles", [...value]);
+  }
+
+  isFavoritePuzzle(puzzleId: PuzzleId): boolean {
+    return this.favoritePuzzles.has(puzzleId);
+  }
+  async setFavoritePuzzle(puzzleId: PuzzleId, isFavorite: boolean): Promise<void> {
+    const wasFavorite = this.isFavoritePuzzle(puzzleId);
+    if (isFavorite !== wasFavorite) {
+      const favorites = new Set(this.favoritePuzzles);
+      if (isFavorite) {
+        favorites.add(puzzleId);
+      } else {
+        favorites.delete(puzzleId);
+      }
+      this.favoritePuzzles = favorites;
+    }
+  }
+
+  get showUnfinishedPuzzles(): boolean {
+    return this._showUnfinishedPuzzles.get();
+  }
+  set showUnfinishedPuzzles(value: boolean) {
+    this._showUnfinishedPuzzles.set(value);
+    this.saveCommonSetting("showUnfinishedPuzzles", value);
+  }
+
   get rightButtonLongPress(): boolean {
     return this._rightButtonLongPress.get();
   }
@@ -119,18 +161,18 @@ class Settings {
   }
 
   // Settings methods
-  private async getCommonSettings(): Promise<CommonPuzzleSettings> {
+  private async getCommonSettings(): Promise<CommonSettings> {
     const record = await db.settings.get("puzzle-common");
     return record?.type === "puzzle-common" ? record.data : { puzzlePreferences: {} };
   }
 
-  private async saveCommonSetting<K extends keyof CommonPuzzleSettings>(
+  private async saveCommonSetting<K extends keyof CommonSettings>(
     name: K,
-    value: CommonPuzzleSettings[K],
+    value: CommonSettings[K],
   ) {
     const current = await this.getCommonSettings();
     if (current[name] !== value) {
-      const updated: CommonPuzzleSettings = {
+      const updated: CommonSettings = {
         ...current,
         [name]: value,
       };
@@ -178,7 +220,7 @@ class Settings {
     const { commonPreferences, puzzlePreferences } = this.splitPuzzlePreferences(prefs);
     if (commonPreferences !== undefined) {
       const current = await this.getCommonSettings();
-      const updated: CommonPuzzleSettings = {
+      const updated: CommonSettings = {
         ...current,
         puzzlePreferences: {
           ...current?.puzzlePreferences,

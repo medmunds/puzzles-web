@@ -4,13 +4,12 @@ import type { ConfigValues, GameStatus } from "../puzzle/types.ts";
 export type PuzzleId = string;
 export type EncodedParams = string;
 
-export interface CatalogSettings {
-  favorites?: PuzzleId[];
-  showUnfinished?: boolean;
-}
-
 // Settings shared by all puzzles
-export interface CommonPuzzleSettings {
+export interface CommonSettings {
+  // Catalog-level settings
+  favoritePuzzles?: PuzzleId[];
+  showUnfinishedPuzzles?: boolean;
+
   // Preferences shared between all puzzles
   puzzlePreferences?: ConfigValues;
 
@@ -39,8 +38,7 @@ export interface PuzzleSettings {
 }
 
 export type SettingsRecord =
-  | { id: "catalog"; type: "catalog"; data: CatalogSettings }
-  | { id: "puzzle-common"; type: "puzzle-common"; data: CommonPuzzleSettings }
+  | { id: "puzzle-common"; type: "puzzle-common"; data: CommonSettings }
   | { id: PuzzleId; type: "puzzle"; data: PuzzleSettings };
 
 export enum SaveType {

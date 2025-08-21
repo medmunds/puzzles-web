@@ -101,7 +101,7 @@ export class AppRouter extends LitElement {
       case "index":
         return {
           name: "catalog",
-          params: { ...params, showUnfinished: url.searchParams.has("unfinished") },
+          params,
         };
       default:
         if (puzzleDataMap[path]) {
@@ -129,9 +129,6 @@ export class AppRouter extends LitElement {
     switch (route.name) {
       case "catalog":
         path = "";
-        if (route.params.showUnfinished) {
-          searchParams.append("unfinished", "");
-        }
         break;
       case "puzzle":
         if (typeof route.params.puzzleType !== "string") {
@@ -232,7 +229,6 @@ export class AppRouter extends LitElement {
         return html`
           <catalog-screen
               .router=${this}
-              ?show-unfinished=${params.showUnfinished}
               ?debug=${params.debug}
           ></catalog-screen>
         `;
