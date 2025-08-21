@@ -5,6 +5,13 @@ import { customElement, property } from "lit/decorators.js";
 import "@awesome.me/webawesome/dist/components/badge/badge.js";
 import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/card/card.js";
+import "@awesome.me/webawesome/dist/components/rating/rating.js";
+
+interface FavoriteChangeDetail {
+  puzzleType: string;
+  isFavorite: boolean;
+}
+export type FavoriteChangeEvent = CustomEvent<FavoriteChangeDetail>;
 
 @customElement("catalog-card")
 export class CatalogCard extends LitElement {
@@ -29,6 +36,9 @@ export class CatalogCard extends LitElement {
   @property({ type: Boolean })
   resume = false;
 
+  @property({ type: Boolean })
+  favorite = false;
+
   renderIcon() {
     if (this.unfinished) {
       // Unfinished puzzles don't have icons yet
@@ -51,6 +61,8 @@ export class CatalogCard extends LitElement {
   }
 
   render() {
+    // TODO: wa-rating isn't semantically correct for favorite;
+    //   really want a toggle button of some sort
     return html`
       <wa-card>
         <div class="card-body">
@@ -63,6 +75,15 @@ export class CatalogCard extends LitElement {
         </div>
 
         <footer slot="footer">
+          <wa-rating 
+              aria-label="Favorite" 
+              role="checkbox"
+              aria-checked=${this.favorite}
+              max="1" 
+              value=${this.favorite ? 1 : 0}
+              @click=${(event: Event) => event.stopPropagation()}
+              @change=${this.handleFavoriteChange}
+          ></wa-rating>
           <wa-button 
               id="play" 
               href="${this.href}" 
@@ -72,6 +93,18 @@ export class CatalogCard extends LitElement {
         </footer>
       </wa-card>
     `;
+  }
+
+  private handleFavoriteChange(event: Event) {
+    const target = event.target as HTMLElementTagNameMap["wa-rating"];
+    const isFavorite = target.value !== 0;
+    this.dispatchEvent(
+      new CustomEvent<FavoriteChangeDetail>("favorite-change", {
+        bubbles: true,
+        composed: true,
+        detail: { puzzleType: this.puzzleType, isFavorite },
+      }),
+    );
   }
 
   static styles = css`
@@ -163,14 +196,23 @@ export class CatalogCard extends LitElement {
 
     footer {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--wa-space-l);
     }
-
+    
+    wa-rating {
+      user-select: none; /* avoid selecting nearest text */
+    }
   `;
 }
 
 declare global {
   interface HTMLElementTagNameMap {
     "catalog-card": CatalogCard;
+  }
+
+  interface HTMLElementEventMap {
+    "favorite-change": FavoriteChangeEvent;
   }
 }

@@ -1,8 +1,10 @@
 import { SignalWatcher } from "@lit-labs/signals";
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, eventOptions, property, query } from "lit/decorators.js";
+import { repeat } from "lit/directives/repeat.js";
 import type { AppRouter } from "./app-router.ts";
 import { puzzleDataMap, version } from "./catalog.ts";
+import type { FavoriteChangeEvent } from "./catalog-card.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { waitForStableSize } from "./utils/resize.ts";
@@ -20,32 +22,47 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
   private appElement?: HTMLDivElement;
 
   protected override render() {
+    const favorites = settings.favoritePuzzles;
+    let puzzleTypes = Object.keys(puzzleDataMap);
+    if (!settings.showUnfinishedPuzzles) {
+      puzzleTypes = puzzleTypes.filter(
+        (puzzleType) => !puzzleDataMap[puzzleType].unfinished,
+      );
+    }
+
     return html`
-      <div class="app" @scroll=${this.handleAppScroll}>
+      <div class="app" 
+           @scroll=${this.handleAppScroll}
+           @favorite-change=${this.handleFavoriteChange}
+      >
         <header>
           <h1>Puzzles</h1>
           <div class="subtitle">from Simon Tatham’s portable puzzle collection</div>
         </header>
-  
+
+        ${
+          favorites.size > 0
+            ? html`
+              <h2>Favorites</h2>
+              <div class="puzzle-grid">
+                ${repeat(
+                  [...favorites].sort(),
+                  (puzzleType) => puzzleType,
+                  (puzzleType) => this.renderCatalogCard(puzzleType, true),
+                )}
+              </div>
+              <h2>All puzzles</h2>
+            `
+            : nothing
+        }
+
         <div class="puzzle-grid">
-          ${Object.entries(puzzleDataMap)
-            .filter(
-              ([_puzzleType, { unfinished }]) =>
-                settings.showUnfinishedPuzzles || !unfinished,
-            )
-            .map(
-              ([puzzleType, { name, description, objective, unfinished }]) => html`
-                <catalog-card 
-                  puzzle-type=${puzzleType}
-                  href=${this.router?.reverse({ name: "puzzle", params: { puzzleType } })?.href}
-                  name=${name}
-                  description=${description}
-                  objective=${objective}
-                  ?resume=${savedGames.autoSavedPuzzles.has(puzzleType)}
-                  ?unfinished=${unfinished}
-                ></catalog-card>
-              `,
-            )}
+          ${repeat(
+            puzzleTypes,
+            (puzzleType) => puzzleType,
+            (puzzleType) =>
+              this.renderCatalogCard(puzzleType, favorites.has(puzzleType)),
+          )}
         </div>
   
         <footer>
@@ -63,6 +80,22 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
           <p class="version">v${version}</p>
         </footer>
       </div>
+    `;
+  }
+
+  private renderCatalogCard(puzzleType: string, isFavorite: boolean) {
+    const { name, description, objective, unfinished } = puzzleDataMap[puzzleType];
+    return html`
+      <catalog-card
+        puzzle-type=${puzzleType}
+        href=${this.router?.reverse({ name: "puzzle", params: { puzzleType } })?.href}
+        name=${name}
+        description=${description}
+        objective=${objective}
+        ?resume=${savedGames.autoSavedPuzzles.has(puzzleType)}
+        ?favorite=${isFavorite}
+        ?unfinished=${unfinished}
+      ></catalog-card>                    
     `;
   }
 
@@ -99,6 +132,11 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
       };
       window.history.replaceState(newState, "");
     }
+  }
+
+  private async handleFavoriteChange(event: FavoriteChangeEvent) {
+    const { puzzleType, isFavorite } = event.detail;
+    await settings.setFavoritePuzzle(puzzleType, isFavorite);
   }
 
   static styles = css`
