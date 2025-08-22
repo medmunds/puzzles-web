@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/browser";
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { puzzleDataMap } from "./catalog.ts";
@@ -226,6 +227,9 @@ export class AppRouter extends LitElement {
     const { name, params } = this.route ?? this.defaultRoute;
     switch (name) {
       case "catalog":
+        if (import.meta.env.VITE_SENTRY_DSN) {
+          Sentry.setTag("screen", "catalog");
+        }
         return html`
           <catalog-screen
               .router=${this}
@@ -233,6 +237,9 @@ export class AppRouter extends LitElement {
           ></catalog-screen>
         `;
       case "puzzle":
+        if (import.meta.env.VITE_SENTRY_DSN) {
+          Sentry.setTag("screen", `puzzle/${params.puzzleType}`);
+        }
         // Lazy load the puzzle-screen component when needed.
         // TODO: use lit task for loading
         import("./puzzle-screen.ts");

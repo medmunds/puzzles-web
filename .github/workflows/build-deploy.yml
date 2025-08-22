@@ -149,6 +149,8 @@ jobs:
       - name: Build app
         env:
           BASE_URL: ${{ vars.S3_BUCKET_PREFIX == '' && '/' || format('/{0}/', vars.S3_BUCKET_PREFIX) }}
+          VITE_GIT_SHA: ${{ github.sha }}
+          VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
         run: npm run build -- --base="${BASE_URL}"
 
       - name: Upload dist artifact

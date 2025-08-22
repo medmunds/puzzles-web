@@ -52,8 +52,9 @@ export function installErrorHandlers() {
   }
 
   // Catch otherwise unhandled JavaScript errors
-  window.onerror = (message, filename, lineno, colno, _error) => {
+  window.addEventListener("error", (event) => {
     try {
+      const { message, filename, lineno, colno } = event;
       // (The message already starts with "Uncaught Error:".)
       const errorMessage = `${message}${
         filename ? ` at ${filename}:${lineno}:${colno}` : ""
@@ -62,10 +63,10 @@ export function installErrorHandlers() {
     } catch (error) {
       console.error("Error in onerror handler", error);
     }
-  };
+  });
 
   // Catch unhandled promise rejections
-  window.onunhandledrejection = (event) => {
+  window.addEventListener("unhandledrejection", (event) => {
     try {
       const description = String(
         event.reason instanceof Error && event.reason.stack
@@ -77,7 +78,7 @@ export function installErrorHandlers() {
     } catch (error) {
       console.error("Error in onunhandledrejection handler", error);
     }
-  };
+  });
 }
 
 //
@@ -129,8 +130,9 @@ export function installErrorHandlersInWorker() {
 
   // Unhandled errors (but not promise rejections) already propagate
   // to the main thread's onerror, but not when using mobile emulated console.
-  self.onerror = (message, filename, lineno, colno, error) => {
+  self.addEventListener("error", (event) => {
     try {
+      const { message, filename, lineno, colno, error } = event;
       // (The message already starts with "Uncaught Error:".)
       const errorMessage = `${message}${
         filename ? ` at ${filename}:${lineno}:${colno}` : ""
@@ -139,9 +141,9 @@ export function installErrorHandlersInWorker() {
     } catch (error) {
       console.error("Error in onerror handler", error);
     }
-  };
+  });
 
-  self.onunhandledrejection = (event) => {
+  self.addEventListener("unhandledrejection", (event) => {
     try {
       const error = event.reason instanceof Error ? event.reason : undefined;
       const description = String(error?.stack ?? event.reason);
@@ -150,7 +152,7 @@ export function installErrorHandlersInWorker() {
     } catch (error) {
       console.error("Error in worker onunhandledrejection handler", error);
     }
-  };
+  });
 }
 
 /**

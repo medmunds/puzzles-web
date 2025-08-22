@@ -1,3 +1,8 @@
+// TODO: use separate tsconfig.json for worker.ts (without DOM)
+/// <reference lib="webworker" />
+declare var self: DedicatedWorkerGlobalScope;
+
+import * as Sentry from "@sentry/browser";
 import * as Comlink from "comlink";
 import { transfer } from "comlink";
 import createModule from "../assets/puzzles/emcc-runtime";
@@ -19,6 +24,12 @@ import type {
   PuzzleStaticAttributes,
   Size,
 } from "./types.ts";
+
+// Sentry's typing incorrectly expects Worker rather than WorkerGlobalScope,
+// though the docs make it clear this is meant to be called from the worker thread.
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.registerWebWorker({ self: self as unknown as Worker });
+}
 
 installErrorHandlersInWorker();
 

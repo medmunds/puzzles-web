@@ -1,4 +1,5 @@
 import { computed, type Signal, signal } from "@lit-labs/signals";
+import * as Sentry from "@sentry/browser";
 import * as Comlink from "comlink";
 import { transfer } from "comlink";
 import {
@@ -21,6 +22,13 @@ import type {
 } from "./types.ts";
 import type { RemoteWorkerPuzzle, RemoteWorkerPuzzleFactory } from "./worker.ts";
 
+const sentryWebWorkerIntegration = import.meta.env.VITE_SENTRY_DSN
+  ? Sentry.webWorkerIntegration({ worker: [] })
+  : null;
+if (sentryWebWorkerIntegration) {
+  Sentry.addIntegration(sentryWebWorkerIntegration);
+}
+
 /**
  * Public API to the remote WASM puzzle module running in a worker.
  * Exposes reactive properties for puzzle state.
@@ -28,10 +36,14 @@ import type { RemoteWorkerPuzzle, RemoteWorkerPuzzleFactory } from "./worker.ts"
  */
 export class Puzzle {
   public static async create(puzzleId: string): Promise<Puzzle> {
+    if (import.meta.env.VITE_SENTRY_DSN) {
+      Sentry.setTag("puzzleId", puzzleId);
+    }
     const worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
       name: `puzzle-worker-${puzzleId}`,
     });
+    sentryWebWorkerIntegration?.addWorker(worker);
     installWorkerErrorReceivers(worker);
     const workerFactory = Comlink.wrap<RemoteWorkerPuzzleFactory>(worker);
     const workerPuzzle = await workerFactory.create(puzzleId);
@@ -90,6 +102,13 @@ export class Puzzle {
 
     switch (message.type) {
       case "game-id-change": {
+        if (import.meta.env.VITE_SENTRY_DSN) {
+          Sentry.setContext("Puzzle", {
+            puzzleId: this.puzzleId,
+            gameId: message.currentGameId,
+            randomSeed: message.randomSeed,
+          });
+        }
         update(this._currentGameId, message.currentGameId);
         update(this._randomSeed, message.randomSeed);
         break;
