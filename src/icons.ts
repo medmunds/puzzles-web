@@ -93,7 +93,7 @@ const missingIcon = badgeQuestionMarkIcon;
 registerIconLibrary("default", {
   resolver: (name) => {
     const icon = icons[name];
-    if (!import.meta.env.PRODUCTION && !icon) {
+    if (!import.meta.env.PROD && !icon) {
       throw new Error(`Missing icon ${name}`);
     }
     return icon ?? missingIcon;
