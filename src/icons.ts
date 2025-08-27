@@ -4,7 +4,7 @@ import arrowLeftToLineIcon from "lucide-static/icons/arrow-left-to-line.svg";
 import arrowRightIcon from "lucide-static/icons/arrow-right.svg";
 import awardIcon from "lucide-static/icons/award.svg";
 import badgeQuestionMarkIcon from "lucide-static/icons/badge-question-mark.svg";
-import boxIcon from "lucide-static/icons/box.svg";
+import boxesIcon from "lucide-static/icons/boxes.svg";
 import circleCheckIcon from "lucide-static/icons/circle-check.svg";
 import circlePlayIcon from "lucide-static/icons/circle-play.svg";
 import circleQuestionMarkIcon from "lucide-static/icons/circle-question-mark.svg";
@@ -14,7 +14,6 @@ import downloadIcon from "lucide-static/icons/download.svg";
 import frownIcon from "lucide-static/icons/frown.svg";
 import gemIcon from "lucide-static/icons/gem.svg";
 import infoIcon from "lucide-static/icons/info.svg";
-import iterationCWIcon from "lucide-static/icons/iteration-cw.svg";
 import laughIcon from "lucide-static/icons/laugh.svg";
 import octagonAlertIcon from "lucide-static/icons/octagon-alert.svg";
 import partyPopperIcon from "lucide-static/icons/party-popper.svg";
@@ -37,6 +36,7 @@ import uploadIcon from "lucide-static/icons/upload.svg";
 import wandIcon from "lucide-static/icons/wand.svg";
 import mouseLeftButtonIcon from "./assets/mouse-left-button.svg";
 import mouseRightButtonIcon from "./assets/mouse-right-button.svg";
+import restartIcon from "./assets/restart.svg";
 
 /**
  * Re-export the Lucide icons we use with symbolic names, for easier modification
@@ -45,7 +45,7 @@ import mouseRightButtonIcon from "./assets/mouse-right-button.svg";
 // biome-ignore format: leave all keys as strings
 const icons: Record<string, string> = {
   // general
-  "back-to-catalog": boxIcon,
+  "back-to-catalog": boxesIcon,
   "checkpoint-list": shieldCheckIcon,
   "checkpoint": circleCheckIcon,
   "checkpoint-add": circlePlayIcon,
@@ -55,7 +55,7 @@ const icons: Record<string, string> = {
   "new-game": plusIcon,
   "puzzle-type": swatchBookIcon,
   "redo": redo2Icon,
-  "restart-game": iterationCWIcon,
+  "restart-game": restartIcon,
   "settings": settingsIcon,
   "save-game": downloadIcon,
   "load-game": uploadIcon,
