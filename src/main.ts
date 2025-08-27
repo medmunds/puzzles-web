@@ -38,7 +38,7 @@ if (new URL(window.location.href).searchParams.has("console")) {
     document.head.appendChild(script);
   });
   if (src.indexOf("eruda") !== -1) {
-    // @ts-ignore
+    // @ts-expect-error
     window.eruda?.init();
   } else {
     // mobileConsole treats assert(assertion, ...) as a log level

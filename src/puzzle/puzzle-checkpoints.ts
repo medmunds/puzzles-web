@@ -209,7 +209,7 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
 
   private handleSelectCheckpoint(event: CustomEvent<{ item: WaDropdownItem }>) {
     const value = event.detail.item.value;
-    const checkpoint = Number.parseInt(value);
+    const checkpoint = Number.parseInt(value, 10);
     if (Number.isFinite(checkpoint)) {
       this.puzzle?.goToCheckpoint(checkpoint);
     }
@@ -223,7 +223,7 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
       // don't trigger containing dropdown item, and keep the dropdown open
       event.stopPropagation();
       const value = menuItem.getAttribute("value") ?? "-1";
-      const move = Number.parseInt(value);
+      const move = Number.parseInt(value, 10);
       if (Number.isFinite(move)) {
         this.puzzle?.removeCheckpoint(move);
       }

@@ -126,7 +126,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             @click=${async (event: Event) => {
               // Audition click sound
               const slider: HTMLInputElement = event.target as HTMLInputElement;
-              const volume = Number.parseInt(slider.value);
+              const volume = Number.parseInt(slider.value, 10);
               if (volume > 0) {
                 await audioClick({ volume });
               }

@@ -169,7 +169,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
         `;
 
       default:
-        // @ts-ignore: item.type never
+        // @ts-expect-error: item.type never
         throw new Error(`Unknown config item type ${item.type}`);
     }
   }
@@ -213,7 +213,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
 
   private async updateSelectValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    this.changes[target.id] = Number.parseInt(target.value); // doesn't force redraw
+    this.changes[target.id] = Number.parseInt(target.value, 10); // doesn't force redraw
     if (this.autosubmit) {
       await this.submit();
     }

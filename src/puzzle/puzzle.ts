@@ -128,7 +128,7 @@ export class Puzzle {
         update(this._statusbarText, message.statusBarText);
         break;
       default:
-        // @ts-ignore: message.type never
+        // @ts-expect-error: message.type never
         throw new Error(`Unknown notifyChange type ${message.type}`);
     }
   };

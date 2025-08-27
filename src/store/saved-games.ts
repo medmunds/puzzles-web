@@ -92,7 +92,7 @@ class SavedGames {
         [puzzleId, SaveType.User, `${baseName}\uffff`],
       )
       .each(({ filename }) => {
-        const suffix = Number.parseInt(filename.slice(baseName.length));
+        const suffix = Number.parseInt(filename.slice(baseName.length), 10);
         if (!Number.isNaN(suffix) && suffix > maxSuffix) {
           maxSuffix = suffix;
         }
