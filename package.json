@@ -21,9 +21,9 @@
     "@sentry/wasm": "^10.6.0",
     "colorjs.io": "^0.5.2",
     "comlink": "^4.4.2",
-    "dexie": "^4.0.11",
+    "dexie": "^4.2.0",
     "lit": "^3.3.1",
-    "lucide-static": "^0.536.0"
+    "lucide-static": "^0.542.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.2",
