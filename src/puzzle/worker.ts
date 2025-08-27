@@ -25,10 +25,8 @@ import type {
   Size,
 } from "./types.ts";
 
-// Sentry's typing incorrectly expects Worker rather than WorkerGlobalScope,
-// though the docs make it clear this is meant to be called from the worker thread.
 if (import.meta.env.VITE_SENTRY_DSN) {
-  Sentry.registerWebWorker({ self: self as unknown as Worker });
+  Sentry.registerWebWorker({ self });
 }
 
 installErrorHandlersInWorker();
