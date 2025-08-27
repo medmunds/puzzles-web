@@ -3,8 +3,6 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { html, LitElement, type TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
-import { notifyError } from "../utils/errors.ts";
-import { sleep } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 
@@ -43,19 +41,6 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
               </wa-dropdown-item>
             `,
         )}
-        <wa-divider></wa-divider>
-        <wa-dropdown-item value="share" disabled>
-          <wa-icon slot="icon" name="share"></wa-icon>
-          Share…
-        </wa-dropdown-item>
-        <wa-dropdown-item value="save">
-          <wa-icon slot="icon" name="save-game"></wa-icon>
-          Save…
-        </wa-dropdown-item>
-        <wa-dropdown-item value="load">
-          <wa-icon slot="icon" name="load-game"></wa-icon>
-          Load…
-        </wa-dropdown-item>
         <slot></slot>
       </wa-dropdown>
     `;
@@ -76,61 +61,8 @@ export class PuzzleGameMenu extends SignalWatcher(LitElement) {
       case "solve":
         await this.puzzle?.solve();
         break;
-      case "share":
-        break;
-      case "save":
-        await this.saveGameToFile();
-        break;
-      case "load":
-        await this.loadGameFromFile();
-        break;
       // Other commands are handled by the parent component
     }
-  }
-
-  async saveGameToFile() {
-    if (!this.puzzle) {
-      return;
-    }
-    const type = "application/octet-stream"; // or text/plain, but upstream uses this
-    const data = await this.puzzle.saveGame();
-    const blob = new Blob([data], { type });
-    const url = URL.createObjectURL(blob);
-    const dateStr = new Date().toLocaleString();
-    const filename = `${this.puzzle.displayName} ${dateStr}.sav`;
-    const anchor = Object.assign(document.createElement("a"), {
-      href: url,
-      download: filename,
-      type,
-    });
-    anchor.click();
-    await sleep(10);
-    URL.revokeObjectURL(url);
-  }
-
-  async loadGameFromFile() {
-    if (!this.puzzle) {
-      return;
-    }
-    const input = Object.assign(document.createElement("input"), {
-      type: "file",
-      multiple: false,
-      accept: ".sav,.sgt,.sgtpuzzle,.txt",
-      onchange: async () => {
-        const file = input.files?.[0];
-        if (file) {
-          const data = new Uint8Array(await file.arrayBuffer());
-          const errorMessage = await this.puzzle?.loadGame(data);
-          if (errorMessage) {
-            await notifyError(errorMessage);
-          }
-        }
-      },
-      onerror: async (error: unknown) => {
-        await notifyError(String(error));
-      },
-    });
-    input.click();
   }
 }
 

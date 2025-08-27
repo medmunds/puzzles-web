@@ -9,7 +9,8 @@ import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import type { SettingsDialog } from "./settings-dialog.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
-import { debounced } from "./utils/timing.ts";
+import { notifyError } from "./utils/errors.ts";
+import { debounced, sleep } from "./utils/timing.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -25,6 +26,7 @@ import "./puzzle/puzzle-keys.ts";
 import "./puzzle/puzzle-preset-menu.ts";
 import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
+import "./saved-game-dialogs.ts";
 import "./settings-dialog.ts";
 
 @customElement("puzzle-screen")
@@ -50,6 +52,10 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
   @query("settings-dialog", true)
   private preferencesDialog?: SettingsDialog;
+
+  /** If the current game has been saved or loaded, its filename. */
+  savedFilename?: string;
+  savedGameId?: string;
 
   private _autoSaveId?: string;
   private get autoSaveId(): string | undefined {
@@ -131,6 +137,19 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
           <div class="toolbar">
             <puzzle-game-menu @wa-select=${this.handleGameMenuCommand}>
+              <wa-divider></wa-divider>
+              <wa-dropdown-item value="share" disabled>
+                <wa-icon slot="icon" name="share"></wa-icon>
+                Share…
+              </wa-dropdown-item>
+              <wa-dropdown-item value="load">
+                <wa-icon slot="icon" name="load-game"></wa-icon>
+                Load…
+              </wa-dropdown-item>
+              <wa-dropdown-item value="save">
+                <wa-icon slot="icon" name="save-game"></wa-icon>
+                Save…
+              </wa-dropdown-item>
               <wa-dropdown-item value="preferences">
                 <wa-icon slot="icon" name="settings"></wa-icon>
                 Preferences…
@@ -196,6 +215,16 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         </puzzle-end-notification>
 
         <settings-dialog puzzle-name=${this.puzzleData.name}></settings-dialog>
+        <load-game-dialog 
+            puzzleId=${this.puzzleType}
+            @load-game-import=${this.handleImportGame}
+            @load-game-load=${this.handleLoadGame}
+        ></load-game-dialog>
+        <save-game-dialog
+            puzzleId=${this.puzzleType}
+            @save-game-export=${this.handleExportGame}
+            @save-game-save=${this.handleSaveGame}
+        ></save-game-dialog>
       </puzzle-context>
 
       <help-viewer src=${helpUrl} label=${`${this.puzzleData.name} Help`}></help-viewer>
@@ -205,6 +234,14 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   private async handleGameMenuCommand(event: CustomEvent<{ item: { value: string } }>) {
     const value = event.detail.item.value;
     switch (value) {
+      case "share":
+        break;
+      case "load":
+        this.showLoadGameDialog();
+        break;
+      case "save":
+        await this.showSaveGameDialog();
+        break;
       case "catalog":
         this.router?.navigate(this.router.defaultRoute);
         break;
@@ -220,6 +257,98 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       default:
         // Other commands are handled by puzzle-game-menu
         break;
+    }
+  }
+
+  private showLoadGameDialog() {
+    const dialog = this.shadowRoot?.querySelector("load-game-dialog");
+    if (dialog && !dialog.open) {
+      dialog.open = true;
+    }
+  }
+
+  private async showSaveGameDialog() {
+    const dialog = this.shadowRoot?.querySelector("save-game-dialog");
+    if (dialog && !dialog.open) {
+      dialog.filename =
+        this.savedFilename ?? (await savedGames.makeUntitledFilename(this.puzzleType));
+      dialog.open = true;
+    }
+  }
+
+  private async handleLoadGame(event: HTMLElementEventMap["load-game-load"]) {
+    const dialog = event.target as HTMLElementTagNameMap["load-game-dialog"];
+    const { filename } = event.detail;
+    const puzzle = this.shadowRoot?.querySelector("puzzle-context")?.puzzle;
+    if (puzzle && filename) {
+      event.preventDefault(); // we'll close the dialog if successful
+      const { error, gameId } = await savedGames.loadGame(puzzle, filename);
+      if (error !== undefined) {
+        // TODO: display error in dialog somehow?
+        await notifyError(error);
+      } else if (gameId) {
+        this.savedGameId = gameId;
+        this.savedFilename = filename;
+        dialog.open = false;
+      }
+    }
+  }
+
+  private async handleSaveGame(event: HTMLElementEventMap["save-game-save"]) {
+    const dialog = event.target as HTMLElementTagNameMap["save-game-dialog"];
+    const { filename } = event.detail;
+    const puzzle = this.shadowRoot?.querySelector("puzzle-context")?.puzzle;
+    if (puzzle && filename) {
+      event.preventDefault(); // we'll close the dialog if successful
+      await savedGames.saveGame(puzzle, filename);
+      this.savedGameId = puzzle.currentGameId;
+      this.savedFilename = filename;
+      dialog.open = false;
+    }
+  }
+
+  private async handleImportGame(_event: HTMLElementEventMap["load-game-import"]) {
+    const puzzle = this.shadowRoot?.querySelector("puzzle-context")?.puzzle;
+    if (puzzle) {
+      const input = Object.assign(document.createElement("input"), {
+        type: "file",
+        multiple: false,
+        accept: ".sav,.sgt,.sgtpuzzle,.txt",
+        onchange: async () => {
+          const file = input.files?.[0];
+          if (file) {
+            const data = new Uint8Array(await file.arrayBuffer());
+            const errorMessage = await puzzle.loadGame(data);
+            if (errorMessage) {
+              await notifyError(errorMessage);
+            }
+          }
+        },
+        onerror: async (error: unknown) => {
+          await notifyError(String(error));
+        },
+      });
+      input.click();
+    }
+  }
+
+  private async handleExportGame(event: HTMLElementEventMap["save-game-export"]) {
+    const puzzle = this.shadowRoot?.querySelector("puzzle-context")?.puzzle;
+    if (puzzle) {
+      const type = "application/octet-stream"; // or text/plain, or a type registered to us (upstream uses octet-stream)
+      const data = await puzzle.saveGame();
+      const blob = new Blob([data], { type });
+      const url = URL.createObjectURL(blob);
+      const dateStr = new Date().toLocaleString();
+      const filename = event.detail.filename || `${puzzle.displayName} ${dateStr}`;
+      const anchor = Object.assign(document.createElement("a"), {
+        href: url,
+        download: `${filename}.sav`,
+        type,
+      });
+      anchor.click();
+      await sleep(10);
+      URL.revokeObjectURL(url);
     }
   }
 
@@ -287,6 +416,10 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   private async handlePuzzleGameStateChange(event: PuzzleEvent) {
     const { puzzle } = event.detail;
     if (puzzle.currentGameId) {
+      if (puzzle.currentGameId !== this.savedGameId) {
+        this.savedFilename = undefined;
+        this.savedGameId = puzzle.currentGameId;
+      }
       if (puzzle.totalMoves > 0 && !puzzle.isSolved) {
         // Wait to autosave until the user has made at least one actual move,
         // to avoid autosaving from just browsing through puzzles.
