@@ -261,8 +261,23 @@ export class Puzzle {
     return this.workerPuzzle.setParams(params);
   }
 
-  public async getPresets(): Promise<PresetMenuEntry[]> {
-    return this.workerPuzzle.getPresets();
+  public async getParamsDescription(params: string): Promise<string | undefined> {
+    const presets = await this.getPresets(true);
+    return presets.find((preset) => preset.params === params)?.title;
+  }
+
+  public async getPresets(flat = false): Promise<PresetMenuEntry[]> {
+    let presets = await this.workerPuzzle.getPresets();
+    if (flat) {
+      const flatten = (items: PresetMenuEntry[]): PresetMenuEntry[] => {
+        return items.flatMap((item) => [
+          item,
+          ...(item.submenu ? flatten(item.submenu) : []),
+        ]);
+      };
+      presets = flatten(presets);
+    }
+    return presets;
   }
 
   public async getCustomParamsConfig(): Promise<ConfigDescription> {

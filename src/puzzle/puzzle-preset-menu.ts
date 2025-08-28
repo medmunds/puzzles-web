@@ -62,16 +62,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   }
 
   private async loadPresets(): Promise<void> {
-    // Flatten submenus into presets list (depth first)
-    const flatten = (items: PresetMenuEntry[]): PresetMenuEntry[] => {
-      return items.flatMap((item) => [
-        item,
-        ...(item.submenu ? flatten(item.submenu) : []),
-      ]);
-    };
-
-    const entries = (await this.puzzle?.getPresets()) ?? [];
-    this.presets = flatten(entries);
+    this.presets = (await this.puzzle?.getPresets(true)) ?? [];
   }
 
   override render(): TemplateResult {
