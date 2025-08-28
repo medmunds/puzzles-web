@@ -865,6 +865,11 @@ public:
     explicit wrapped_game_params(const game *game, const allocated_config_item_ptr &items)
         : m_game(game), m_params(game->custom_params(items.get())) {}
 
+    // Params from midend_get_params
+    // (the params used for new games, not necessarily the current game's params)
+    explicit wrapped_game_params(midend *me)
+        : m_game(midend_which_game(me)), m_params(midend_get_params(me)) {}
+
     ~wrapped_game_params() {
         if (m_params && m_game) {
             m_game->free_params(m_params);
@@ -883,6 +888,10 @@ public:
 
     [[nodiscard]] allocated_config_item_ptr as_config_items() const {
         return allocated_config_item_ptr(m_game->configure(m_params));
+    }
+
+    void set_to_midend(midend* me) const {
+        midend_set_params(me, m_params);
     }
 
     // Non-copyable
@@ -1382,11 +1391,24 @@ public:
 
     // Return undefined if successful, else error message.
     [[nodiscard]] std::optional<std::string> newGameFromId(const std::string &id) const {
+        // midend_game_id may partially alter params (used for new games) when
+        // given a params:desc or params#randomSeed id. That doesn't match the
+        // end user documentation (which says "These additional parameters are
+        // also not set permanently if you type in a game ID"), so preserve and
+        // restore existing params to undo the partial changes.
+        const auto params_only = !(id.contains(':') || id.contains('#'));
+        const wrapped_game_params params(me());
         const static_char_ptr error(midend_game_id(me(), id.c_str()));
         if (!error) {
-            // (midend_game_id will notify about game id change, but does not
-            // alter the current params or initialize the game from the id.)
+            if (params_only) {
+                notifyParamsChange();
+            }
+            // (midend_game_id does not initialize a game from the id.)
             newGame();
+            if (!params_only) {
+                // restore original params for later new games
+                params.set_to_midend(me());
+            }
         }
         return error.as_optional_string();
     }
