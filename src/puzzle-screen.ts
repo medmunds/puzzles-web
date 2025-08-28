@@ -28,6 +28,7 @@ import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
 import "./saved-game-dialogs.ts";
 import "./settings-dialog.ts";
+import "./share-dialog.ts";
 
 @customElement("puzzle-screen")
 export class PuzzleScreen extends SignalWatcher(LitElement) {
@@ -38,8 +39,13 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   @property({ type: String, attribute: "puzzle-type" })
   puzzleType = "";
 
+  /** A game ID or random seed, including encoded params */
+  @property({ type: String, attribute: "puzzle-gameid" })
+  puzzleGameId?: string;
+
+  /** Encoded params (ignored when puzzle-gameid provided) */
   @property({ type: String, attribute: "puzzle-params" })
-  puzzleParams = "";
+  puzzleParams?: string;
 
   @state()
   private puzzleData?: PuzzleData;
@@ -113,7 +119,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     return html`
       <puzzle-context 
           type=${this.puzzleType} 
-          params=${this.puzzleParams} 
           @puzzle-loaded=${this.handlePuzzleLoaded}
           @puzzle-params-change=${this.handlePuzzleParamsChange}
           @puzzle-game-state-change=${this.handlePuzzleGameStateChange}
@@ -138,7 +143,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           <div class="toolbar">
             <puzzle-game-menu @wa-select=${this.handleGameMenuCommand}>
               <wa-divider></wa-divider>
-              <wa-dropdown-item value="share" disabled>
+              <wa-dropdown-item value="share">
                 <wa-icon slot="icon" name="share"></wa-icon>
                 Share…
               </wa-dropdown-item>
@@ -215,6 +220,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         </puzzle-end-notification>
 
         <settings-dialog puzzle-name=${this.puzzleData.name}></settings-dialog>
+        <share-dialog puzzle-name=${this.puzzleData.name} .router=${this.router}></share-dialog>
         <load-game-dialog 
             puzzleId=${this.puzzleType}
             @load-game-import=${this.handleImportGame}
@@ -235,6 +241,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     const value = event.detail.item.value;
     switch (value) {
       case "share":
+        await this.showShareDialog();
         break;
       case "load":
         this.showLoadGameDialog();
@@ -257,6 +264,14 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       default:
         // Other commands are handled by puzzle-game-menu
         break;
+    }
+  }
+
+  private async showShareDialog() {
+    const dialog = this.shadowRoot?.querySelector("share-dialog");
+    if (dialog && !dialog.open) {
+      await dialog.reset();
+      dialog.open = true;
     }
   }
 
@@ -370,34 +385,73 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     const prefs = await settings.getPuzzlePreferences(puzzle.puzzleId);
     await puzzle.setPreferences(prefs);
 
-    const params = await settings.getParams(puzzle.puzzleId);
-    if (params) {
-      const error = await puzzle.setParams(params);
-      if (error) {
+    // Set up the default params for all new games in this session.
+    // Prefer the url's ?type=<params> if provided from the router and valid.
+    // Otherwise, try the last used params stored in our settings.
+    // (If nothing works, every puzzle has its own defaults.)
+    // This applies even when puzzleGameId is provided, to set the default
+    // params for subsequent new games.
+    const settingsParams = await settings.getParams(puzzle.puzzleId);
+    for (const params of [this.puzzleParams, settingsParams]) {
+      if (params) {
+        const error = await puzzle.setParams(params);
+        if (!error) {
+          break; // successfully set default params
+        }
         console.warn(
-          `Error setting puzzle ${puzzle.puzzleId} params to saved "${params}": ` +
-            `${error}. Discarding.`,
+          `Error setting puzzle ${puzzle.puzzleId} params to "${params}": ` +
+            `${error}. Ignoring.`,
         );
-        await settings.setParams(puzzle.puzzleId, undefined);
+        if (params === settingsParams) {
+          // Don't try those again
+          await settings.setParams(puzzle.puzzleId, undefined);
+        } else {
+          notifyError(`Ignoring invalid type= in URL (${error})`).then();
+        }
       }
     }
 
     // TODO: restore custom presets from settings
 
+    // Ensure there's a game, from (in order of preference)
+    // - puzzleGameId (URL hash from router)
+    // - the most recent autoSave
+    // - a new game
+    let hasGame = false;
+
+    if (this.puzzleGameId) {
+      const error = await puzzle.newGameFromId(this.puzzleGameId);
+      if (!error) {
+        hasGame = true;
+        this.autoSaveId = savedGames.makeAutoSaveId();
+      } else {
+        notifyError(`Ignoring invalid id= in URL (${error})`).then();
+      }
+    }
+
     if (!this.autoSaveId) {
       this.autoSaveId = await savedGames.findMostRecentAutoSave(puzzle.puzzleId);
     }
-
-    let restored = false;
-    if (this.autoSaveId) {
-      restored = await savedGames.restoreAutoSavedGame(puzzle, this.autoSaveId);
+    if (!hasGame && !this.puzzleParams && this.autoSaveId) {
+      // Restore a recent autosave, unless params in url (which might not match)
+      hasGame = await savedGames.restoreAutoSavedGame(puzzle, this.autoSaveId);
     }
-    if (!restored) {
+
+    if (!hasGame) {
       await puzzle.newGame();
     }
 
     this.puzzleLoaded = true;
     await this.shadowRoot?.querySelector("puzzle-context")?.updateComplete;
+
+    // Clear any specific type or game id params from the URL
+    if (this.router && (this.puzzleParams || this.puzzleGameId)) {
+      const cleanUrl = this.router.reverse({
+        name: "puzzle",
+        params: { puzzleType: this.puzzleType },
+      });
+      this.router.navigate(cleanUrl, true);
+    }
   }
 
   private async handlePuzzleParamsChange(event: PuzzleEvent) {

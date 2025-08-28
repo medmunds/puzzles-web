@@ -9,6 +9,7 @@ import WaRadioGroup from "@awesome.me/webawesome/dist/components/radio-group/rad
 import WaScroller from "@awesome.me/webawesome/dist/components/scroller/scroller.js";
 import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
 import WaSlider from "@awesome.me/webawesome/dist/components/slider/slider.js";
+import WaTextarea from "@awesome.me/webawesome/dist/components/textarea/textarea.js";
 import { css } from "lit";
 
 /**
@@ -26,6 +27,7 @@ function disableWaChangedInUpdateWarnings() {
   WaRadioGroup.disableWarning?.("change-in-update");
   WaSelect.disableWarning?.("change-in-update");
   WaSlider.disableWarning?.("change-in-update");
+  WaTextarea.disableWarning?.("change-in-update");
 }
 
 /**

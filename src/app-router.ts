@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/browser";
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { puzzleDataMap } from "./catalog.ts";
 
@@ -114,6 +114,7 @@ export class AppRouter extends LitElement {
               // (e.g., "/blackbox?type=3")
               puzzleType: path,
               puzzleParams: url.searchParams.get("type"),
+              puzzleGameId: url.searchParams.get("id"),
             },
           };
         }
@@ -136,7 +137,10 @@ export class AppRouter extends LitElement {
           throw new Error(`Invalid puzzle type "${route.params.puzzleType}"`);
         }
         path = route.params.puzzleType;
-        if (route.params.puzzleParams) {
+        if (route.params.puzzleGameId) {
+          // puzzleGameId includes puzzle params, so supersedes `type` param
+          searchParams.append("id", route.params.puzzleGameId.toString());
+        } else if (route.params.puzzleParams) {
           searchParams.append("type", route.params.puzzleParams.toString());
         }
         break;
@@ -164,8 +168,11 @@ export class AppRouter extends LitElement {
    * Navigates to the given url or route.
    * url can be relative to the router's baseUrl, or absolute.
    * An url that doesn't match any route will navigate out of the app.
+   *
+   * If replace is true (and url or route is within the app),
+   * replaces the current history state.
    */
-  public navigate(urlOrRoute: string | URL | Route) {
+  public navigate(urlOrRoute: string | URL | Route, replace = false) {
     const resolvedUrl =
       typeof urlOrRoute === "string" || urlOrRoute instanceof URL
         ? new URL(urlOrRoute, this.baseUrl)
@@ -183,6 +190,7 @@ export class AppRouter extends LitElement {
 
     // Special case: treat navigating to catalog as "back" if possible
     if (
+      !replace &&
       targetRoute.name === this.defaultRoute.name &&
       this.currentHistoryState?.previousRoute?.name === targetRoute.name
     ) {
@@ -191,10 +199,18 @@ export class AppRouter extends LitElement {
     }
 
     const newState: HistoryState = { route: targetRoute };
-    if (this.route) {
-      newState.previousRoute = this.route;
+    const previousRoute = replace
+      ? this.currentHistoryState?.previousRoute
+      : this.route;
+    if (previousRoute) {
+      newState.previousRoute = previousRoute;
     }
-    window.history.pushState(newState, "", resolvedUrl);
+
+    if (replace) {
+      window.history.replaceState(newState, "", resolvedUrl);
+    } else {
+      window.history.pushState(newState, "", resolvedUrl);
+    }
     this.route = targetRoute;
   }
 
@@ -247,7 +263,8 @@ export class AppRouter extends LitElement {
           <puzzle-screen 
               .router=${this} 
               puzzle-type=${params.puzzleType} 
-              puzzle-params=${params.puzzleParams ?? ""}
+              puzzle-gameid=${params.puzzleGameId ?? nothing}
+              puzzle-params=${params.puzzleParams ?? nothing}
               ?debug=${params.debug}
             ></puzzle-screen>
         `;
