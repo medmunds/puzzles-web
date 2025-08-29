@@ -1391,24 +1391,19 @@ public:
 
     // Return undefined if successful, else error message.
     [[nodiscard]] std::optional<std::string> newGameFromId(const std::string &id) const {
-        // midend_game_id may partially alter params (used for new games) when
-        // given a params:desc or params#randomSeed id. That doesn't match the
-        // end user documentation (which says "These additional parameters are
-        // also not set permanently if you type in a game ID"), so preserve and
-        // restore existing params to undo the partial changes.
-        const auto params_only = !(id.contains(':') || id.contains('#'));
-        const wrapped_game_params params(me());
+        // (Per the end user docs, midend_game_id should really only affect the
+        // next midend_new_game, but leave params unchanged for later new
+        // games. But it modifies both params and current_params.
+        // An attempted workaround--saving params before midend_game_id and
+        // restoring them after midend_new_game--breaks midend_size, which uses
+        // params rather than current_params.)
         const static_char_ptr error(midend_game_id(me(), id.c_str()));
         if (!error) {
-            if (params_only) {
-                notifyParamsChange();
-            }
-            // (midend_game_id does not initialize a game from the id.)
+            // midend_game_id may have modified params, so notify about the change.
+            notifyParamsChange();
+            // midend_game_id does not initialize a game from the id, so we should.
+            // (Other necessary notifications are handled by newGame and its callees.)
             newGame();
-            if (!params_only) {
-                // restore original params for later new games
-                params.set_to_midend(me());
-            }
         }
         return error.as_optional_string();
     }
