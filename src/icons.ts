@@ -13,6 +13,7 @@ import deleteIcon from "lucide-static/icons/delete.svg";
 import downloadIcon from "lucide-static/icons/download.svg";
 import frownIcon from "lucide-static/icons/frown.svg";
 import gemIcon from "lucide-static/icons/gem.svg";
+import hashIcon from "lucide-static/icons/hash.svg";
 import infoIcon from "lucide-static/icons/info.svg";
 import laughIcon from "lucide-static/icons/laugh.svg";
 import octagonAlertIcon from "lucide-static/icons/octagon-alert.svg";
@@ -51,6 +52,7 @@ const icons: Record<string, string> = {
   "checkpoint-add": circlePlayIcon,
   "checkpoint-remove": trash2Icon,
   "checkpoint-current-move": playIcon,
+  "gameid": hashIcon,
   "help": circleQuestionMarkIcon,
   "new-game": plusIcon,
   "puzzle-type": swatchBookIcon,

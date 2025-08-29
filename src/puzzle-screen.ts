@@ -17,6 +17,7 @@ import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
+import "./enter-gameid-dialog.ts";
 import "./head-matter.ts";
 import "./help-viewer.ts";
 import "./puzzle/puzzle-checkpoints.ts";
@@ -155,6 +156,11 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
                 <wa-icon slot="icon" name="save-game"></wa-icon>
                 Save…
               </wa-dropdown-item>
+              <wa-dropdown-item value="gameid">
+                <wa-icon slot="icon" name="gameid"></wa-icon>
+                Enter ID&hairsp;/&hairsp;seed…
+              </wa-dropdown-item>
+              <wa-divider></wa-divider>
               <wa-dropdown-item value="preferences">
                 <wa-icon slot="icon" name="settings"></wa-icon>
                 Preferences…
@@ -231,6 +237,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
             @save-game-export=${this.handleExportGame}
             @save-game-save=${this.handleSaveGame}
         ></save-game-dialog>
+        <enter-gameid-dialog puzzle-name=${this.puzzleData.name}></enter-gameid-dialog>
       </puzzle-context>
 
       <help-viewer src=${helpUrl} label=${`${this.puzzleData.name} Help`}></help-viewer>
@@ -248,6 +255,9 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         break;
       case "save":
         await this.showSaveGameDialog();
+        break;
+      case "gameid":
+        this.showEnterGameIDDialog();
         break;
       case "catalog":
         this.router?.navigate(this.router.defaultRoute);
@@ -287,6 +297,14 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     if (dialog && !dialog.open) {
       dialog.filename =
         this.savedFilename ?? (await savedGames.makeUntitledFilename(this.puzzleType));
+      dialog.open = true;
+    }
+  }
+
+  private showEnterGameIDDialog() {
+    const dialog = this.shadowRoot?.querySelector("enter-gameid-dialog");
+    if (dialog && !dialog.open) {
+      dialog.reset();
       dialog.open = true;
     }
   }
