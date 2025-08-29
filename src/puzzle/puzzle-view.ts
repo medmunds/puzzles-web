@@ -67,6 +67,20 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     callback: throttle(() => this.resize(), 100),
   });
 
+  private observedResizeElement?: Element; // set to resizeElement when observed
+  private observeResizeElement(element?: Element) {
+    if (element !== this.observedResizeElement) {
+      if (this.observedResizeElement) {
+        this.resizeController.unobserve(this.observedResizeElement);
+        this.observedResizeElement = undefined;
+      }
+      if (element) {
+        this.resizeController.observe(element);
+        this.observedResizeElement = element;
+      }
+    }
+  }
+
   protected override willUpdate(changedProperties: Map<string, unknown>) {
     // Since lit signals doesn't yet support effects on reactive properties, copy the
     // puzzle's reactive currentGameId and currentParams into local reactive state.
@@ -78,13 +92,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       // Altering ResizeController's observables will requestUpdate().
       // Apply changes in willUpdate() to avoid triggering a second update
       // on initial render (Lit change-in-update warning).
-      const oldValue = changedProperties.get("resizeElement") as Element | undefined;
-      if (oldValue) {
-        this.resizeController.unobserve(oldValue);
-      }
-      if (this.resizeElement) {
-        this.resizeController.observe(this.resizeElement);
-      }
+      this.observeResizeElement(this.resizeElement);
     }
   }
 
@@ -133,10 +141,13 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     super.connectedCallback();
     document.addEventListener("visibilitychange", this.redrawWhenVisible);
     window.addEventListener("focus", this.redrawWhenVisible);
+    this.observeResizeElement(this.resizeElement);
   }
 
   override async disconnectedCallback() {
     super.disconnectedCallback();
+    this.observeResizeElement(undefined);
+    this.resizeElement = undefined; // try to break circular reference?
     document.removeEventListener("visibilitychange", this.redrawWhenVisible);
     window.removeEventListener("focus", this.redrawWhenVisible);
   }
