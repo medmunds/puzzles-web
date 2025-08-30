@@ -1,9 +1,10 @@
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property } from "lit/decorators.js";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/callout/callout.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/input/input.js";
@@ -51,6 +52,10 @@ abstract class GameFileDialog extends LitElement {
   }
 
   static styles = css`
+    wa-dialog {
+      --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
+    }
+    
     wa-dialog::part(body) {
       padding-block-start: calc(var(--spacing) - var(--wa-form-control-padding-block));
       
@@ -83,7 +88,12 @@ abstract class GameFileDialog extends LitElement {
 
 @customElement("load-game-dialog")
 export class LoadGameDialog extends GameFileDialog {
+  @property({ type: Boolean, attribute: "game-in-progress" })
+  gameInProgress: boolean = false;
+
   protected override render() {
+    const isApp = !window.matchMedia("(display-mode: browser)").matches;
+
     return html`
       <wa-dialog>
         <div slot="label">Load game</div>
@@ -94,10 +104,9 @@ export class LoadGameDialog extends GameFileDialog {
           <wa-icon label="Help" name="help"></wa-icon>
         </wa-button>
         <wa-popover for="help">
-          <p>Pick a game you saved earlier to resume play. 
-            (This will replace the current game.)</p>
-          <p>Or use <em>Import</em> to upload a file saved from
-            another compatible SGT Puzzles app.</p>
+          <p>Pick a game you saved earlier to resume play.</p>
+          <p>Or use <em>Import</em> to ${isApp ? "load" : "upload"} a file saved 
+            from any compatible <cite>Portable Puzzles Collection</cite> app.</p>
         </wa-popover>
 
         <saved-game-list
@@ -108,6 +117,17 @@ export class LoadGameDialog extends GameFileDialog {
           <div slot="placeholder">(saved games will appear here)</div>
         </saved-game-list>
 
+        ${
+          this.gameInProgress
+            ? html`
+              <wa-callout variant="warning">
+                <wa-icon slot="icon" name="warning"></wa-icon>
+                This will replace the game in progress
+              </wa-callout>
+            `
+            : nothing
+        }
+        
         <wa-button
             slot="footer" class="start"
             appearance="filled outlined"
@@ -156,6 +176,8 @@ export class LoadGameDialog extends GameFileDialog {
 @customElement("save-game-dialog")
 export class SaveGameDialog extends GameFileDialog {
   protected override render() {
+    const isApp = !window.matchMedia("(display-mode: browser)").matches;
+
     return html`
       <wa-dialog>
         <div slot="label">Save game</div>
@@ -167,9 +189,11 @@ export class SaveGameDialog extends GameFileDialog {
         </wa-button>
         <wa-popover for="help">
           <p>Save the current game so you can return to it later. 
-            You can enter a name to help you remember it.</p>
-          <p>Or use <em>Export</em> to download a file that you 
-            can load into any compatible SGT Puzzles app.</p>
+            (Saved games are kept in ${isApp ? "this app’s" : "your browser’s"} 
+            local storage.)</p>
+          <p>Or use <em>Export</em> to ${isApp ? "create" : "download"} a file 
+            you can load into any compatible <cite>Portable Puzzles Collection</cite> 
+            app.</p>
         </wa-popover>
         
         <saved-game-list 

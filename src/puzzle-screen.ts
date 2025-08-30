@@ -288,6 +288,8 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   private showLoadGameDialog() {
     const dialog = this.shadowRoot?.querySelector("load-game-dialog");
     if (dialog && !dialog.open) {
+      const puzzle = this.shadowRoot?.querySelector("puzzle-context")?.puzzle;
+      dialog.gameInProgress = (puzzle?.totalMoves ?? 0) > 0;
       dialog.open = true;
     }
   }
@@ -317,7 +319,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       event.preventDefault(); // we'll close the dialog if successful
       const { error, gameId } = await savedGames.loadGame(puzzle, filename);
       if (error !== undefined) {
-        // TODO: display error in dialog somehow?
+        // TODO: display error in dialog (like enter-gameid-dialog does)
         await notifyError(error);
       } else if (gameId) {
         this.savedGameId = gameId;
