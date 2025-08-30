@@ -80,15 +80,15 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
             <wa-icon slot="icon" name="error"></wa-icon>
             <strong>Unable to use that id</strong>&hairsp;&mdash;&hairsp;are you 
             sure it’s for <cite>${this.puzzleName}</cite>? (Error: ${this.error}.)
-          </div>
+          </wa-callout>
         `
       : this.puzzle?.totalMoves
         ? html`
           <wa-callout variant="warning">
             <wa-icon slot="icon" name="warning"></wa-icon>
             This will replace the game in progress
-          </div>
-          `
+          </wa-callout>
+        `
         : nothing;
 
     return html`
@@ -171,11 +171,16 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
       display: contents;
     }
 
+    wa-dialog {
+      --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
+    }
+
     wa-dialog::part(body) {
       display: flex;
       flex-direction: column;
       gap: var(--wa-space-l);
     }
+
     footer {
       display: grid;
       grid-auto-flow: column;
@@ -187,19 +192,6 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
     
     wa-input::part(label) {
       margin-bottom: var(--wa-space-s);
-    }
-    
-    .warning, .error {
-      display: flex;
-      align-items: center;
-      gap: var(--wa-space-xs);
-    }
-
-    .warning wa-icon {
-      color: var(--wa-color-warning-on-normal);
-    }
-    .error {
-      color: var(--wa-color-danger-on-normal);
     }
   `;
 }
