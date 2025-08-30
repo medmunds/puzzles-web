@@ -3,7 +3,7 @@ import { css, html, LitElement } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import type { AppRouter } from "./app-router.ts";
-import { type PuzzleData, puzzleDataMap, version } from "./catalog.ts";
+import { type PuzzleData, puzzleDataMap } from "./catalog.ts";
 import type { HelpViewer } from "./help-viewer.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import type { SettingsDialog } from "./settings-dialog.ts";
@@ -17,6 +17,7 @@ import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
+import "./about-dialog.ts";
 import "./enter-gameid-dialog.ts";
 import "./head-matter.ts";
 import "./help-viewer.ts";
@@ -170,9 +171,12 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
                 <wa-icon slot="icon" name="back-to-catalog"></wa-icon>
                 Other puzzles
               </wa-dropdown-item>
+              <wa-dropdown-item value="about">
+                <wa-icon slot="icon" name="info"></wa-icon>
+                About
+              </wa-dropdown-item>
               <wa-divider></wa-divider>
               <wa-dropdown-item value="redraw">Redraw puzzle</wa-dropdown-item>
-              <h3 class="version">v${version}</h3>
             </puzzle-game-menu>
             <puzzle-preset-menu></puzzle-preset-menu>
             <wa-button appearance="filled outlined" href=${helpUrl} @click=${this.showHelp}>
@@ -225,6 +229,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           </wa-button>
         </puzzle-end-notification>
 
+        <about-dialog></about-dialog>
         <settings-dialog puzzle-name=${this.puzzleData.name}></settings-dialog>
         <share-dialog puzzle-name=${this.puzzleData.name} .router=${this.router}></share-dialog>
         <load-game-dialog 
@@ -258,6 +263,9 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         break;
       case "gameid":
         this.showEnterGameIDDialog();
+        break;
+      case "about":
+        this.showAboutDialog();
         break;
       case "catalog":
         this.router?.navigate(this.router.defaultRoute);
@@ -307,6 +315,13 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     const dialog = this.shadowRoot?.querySelector("enter-gameid-dialog");
     if (dialog && !dialog.open) {
       dialog.reset();
+      dialog.open = true;
+    }
+  }
+
+  private showAboutDialog() {
+    const dialog = this.shadowRoot?.querySelector("about-dialog");
+    if (dialog && !dialog.open) {
       dialog.open = true;
     }
   }
@@ -632,13 +647,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       &::part(indicator) {
         border-radius: 0;
       }
-    }
-
-    .version {
-      /* Allow selecting the version info */
-      -moz-user-select: all;
-      -webkit-user-select: all;
-      user-select: all;
     }
   `;
 }
