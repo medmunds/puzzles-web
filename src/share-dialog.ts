@@ -217,6 +217,14 @@ export class ShareDialog extends SignalWatcher(LitElement) {
   }
 
   static styles = css`
+    :host {
+      display: contents;
+    }
+
+    wa-dialog {
+      --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
+    }
+
     wa-dialog::part(body) {
       display: flex;
       flex-direction: column;
