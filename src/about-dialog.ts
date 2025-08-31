@@ -2,7 +2,10 @@ import { css, type HTMLTemplateResult, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { licenses as thirdPartyLicenses } from "./assets/third-party-licenses.json";
 import { version } from "./catalog.ts";
+
+// Missing third-party-licenses.json? Try `npm run generate-licenses-json`.
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -20,6 +23,27 @@ import privacyHtml from "./assets/privacy.html?raw";
 const repoName = "Puzzles web app";
 // The (potentially branded) name of the PWA built from this repo
 const appName = import.meta.env.VITE_APP_NAME || repoName;
+
+// Override some specific package names
+const packageDisplayNames: Record<string, string> = {
+  "@awesome.me/webawesome": "Web Awesome",
+  "@lit-labs/observers": "Lit Labs Observers",
+  "@lit-labs/signals": "Lit Labs Signals",
+  "@lit/context": "Lit Context",
+  "@sentry/browser": "Sentry SDK (Browser)",
+  "@sentry/wasm": "Sentry SDK (WASM)",
+  "colorjs.io": "Color.js",
+  "lucide-static": "Lucide Icons",
+} as const;
+
+const packageDisplayName = (packageName: string): string => {
+  let displayName = packageDisplayNames[packageName];
+  if (displayName === undefined) {
+    // Default: convert to Title case (package names are ASCII, not arbitrary Unicode)
+    displayName = packageName.slice(0, 1).toUpperCase() + packageName.slice(1);
+  }
+  return displayName;
+};
 
 /**
  * Split text into paragraphs at double linebreaks.
@@ -47,10 +71,15 @@ export class AboutDialog extends LitElement {
     }
   }
 
-  protected override render() {
-    // TODO: node dependency licenses (use something like license-checker?)
-    // TODO: emcc runtime licenses (hardcode?)
+  // TODO: emcc runtime licenses (hardcode?)
+  private static thirdPartyLicenses = thirdPartyLicenses
+    .map(({ name, licenseType, licenseText }) => ({
+      name: packageDisplayName(name),
+      text: licenseText ?? `${licenseType} License (no license text available)`,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
+  protected override render() {
     return html`
       <wa-dialog light-dismiss>
         <div slot="label">About <cite>${appName}</cite></div>
@@ -91,16 +120,21 @@ export class AboutDialog extends LitElement {
             <p>This application incorporates the following software<br>
               (expand each item to view its copyright and license terms)</p>
           </div>
-
+          
           <wa-details appearance="plain" icon-position="start" name="license">
             <div slot="summary">Simon Tatham’s Portable Puzzles Collection</div>
             ${licenseTextToHTML(sgtPuzzlesLicenseText)}
           </wa-details>
 
-          <wa-details appearance="plain" icon-position="start" name="license">
-            <div slot="summary">TODO: other packages</div>
-            <p>TODO: Terms</p>
-          </wa-details>
+          ${AboutDialog.thirdPartyLicenses.map(
+            ({ name, text }) => html`
+              <wa-details appearance="plain" icon-position="start" name="license">
+                <div slot="summary">${name}</div>
+                ${licenseTextToHTML(text)}
+              </wa-details>
+            `,
+          )}
+
         </wa-details>
       </wa-dialog>
     `;

@@ -10,6 +10,7 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome check --write .",
+    "generate-licenses-json": "./generate-licenses-json.sh --out src/assets/third-party-licenses.json",
     "prepare": "husky"
   },
   "dependencies": {
