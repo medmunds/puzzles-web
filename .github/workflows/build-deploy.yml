@@ -146,9 +146,6 @@ jobs:
           name: puzzles
           path: src/assets/puzzles
 
-      - name: Generate third-party license info
-        run: npm run generate-licenses-json
-
       - name: Build app
         env:
           BASE_URL: ${{ vars.S3_BUCKET_PREFIX == '' && '/' || format('/{0}/', vars.S3_BUCKET_PREFIX) }}

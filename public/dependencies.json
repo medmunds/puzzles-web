@@ -1,0 +1,22 @@
+{
+  "dependencies": [
+    {
+      "name": "dependencies.json development placeholder",
+      "version": "1.1.1",
+      "license": "MIT",
+      "notice": "This is a development-time placeholder\n\nIt will be replaced in production builds by rollup-plugin-license.\n\n"
+    },
+    {
+      "name": "@some-other/package",
+      "version": "2025.8",
+      "license": "BSD-3-Clause",
+      "notice": "\n\n\nThis should be last (verifies package sort order ignores punctuation).\n\n\n\n\nAlso only two <p> tags & no html injection."
+    },
+    {
+      "name": "missing-license-text",
+      "version": "3.0",
+      "license": "MIT",
+      "notice": null
+    }
+  ]
+}

@@ -10,7 +10,6 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome check --write .",
-    "generate-licenses-json": "./generate-licenses-json.sh --out src/assets/third-party-licenses.json",
     "prepare": "husky"
   },
   "dependencies": {
@@ -32,6 +31,7 @@
     "@vite-pwa/assets-generator": "^1.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
+    "rollup-plugin-license": "^3.6.0",
     "typescript": "~5.9.0",
     "vite": "^7.1.3",
     "vite-plugin-pwa": "^1.0.3"

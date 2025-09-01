@@ -1,11 +1,8 @@
 import { css, type HTMLTemplateResult, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
-import { customElement } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { licenses as thirdPartyLicenses } from "./assets/third-party-licenses.json";
 import { version } from "./catalog.ts";
-
-// Missing third-party-licenses.json? Try `npm run generate-licenses-json`.
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -24,26 +21,15 @@ const repoName = "Puzzles web app";
 // The (potentially branded) name of the PWA built from this repo
 const appName = import.meta.env.VITE_APP_NAME || repoName;
 
-// Override some specific package names
-const packageDisplayNames: Record<string, string> = {
-  "@awesome.me/webawesome": "Web Awesome",
-  "@lit-labs/observers": "Lit Labs Observers",
-  "@lit-labs/signals": "Lit Labs Signals",
-  "@lit/context": "Lit Context",
-  "@sentry/browser": "Sentry SDK (Browser)",
-  "@sentry/wasm": "Sentry SDK (WASM)",
-  "colorjs.io": "Color.js",
-  "lucide-static": "Lucide Icons",
-} as const;
-
-const packageDisplayName = (packageName: string): string => {
-  let displayName = packageDisplayNames[packageName];
-  if (displayName === undefined) {
-    // Default: convert to Title case (package names are ASCII, not arbitrary Unicode)
-    displayName = packageName.slice(0, 1).toUpperCase() + packageName.slice(1);
-  }
-  return displayName;
-};
+// Form of dependencies.json
+interface DependencyInfo {
+  dependencies: {
+    name: string;
+    version: string;
+    license: string;
+    notice: string | null;
+  }[];
+}
 
 /**
  * Split text into paragraphs at double linebreaks.
@@ -54,7 +40,8 @@ const licenseTextToHTML = (
   label?: string | HTMLTemplateResult,
 ): HTMLTemplateResult[] =>
   text
-    .split("\n\n")
+    .trim()
+    .split(/\n\n+/)
     .map((paragraph, i) => html`<p>${i === 0 ? label : nothing}${paragraph}</p>`);
 
 @customElement("about-dialog")
@@ -72,12 +59,25 @@ export class AboutDialog extends LitElement {
   }
 
   // TODO: emcc runtime licenses (hardcode?)
-  private static thirdPartyLicenses = thirdPartyLicenses
-    .map(({ name, licenseType, licenseText }) => ({
-      name: packageDisplayName(name),
-      text: licenseText ?? `${licenseType} License (no license text available)`,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  @state()
+  private dependencies?: DependencyInfo["dependencies"];
+
+  private async loadDependencies() {
+    if (!this.dependencies) {
+      // Load dependency info. This must be fetched rather than imported,
+      // because dependencies.json is generated *after* bundling
+      // (and we don't want to bundle an imported placeholder).
+      const dependenciesJson = await fetch("/dependencies.json");
+      const { dependencies } = (await dependenciesJson.json()) as DependencyInfo;
+      // Sort by name ignoring leading "@" (and other punctuation)
+      const { compare } = new Intl.Collator(undefined, {
+        sensitivity: "accent",
+        ignorePunctuation: true,
+      });
+      dependencies.sort((a, b) => compare(a.name, b.name));
+      this.dependencies = dependencies;
+    }
+  }
 
   protected override render() {
     return html`
@@ -107,7 +107,11 @@ export class AboutDialog extends LitElement {
           ${unsafeHTML(privacyHtml)}
         </wa-details>
 
-        <wa-details summary="Copyright notices and licenses" name="section">
+        <wa-details 
+            summary="Copyright notices and licenses" 
+            name="section" 
+            @wa-show=${this.loadDependencies}
+        >
           ${licenseTextToHTML(
             licenseText,
             html`<strong>${repoName /* NOT appName */}</strong><br>`,
@@ -126,11 +130,11 @@ export class AboutDialog extends LitElement {
             ${licenseTextToHTML(sgtPuzzlesLicenseText)}
           </wa-details>
 
-          ${AboutDialog.thirdPartyLicenses.map(
-            ({ name, text }) => html`
+          ${this.dependencies?.map(
+            ({ name, license, notice }) => html`
               <wa-details appearance="plain" icon-position="start" name="license">
                 <div slot="summary">${name}</div>
-                ${licenseTextToHTML(text)}
+                ${licenseTextToHTML(notice ?? `${license} license (no license text provided)`)}
               </wa-details>
             `,
           )}
