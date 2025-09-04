@@ -63,10 +63,10 @@ export default defineConfig({
       injectRegister: null, // registered in main.ts
       includeAssets: ["dependencies.json", "favicon.svg", "help/**"],
       manifest: {
-        name: "Simon Tatham’s portable puzzles collection",
+        name: process.env.VITE_APP_NAME ?? "Puzzles web app",
         short_name: "Puzzles",
-        background_color: "#f9f9f9", // --sl-neutral-50
-        theme_color: "#0284c7", // --sl-primary-600
+        background_color: "#f1f2f3", // --wa-color-neutral-95
+        theme_color: "#0071ec", // --wa-color-brand-50
       },
       registerType: "prompt",
       pwaAssets: {
