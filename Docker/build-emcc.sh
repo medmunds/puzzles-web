@@ -17,6 +17,9 @@ BUILDTYPE=${BUILDTYPE:-Release}
 # BUILD_UNFINISHED: semicolon-separated list of unfinished puzzles to also build
 #   -- e.g., BUILD_UNFINISHED="group;sokoban"
 BUILD_UNFINISHED=${BUILD_UNFINISHED:-}
+# GENERATE_SOURCE_MAPS: set to "ON" to generate source maps
+# (will disable several optimizations)
+GENERATE_SOURCE_MAPS=${GENERATE_SOURCE_MAPS:-}
 # JOBS: number of parallel builds to run, default is number of processors
 JOBS=${JOBS:-$(nproc 2>/dev/null || echo 1)}
 
@@ -41,16 +44,44 @@ echo "[INFO] Building wasm puzzles and docs..."
 BINARY_VERSION="1,${BUILDDATE:0:4},${BUILDDATE:4:2},${BUILDDATE:6:2}"
 VERSION="${BUILDDATE}.${VCSID}"
 VER="Version ${VERSION}"
-emcmake cmake -B "${BUILD_DIR}" -S "${SRC_DIR}" \
-  -DCMAKE_BUILD_TYPE="${BUILDTYPE}" \
-  -DWEB_APP=true \
-  -DCMAKE_C_FLAGS="-DVER='\"${VER}\"' -DVERSIONINFO_BINARY_VERSION='${BINARY_VERSION}'" \
-  -DPUZZLES_ENABLE_UNFINISHED="${BUILD_UNFINISHED}"
 
+CMAKE_ARGS=(
+  -B "${BUILD_DIR}"
+  -S "${SRC_DIR}"
+  -DCMAKE_BUILD_TYPE="${BUILDTYPE}"
+  -DWEB_APP=true
+  -DCMAKE_C_FLAGS="-DVER='\"${VER}\"' -DVERSIONINFO_BINARY_VERSION='${BINARY_VERSION}'"
+  -DPUZZLES_ENABLE_UNFINISHED="${BUILD_UNFINISHED}"
+)
+
+if [[ "${GENERATE_SOURCE_MAPS}" == "ON" ]]; then
+  CMAKE_ARGS+=(-DGENERATE_SOURCE_MAPS=ON)
+  echo "[INFO] Source maps will be generated for license extraction"
+fi
+
+emcmake cmake "${CMAKE_ARGS[@]}"
 (
   cd "${BUILD_DIR}"
   make -j"${JOBS}" VERBOSE="${VERBOSE:-}"
 )
+
+# Extract source file list from source maps if they were generated
+if ls "${BUILD_DIR}"/*.map 1> /dev/null 2>&1; then
+  echo "[INFO] Extracting source file list from source maps..."
+  jq -r '.sources[]' "${BUILD_DIR}"/*.map \
+    | sed -E -e 's=^(\.\./)+=/=' \
+             -e's=^/emsdk/(emscripten|lib)=/emsdk/upstream/\1=' \
+    | grep -v "/puzzles" \
+    | sort -u \
+    > "${BUILD_DIR}/source-file-list.txt"
+fi
+
+if [[ -f "${BUILD_DIR}/source-file-list.txt" ]]; then
+  echo "[INFO] Generating dependencies.json"
+  python3 "${SRC_DIR}/emcc-dependency-info.py" \
+    --sources "${BUILD_DIR}/source-file-list.txt" \
+    --output "${BUILD_DIR}/dependencies.json"
+fi
 
 echo "[INFO] Building catalog.json..."
 jq --arg version "$VERSION" -R -s '
@@ -115,3 +146,9 @@ fi
 shopt -u nullglob
 
 cp "${BUILD_DIR}/catalog.json" "${DIST_DIR_WASM}/" || echo "[WARN] No catalog.json found."
+if [[ -f "${BUILD_DIR}/source-file-list.txt" ]]; then
+  cp "${BUILD_DIR}/source-file-list.txt" "${DIST_DIR_WASM}/"
+fi
+if [[ -f "${BUILD_DIR}/dependencies.json" ]]; then
+  cp "${BUILD_DIR}/dependencies.json" "${DIST_DIR_WASM}/"
+fi

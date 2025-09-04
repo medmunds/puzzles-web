@@ -61,12 +61,16 @@ function(set_platform_gui_target_properties TARGET)
 endfunction()
 
 function(set_platform_puzzle_target_properties NAME TARGET)
+    target_compile_options(${TARGET} PRIVATE
+        $<$<BOOL:${GENERATE_SOURCE_MAPS}>:-gsource-map>
+    )
     target_link_options(${TARGET} PRIVATE
         # Generate TypeScript .d.ts files for emcc exports
         "--emit-tsd" "${NAME}.d.ts"
         # Generate source maps for Debug builds
         $<$<CONFIG:Debug>:-gseparate-dwarf>
         $<$<CONFIG:Debug>:-gsource-map=inline>
+        $<$<BOOL:${GENERATE_SOURCE_MAPS}>:-gsource-map>
     )
 endfunction()
 

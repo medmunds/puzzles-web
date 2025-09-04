@@ -25,24 +25,42 @@ const appName = import.meta.env.VITE_APP_NAME || repoName;
 interface DependencyInfo {
   dependencies: {
     name: string;
-    version: string;
-    license: string;
+    version?: string;
+    license: string | null;
     notice: string | null;
   }[];
 }
 
 /**
- * Split text into paragraphs at double linebreaks.
+ * Format text as html:
+ * - Split into <p> at double NLs (but ignore single NL as plain text wrapping)
+ * - Convert CR to <br> (special convention for dependencies.json from puzzles)
+ * - Omit ----- or ===== (and longer sequences)
  * Optional label is inserted at the start of the first paragraph if provided.
  */
-const licenseTextToHTML = (
+function licenseTextToHTML(
   text: string,
   label?: string | HTMLTemplateResult,
-): HTMLTemplateResult[] =>
-  text
-    .trim()
-    .split(/\n\n+/)
-    .map((paragraph, i) => html`<p>${i === 0 ? label : nothing}${paragraph}</p>`);
+): HTMLTemplateResult[] {
+  const result: HTMLTemplateResult[] = [];
+  const divider = /^\s*(?:={5,}|-{5,})\s*$/;
+  let firstParagraph = true;
+  for (const paragraph of text.trim().split("\n\n")) {
+    if (divider.test(paragraph)) {
+      // (It seems more readable to just omit the <hr>.)
+      // result.push(html`<wa-divider></wa-divider>`);
+      continue;
+    }
+    const lines = paragraph
+      .replace(/[-=]{5,}/g, "")
+      .split("\r")
+      .map((line, i) => (i > 0 ? html`<br>${line}` : line));
+    result.push(html`<p>${firstParagraph ? label : nothing}${lines}</p>`);
+    firstParagraph = false;
+  }
+
+  return result;
+}
 
 @customElement("about-dialog")
 export class AboutDialog extends LitElement {
@@ -67,8 +85,21 @@ export class AboutDialog extends LitElement {
       // Load dependency info. This must be fetched rather than imported,
       // because dependencies.json is generated *after* bundling
       // (and we don't want to bundle an imported placeholder).
-      const dependenciesJson = await fetch("/dependencies.json");
-      const { dependencies } = (await dependenciesJson.json()) as DependencyInfo;
+      async function loadJson(href: string): Promise<DependencyInfo["dependencies"]> {
+        const response = await fetch(href);
+        const { dependencies } = (await response.json()) as DependencyInfo;
+        return dependencies;
+      }
+
+      const dependencies = (
+        await Promise.all([
+          // package.json dependencies, from rollup-plugin-license via vite:
+          loadJson("/dependencies.json"),
+          // Emscripten/WASM dependencies, from puzzles/emcc-dependency-info.py:
+          loadJson(new URL("./assets/puzzles/dependencies.json", import.meta.url).href),
+        ])
+      ).flat();
+
       // Sort by name ignoring leading "@" (and other punctuation)
       const { compare } = new Intl.Collator(undefined, {
         sensitivity: "accent",
