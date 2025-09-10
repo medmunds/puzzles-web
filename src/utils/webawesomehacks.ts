@@ -6,7 +6,6 @@ import WaDropdown from "@awesome.me/webawesome/dist/components/dropdown/dropdown
 import WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
 import WaRadio from "@awesome.me/webawesome/dist/components/radio/radio.js";
 import WaRadioGroup from "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
-import WaScroller from "@awesome.me/webawesome/dist/components/scroller/scroller.js";
 import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
 import WaSlider from "@awesome.me/webawesome/dist/components/slider/slider.js";
 import WaTextarea from "@awesome.me/webawesome/dist/components/textarea/textarea.js";
@@ -28,74 +27,6 @@ function disableWaChangedInUpdateWarnings() {
   WaSelect.disableWarning?.("change-in-update");
   WaSlider.disableWarning?.("change-in-update");
   WaTextarea.disableWarning?.("change-in-update");
-}
-
-/**
- * wa-button and wa-checkbox lose spacing between elements in their
- * default slot (e.g., `<wa-button>This is <b>bold</b></wa-button>`
- * renders as "This isbold"). Override their styles to fix.
- *
- * https://github.com/shoelace-style/webawesome/issues/1272
- * https://github.com/shoelace-style/webawesome/pull/1274
- */
-function fixWaButtonAndCheckboxLabelLayout() {
-  WaButton.elementStyles.push(css`
-    :not(.is-icon-button) .label {
-      display: inline-block;
-    }
-  `);
-  WaCheckbox.elementStyles.push(css`
-    [part~='label'] {
-      display: inline-block;
-    }
-  `);
-}
-
-/**
- * wa-dropdown doesn't handle content that is too large to fit.
- * Monkey patch its wa-popup to enable auto-size="both", which calculates
- * available size and sets css custom properties for max width and height.
- * (Shoelace sl-dropdown handled this the same way via sl-menu.)
- *
- * https://github.com/shoelace-style/webawesome/issues/1268
- */
-function fixWaDropdownOverflow() {
-  const oldFirstUpdated = WaDropdown.prototype.firstUpdated;
-  WaDropdown.prototype.firstUpdated = function (this: WaDropdown) {
-    const popup = this.shadowRoot?.querySelector("wa-popup");
-    if (!popup) {
-      throw new Error("fixWaDropdownOverflow monkeypatch is no longer valid");
-    }
-    if (popup.autoSize !== undefined) {
-      // Presumably it's been fixed
-      throw new Error("fixWaDropdownOverflow monkeypatch is no longer necessary");
-    }
-    popup.autoSize = "both";
-    return oldFirstUpdated.call(this);
-  };
-  WaDropdown.elementStyles.push(
-    css`
-      #menu {
-        overflow: auto;
-        max-width: var(--auto-size-available-width) !important;
-        max-height: var(--auto-size-available-height) !important;
-      }
-    `,
-  );
-}
-
-/**
- * Fix problem where wa-scroller shadows are below form controls.
- * https://github.com/shoelace-style/webawesome/issues/1326
- */
-function fixWaScrollerShadowZIndex() {
-  WaScroller.elementStyles.push(css`
-    #start-shadow, #end-shadow {
-      /* Move shadows above form controls. 
-       * (wa-radio[checked] uses z-index 1.) */
-      z-index: 2;
-    }
-  `);
 }
 
 /**
@@ -207,9 +138,6 @@ function flipWaDropdownCaretForTopPlacement() {
 
 export function installWebAwesomeHacks() {
   disableWaChangedInUpdateWarnings();
-  fixWaButtonAndCheckboxLabelLayout();
-  fixWaDropdownOverflow();
-  fixWaScrollerShadowZIndex();
   enableCustomWaDialogAnimations();
   rotateWaButtonCaretWhenExpanded();
   flipWaDropdownCaretForTopPlacement();
