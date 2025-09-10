@@ -4,9 +4,7 @@ import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import type { AppRouter } from "./app-router.ts";
 import { type PuzzleData, puzzleDataMap } from "./catalog.ts";
-import type { HelpViewer } from "./help-viewer.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
-import type { SettingsDialog } from "./settings-dialog.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { notifyError } from "./utils/errors.ts";
@@ -17,10 +15,8 @@ import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
-import "./about-dialog.ts";
-import "./enter-gameid-dialog.ts";
+import "./dynamic-content.ts";
 import "./head-matter.ts";
-import "./help-viewer.ts";
 import "./puzzle/puzzle-checkpoints.ts";
 import "./puzzle/puzzle-context.ts";
 import "./puzzle/puzzle-game-menu.ts";
@@ -28,9 +24,6 @@ import "./puzzle/puzzle-keys.ts";
 import "./puzzle/puzzle-preset-menu.ts";
 import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
-import "./saved-game-dialogs.ts";
-import "./settings-dialog.ts";
-import "./share-dialog.ts";
 
 @customElement("puzzle-screen")
 export class PuzzleScreen extends SignalWatcher(LitElement) {
@@ -55,11 +48,8 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   @state()
   private puzzleLoaded = false;
 
-  @query("help-viewer", true)
-  private helpPanel?: HelpViewer;
-
-  @query("settings-dialog", true)
-  private preferencesDialog?: SettingsDialog;
+  @query("dynamic-content")
+  private dynamicContent?: HTMLElementTagNameMap["dynamic-content"];
 
   /** If the current game has been saved or loaded, its filename. */
   savedFilename?: string;
@@ -111,10 +101,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     const iconUrl = new URL(
       `./assets/icons/${this.puzzleType}-64d8.png`,
       import.meta.url,
-    ).href;
-    const helpUrl = new URL(
-      `help/${this.puzzleType}-overview.html`,
-      this.router?.baseUrl,
     ).href;
     const otherPuzzlesUrl = this.router?.reverse(this.router.defaultRoute)?.href;
 
@@ -179,7 +165,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
               <wa-dropdown-item value="redraw">Redraw puzzle</wa-dropdown-item>
             </puzzle-game-menu>
             <puzzle-preset-menu></puzzle-preset-menu>
-            <wa-button appearance="filled outlined" href=${helpUrl} @click=${this.showHelp}>
+            <wa-button appearance="filled outlined" href=${this.helpUrl} @click=${this.showHelp}>
               <wa-icon slot="start" name="help"></wa-icon>
               Help
             </wa-button>
@@ -229,23 +215,8 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           </wa-button>
         </puzzle-end-notification>
 
-        <about-dialog></about-dialog>
-        <settings-dialog puzzle-name=${this.puzzleData.name}></settings-dialog>
-        <share-dialog puzzle-name=${this.puzzleData.name} .router=${this.router}></share-dialog>
-        <load-game-dialog 
-            puzzleId=${this.puzzleType}
-            @load-game-import=${this.handleImportGame}
-            @load-game-load=${this.handleLoadGame}
-        ></load-game-dialog>
-        <save-game-dialog
-            puzzleId=${this.puzzleType}
-            @save-game-export=${this.handleExportGame}
-            @save-game-save=${this.handleSaveGame}
-        ></save-game-dialog>
-        <enter-gameid-dialog puzzle-name=${this.puzzleData.name}></enter-gameid-dialog>
+        <dynamic-content></dynamic-content>
       </puzzle-context>
-
-      <help-viewer src=${helpUrl} label=${`${this.puzzleData.name} Help`}></help-viewer>
     `;
   }
 
@@ -256,24 +227,22 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         await this.showShareDialog();
         break;
       case "load":
-        this.showLoadGameDialog();
+        await this.showLoadGameDialog();
         break;
       case "save":
         await this.showSaveGameDialog();
         break;
       case "gameid":
-        this.showEnterGameIDDialog();
+        await this.showEnterGameIDDialog();
         break;
       case "about":
-        this.showAboutDialog();
+        await this.showAboutDialog();
         break;
       case "catalog":
         this.router?.navigate(this.router.defaultRoute);
         break;
       case "preferences":
-        if (this.preferencesDialog) {
-          await this.preferencesDialog.show();
-        }
+        await this.showSettingsDialog();
         break;
       case "redraw":
         // TODO: Remove the "redraw" command (added for debugging Safari)
@@ -286,15 +255,30 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   }
 
   private async showShareDialog() {
-    const dialog = this.shadowRoot?.querySelector("share-dialog");
+    await import("./share-dialog.ts");
+    const dialog = await this.dynamicContent?.addItem({
+      tagName: "share-dialog",
+      render: () =>
+        html`<share-dialog puzzle-name=${this.puzzleData?.name} .router=${this.router}></share-dialog>`,
+    });
     if (dialog && !dialog.open) {
       await dialog.reset();
       dialog.open = true;
     }
   }
 
-  private showLoadGameDialog() {
-    const dialog = this.shadowRoot?.querySelector("load-game-dialog");
+  private async showLoadGameDialog() {
+    await import("./saved-game-dialogs.ts");
+    const dialog = await this.dynamicContent?.addItem({
+      tagName: "load-game-dialog",
+      render: () => html`
+        <load-game-dialog
+            puzzleId=${this.puzzleType}
+            @load-game-import=${this.handleImportGame}
+            @load-game-load=${this.handleLoadGame}
+        ></load-game-dialog>
+      `,
+    });
     if (dialog && !dialog.open) {
       const puzzle = this.shadowRoot?.querySelector("puzzle-context")?.puzzle;
       dialog.gameInProgress = (puzzle?.totalMoves ?? 0) > 0;
@@ -303,7 +287,17 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   }
 
   private async showSaveGameDialog() {
-    const dialog = this.shadowRoot?.querySelector("save-game-dialog");
+    await import("./saved-game-dialogs.ts");
+    const dialog = await this.dynamicContent?.addItem({
+      tagName: "save-game-dialog",
+      render: () => html`
+        <save-game-dialog
+            puzzleId=${this.puzzleType}
+            @save-game-export=${this.handleExportGame}
+            @save-game-save=${this.handleSaveGame}
+        ></save-game-dialog>
+      `,
+    });
     if (dialog && !dialog.open) {
       dialog.filename =
         this.savedFilename ?? (await savedGames.makeUntitledFilename(this.puzzleType));
@@ -311,18 +305,41 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     }
   }
 
-  private showEnterGameIDDialog() {
-    const dialog = this.shadowRoot?.querySelector("enter-gameid-dialog");
+  private async showEnterGameIDDialog() {
+    await import("./enter-gameid-dialog.ts");
+    const dialog = await this.dynamicContent?.addItem({
+      tagName: "enter-gameid-dialog",
+      render: () => html`
+        <enter-gameid-dialog puzzle-name=${this.puzzleData?.name}></enter-gameid-dialog>
+      `,
+    });
     if (dialog && !dialog.open) {
       dialog.reset();
       dialog.open = true;
     }
   }
 
-  private showAboutDialog() {
-    const dialog = this.shadowRoot?.querySelector("about-dialog");
+  private async showAboutDialog() {
+    await import("./about-dialog.ts");
+    const dialog = await this.dynamicContent?.addItem({
+      tagName: "about-dialog",
+      render: () => html`<about-dialog></about-dialog>`,
+    });
     if (dialog && !dialog.open) {
       dialog.open = true;
+    }
+  }
+
+  private async showSettingsDialog() {
+    await import("./settings-dialog.ts");
+    const dialog = await this.dynamicContent?.addItem({
+      tagName: "settings-dialog",
+      render: () => html`
+        <settings-dialog puzzle-name=${this.puzzleData?.name}></settings-dialog>
+      `,
+    });
+    if (dialog && !dialog.open) {
+      await dialog.show();
     }
   }
 
@@ -402,9 +419,20 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     }
   }
 
-  private showHelp(event: MouseEvent) {
+  private get helpUrl(): string | undefined {
+    return new URL(`help/${this.puzzleType}-overview.html`, this.router?.baseUrl).href;
+  }
+
+  private async showHelp(event: UIEvent) {
     event.preventDefault();
-    this.helpPanel?.show();
+    await import("./help-viewer.ts");
+    const helpViewer = await this.dynamicContent?.addItem({
+      tagName: "help-viewer",
+      render: () => html`
+        <help-viewer src=${this.helpUrl} label=${`${this.puzzleData?.name} Help`}></help-viewer>
+      `,
+    });
+    helpViewer?.show();
   }
 
   private async handleChangeType() {
