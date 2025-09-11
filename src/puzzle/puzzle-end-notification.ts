@@ -112,10 +112,10 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   protected override async updated() {
     // Run the wa-dialog's "show" animation after it's in the DOM.
     // (Including the "open" attribute at render time skips the animation.)
-    if (this.dialog) {
-      // Wait for any game animations/flashes to finish before showing dialog
-      await sleep(10); // ensure timer start notification arrives from worker
-      await Promise.all([this.updateComplete, this.puzzle?.timerComplete]);
+    // Wait for any game animations/flashes to finish before showing dialog
+    await sleep(10); // ensure timer start notification arrives from worker
+    await Promise.all([this.updateComplete, this.puzzle?.timerComplete]);
+    if (this.isConnected && this.dialog) {
       this.dialog.open = true;
     }
   }
