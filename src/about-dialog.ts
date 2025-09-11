@@ -76,14 +76,13 @@ export class AboutDialog extends LitElement {
     }
   }
 
-  // TODO: emcc runtime licenses (hardcode?)
   @state()
   private dependencies?: DependencyInfo["dependencies"];
 
   private async loadDependencies() {
     if (!this.dependencies) {
       // Load dependency info. This must be fetched rather than imported,
-      // because dependencies.json is generated *after* bundling
+      // because dependencies-app.json is generated *after* bundling
       // (and we don't want to bundle an imported placeholder).
       async function loadJson(href: string): Promise<DependencyInfo["dependencies"]> {
         const response = await fetch(href);
@@ -94,7 +93,7 @@ export class AboutDialog extends LitElement {
       const dependencies = (
         await Promise.all([
           // package.json dependencies, from rollup-plugin-license via vite:
-          loadJson("/dependencies.json"),
+          loadJson("/dependencies-app.json"),
           // Emscripten/WASM dependencies, from puzzles/emcc-dependency-info.py:
           loadJson(new URL("./assets/puzzles/dependencies.json", import.meta.url).href),
         ])

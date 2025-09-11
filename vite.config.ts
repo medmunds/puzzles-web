@@ -27,7 +27,7 @@ export default defineConfig({
     license({
       thirdParty: {
         output: {
-          file: path.join(__dirname, "dist", "dependencies.json"),
+          file: path.join(__dirname, "dist", "dependencies-app.json"),
           template(deps) {
             const dependencies = deps.map(
               ({ name, version, license, licenseText, noticeText }) => {
