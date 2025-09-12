@@ -106,7 +106,7 @@ export class PuzzleViewInteractive extends PuzzleView {
   protected secondaryButtonFeedback() {
     if (this.secondaryButtonAudioVolume > 0) {
       const volume = clamp(0, this.secondaryButtonAudioVolume, 100);
-      audioClick({ volume }).then(/* nothing */);
+      void audioClick({ volume });
     }
   }
 

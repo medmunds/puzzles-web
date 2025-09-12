@@ -1,8 +1,12 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
   "linter": {
     "rules": {
       "recommended": true,
+      "nursery": {
+        "noFloatingPromises": "error",
+        "noMisusedPromises": "error"
+      },
       "style": {
         "noParameterAssign": "off"
       }

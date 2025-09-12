@@ -59,7 +59,7 @@ export function installErrorHandlers() {
       const errorMessage = `${message}${
         filename ? ` at ${filename}:${lineno}:${colno}` : ""
       }`;
-      notifyError(errorMessage);
+      void notifyError(errorMessage);
     } catch (error) {
       console.error("Error in onerror handler", error);
     }
@@ -74,7 +74,7 @@ export function installErrorHandlers() {
           : event.reason,
       );
       const errorMessage = `Unhandled Promise Rejection: ${description}`;
-      notifyError(errorMessage);
+      void notifyError(errorMessage);
     } catch (error) {
       console.error("Error in onunhandledrejection handler", error);
     }
@@ -113,7 +113,7 @@ const isWorkerUnhandledErrorMessage = (
 const handleWorkerMessage = (event: MessageEvent<unknown>) => {
   if (isWorkerUnhandledErrorMessage(event)) {
     console.error(event.data.message, event.data.error);
-    notifyError(String(event.data.message));
+    void notifyError(String(event.data.message));
   }
 };
 

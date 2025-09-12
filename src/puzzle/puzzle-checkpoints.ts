@@ -207,11 +207,11 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
     `;
   }
 
-  private handleSelectCheckpoint(event: CustomEvent<{ item: WaDropdownItem }>) {
+  private async handleSelectCheckpoint(event: CustomEvent<{ item: WaDropdownItem }>) {
     const value = event.detail.item.value;
     const checkpoint = Number.parseInt(value, 10);
     if (Number.isFinite(checkpoint)) {
-      this.puzzle?.goToCheckpoint(checkpoint);
+      await this.puzzle?.goToCheckpoint(checkpoint);
     }
   }
 

@@ -128,7 +128,7 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
   }
 
   private async _unloadPuzzle() {
-    this._puzzle?.delete();
+    await this._puzzle?.delete();
     this._puzzle = undefined;
   }
 

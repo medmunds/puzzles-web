@@ -1,4 +1,5 @@
 import { type Signal, signal } from "@lit-labs/signals";
+import * as Sentry from "@sentry/browser";
 import type { ConfigValues } from "../puzzle/types.ts";
 import { equalSet } from "../utils/equal.ts";
 import { type CommonSettings, db, type PuzzleId, type PuzzleSettings } from "./db.ts";
@@ -71,13 +72,12 @@ class Settings {
   }
 
   // Accessors for reactive signals
-  // TODO: promises are being dropped in setters
   get favoritePuzzles(): ReadonlySet<PuzzleId> {
     return this._favoritePuzzles.get();
   }
   set favoritePuzzles(value: ReadonlySet<PuzzleId>) {
     this._favoritePuzzles.set(value);
-    this.saveCommonSetting("favoritePuzzles", [...value]);
+    this.saveCommonSettingOrLogError("favoritePuzzles", [...value]);
   }
 
   isFavoritePuzzle(puzzleId: PuzzleId): boolean {
@@ -101,7 +101,7 @@ class Settings {
   }
   set showUnfinishedPuzzles(value: boolean) {
     this._showUnfinishedPuzzles.set(value);
-    this.saveCommonSetting("showUnfinishedPuzzles", value);
+    this.saveCommonSettingOrLogError("showUnfinishedPuzzles", value);
   }
 
   get rightButtonLongPress(): boolean {
@@ -109,7 +109,7 @@ class Settings {
   }
   set rightButtonLongPress(value: boolean) {
     this._rightButtonLongPress.set(value);
-    this.saveCommonSetting("rightButtonLongPress", value);
+    this.saveCommonSettingOrLogError("rightButtonLongPress", value);
   }
 
   get rightButtonTwoFingerTap(): boolean {
@@ -117,7 +117,7 @@ class Settings {
   }
   set rightButtonTwoFingerTap(value: boolean) {
     this._rightButtonTwoFingerTap.set(value);
-    this.saveCommonSetting("rightButtonTwoFingerTap", value);
+    this.saveCommonSettingOrLogError("rightButtonTwoFingerTap", value);
   }
 
   get rightButtonAudioVolume(): number {
@@ -125,7 +125,7 @@ class Settings {
   }
   set rightButtonAudioVolume(value: number) {
     this._rightButtonAudioVolume.set(value);
-    this.saveCommonSetting("rightButtonAudioVolume", value);
+    this.saveCommonSettingOrLogError("rightButtonAudioVolume", value);
   }
 
   get rightButtonHoldTime(): number {
@@ -133,7 +133,7 @@ class Settings {
   }
   set rightButtonHoldTime(value: number) {
     this._rightButtonHoldTime.set(value);
-    this.saveCommonSetting("rightButtonHoldTime", value);
+    this.saveCommonSettingOrLogError("rightButtonHoldTime", value);
   }
 
   get rightButtonDragThreshold(): number {
@@ -141,7 +141,7 @@ class Settings {
   }
   set rightButtonDragThreshold(value: number) {
     this._rightButtonDragThreshold.set(value);
-    this.saveCommonSetting("rightButtonDragThreshold", value);
+    this.saveCommonSettingOrLogError("rightButtonDragThreshold", value);
   }
 
   get maximizePuzzleSize(): number {
@@ -149,7 +149,7 @@ class Settings {
   }
   set maximizePuzzleSize(value: number) {
     this._maximizePuzzleSize.set(value);
-    this.saveCommonSetting("maximizePuzzleSize", value);
+    this.saveCommonSettingOrLogError("maximizePuzzleSize", value);
   }
 
   get showStatusbar(): boolean {
@@ -157,7 +157,7 @@ class Settings {
   }
   set showStatusbar(value: boolean) {
     this._showStatusbar.set(value);
-    this.saveCommonSetting("showStatusbar", value);
+    this.saveCommonSettingOrLogError("showStatusbar", value);
   }
 
   // Settings methods
@@ -185,6 +185,17 @@ class Settings {
         data: updated,
       });
     }
+  }
+
+  // Ugh. Non-async version of above, for use in property setters.
+  private saveCommonSettingOrLogError<K extends keyof CommonSettings>(
+    name: K,
+    value: CommonSettings[K],
+  ) {
+    this.saveCommonSetting(name, value).catch((error: Error) => {
+      console.error(error);
+      Sentry.captureException(error);
+    });
   }
 
   private async getPuzzleSettings(

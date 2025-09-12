@@ -36,7 +36,7 @@ export class AppRouter extends LitElement {
     this.initState(); // initial route
     if (this.route?.name === "puzzle") {
       // Get a head start on the lazy-loaded puzzle-screen component.
-      import("./puzzle-screen.ts");
+      void import("./puzzle-screen.ts");
     }
   }
 
@@ -258,7 +258,7 @@ export class AppRouter extends LitElement {
         }
         // Lazy load the puzzle-screen component when needed.
         // TODO: use lit task for loading
-        import("./puzzle-screen.ts");
+        void import("./puzzle-screen.ts");
         return html`
           <puzzle-screen 
               .router=${this} 

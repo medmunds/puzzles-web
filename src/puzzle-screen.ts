@@ -469,7 +469,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           // Don't try those again
           await settings.setParams(puzzle.puzzleId, undefined);
         } else {
-          notifyError(`Ignoring invalid type= in URL (${error})`).then();
+          void notifyError(`Ignoring invalid type= in URL (${error})`);
         }
       }
     }
@@ -488,7 +488,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         hasGame = true;
         this.autoSaveId = savedGames.makeAutoSaveId();
       } else {
-        notifyError(`Ignoring invalid id= in URL (${error})`).then();
+        void notifyError(`Ignoring invalid id= in URL (${error})`).then();
       }
     }
 
