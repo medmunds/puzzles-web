@@ -93,7 +93,7 @@ export class AboutDialog extends LitElement {
       const dependencies = (
         await Promise.all([
           // package.json dependencies, from rollup-plugin-license via vite:
-          loadJson("/dependencies-app.json"),
+          loadJson(`${import.meta.env.BASE_URL}dependencies-app.json`),
           // Emscripten/WASM dependencies, from puzzles/emcc-dependency-info.py:
           loadJson(new URL("./assets/puzzles/dependencies.json", import.meta.url).href),
         ])
