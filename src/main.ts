@@ -1,4 +1,3 @@
-/// <reference types="vite-plugin-pwa/vanillajs" />
 import * as Sentry from "@sentry/browser";
 import { wasmIntegration } from "@sentry/wasm";
 
@@ -23,9 +22,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   });
 }
 
-import { registerSW } from "virtual:pwa-register";
 import { installErrorHandlers } from "./utils/errors.ts";
-import { installWebAwesomeHacks } from "./utils/webawesomehacks.ts";
 
 if (new URL(window.location.href).searchParams.has("console")) {
   // Inject an in-document emulated console
@@ -52,20 +49,15 @@ if (new URL(window.location.href).searchParams.has("console")) {
   installErrorHandlers();
 }
 
+import { installWebAwesomeHacks } from "./utils/webawesomehacks.ts";
+
 installWebAwesomeHacks();
 
 // Register components (that are used here or directly by index.html)
 import "./icons";
 import "./app-router";
 
-// Install PWA service worker (from vite-pwa)
-const updateSW = registerSW({
-  async onNeedRefresh() {
-    console.log("Refreshing app");
-    await updateSW(/* reloadPage= */ true);
-  },
-  onOfflineReady() {
-    console.log("App is ready for offline use");
-    // notify("Ready for offline use");
-  },
-});
+// Install PWA service worker
+import { pwaManager } from "./utils/pwa.ts";
+
+pwaManager.registerSW();

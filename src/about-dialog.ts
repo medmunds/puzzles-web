@@ -3,6 +3,7 @@ import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { version } from "./catalog.ts";
+import { pwaManager } from "./utils/pwa.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -10,6 +11,7 @@ import "@awesome.me/webawesome/dist/components/details/details.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
+import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
 
 // Raw content
 import licenseText from "../LICENSE?raw";
@@ -77,6 +79,9 @@ export class AboutDialog extends LitElement {
   }
 
   @state()
+  private updateAvailable: boolean | null = null; // null means check in progress
+
+  @state()
   private dependencies?: DependencyInfo["dependencies"];
 
   private async loadDependencies() {
@@ -111,21 +116,21 @@ export class AboutDialog extends LitElement {
 
   protected override render() {
     return html`
-      <wa-dialog light-dismiss>
+      <wa-dialog light-dismiss @wa-show=${this.handleDialogShow}>
         <div slot="label">About <cite>${appName}</cite></div>
         
         <div class="panel">
           <p>
-            <cite>${appName}</cite>
-            version <span class="version">${version}</span>
-          </p>
-          <p>
-            A web adaptation of 
+            A web adaptation of
             <cite>${this.renderOffsiteLink(
               "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/",
               "Simon Tatham’s Portable Puzzles Collection",
             )}</cite>
             by Mike Edmunds
+          </p>
+          <p>
+            Version <span class="version">${version}</span><br>
+            ${this.renderUpdateInfo()}
           </p>
           <p>
             Source code: 
@@ -184,6 +189,43 @@ export class AboutDialog extends LitElement {
         <span class="nowrap">${lastWord}<wa-icon 
           name="offsite-link" label="Opens in new tab"></wa-icon></span></a>
     `;
+  }
+
+  private renderUpdateInfo() {
+    if (this.updateAvailable === null) {
+      return html`<wa-spinner></wa-spinner> Checking for update&hellip;`;
+    }
+
+    if (this.updateAvailable) {
+      return html`
+        Update available: 
+        <a href="#" @click=${this.installUpdate}>install now</a>
+      `;
+    }
+
+    return html`
+      Up to date 
+      (<a href="#" @click=${this.checkForUpdate}>check again</a>)
+    `;
+  }
+
+  private async handleDialogShow(event: Event) {
+    // Check for updates when the dialog is shown.
+    // (The wa-details elements also emit wa-show, and we don't want to check
+    // for updates when those are expanded.)
+    if (event.target instanceof HTMLElement && event.target.localName === "wa-dialog") {
+      await this.checkForUpdate();
+    }
+  }
+
+  private async checkForUpdate() {
+    this.updateAvailable = null;
+    this.updateAvailable = await pwaManager.checkForUpdate();
+  }
+
+  private async installUpdate() {
+    await pwaManager.installUpdate();
+    this.updateAvailable = false;
   }
 
   static styles = css`
@@ -270,6 +312,10 @@ export class AboutDialog extends LitElement {
     wa-icon[name="offsite-link"] {
       margin-inline-start: 0.1em;
       vertical-align: -2px; /* visual baseline alignment*/
+    }
+    
+    wa-spinner {
+      vertical-align: -2px; /* visual text-middle alignment*/
     }
     
     .version {
