@@ -153,7 +153,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     .single {
       /* Make all single-char buttons the same width, for uniform layout.
        * (This cheats the horizontal padding just a bit.) */
-      width: var(--wa-input-height-medium);
+      width: var(--wa-form-control-height);
     }
     
     wa-button {

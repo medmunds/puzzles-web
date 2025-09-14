@@ -160,14 +160,14 @@ export class AboutDialog extends LitElement {
               (expand each item to view its copyright and license terms)</p>
           </div>
           
-          <wa-details appearance="plain" icon-position="start" name="license">
+          <wa-details appearance="plain" icon-placement="start" name="license">
             <div slot="summary">Simon Tatham’s Portable Puzzles Collection</div>
             ${licenseTextToHTML(sgtPuzzlesLicenseText)}
           </wa-details>
 
           ${this.dependencies?.map(
             ({ name, license, notice }) => html`
-              <wa-details appearance="plain" icon-position="start" name="license">
+              <wa-details appearance="plain" icon-placement="start" name="license">
                 <div slot="summary">${name}</div>
                 ${licenseTextToHTML(notice ?? `${license} license (no license text provided)`)}
               </wa-details>
@@ -261,7 +261,8 @@ export class AboutDialog extends LitElement {
       }
       &::part(content) {
         padding-block: 0;
-        padding-inline-start: calc(1em + var(--spacing));
+        /* caret (wa-icon) width = 1.25em */
+        padding-inline-start: calc(1.25em + var(--spacing));
         padding-inline-end: 0;
       }
     }

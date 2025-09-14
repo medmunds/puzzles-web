@@ -103,5 +103,6 @@ registerIconLibrary("default", {
   mutator: (svg) => {
     // wa-icon css has `svg { fill: currentColor; }` -- need to reset that
     svg.style.fill = "none";
+    svg.style.stroke = "currentColor";
   },
 });

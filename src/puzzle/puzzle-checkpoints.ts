@@ -270,7 +270,7 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
         display: block;
         content: "";
         position: absolute;
-        inset: 0.75em calc(1.5em - 6px); /* padding + icon-width/2 = 1em + 1em/2 */
+        inset: 0.75em calc(1.625em - 7px); /* padding + icon-width/2 = 1em + 1.25em/2 */
 
         border-image-source: var(--timeline-arrow-image);
         border-image-slice: 25% 0 25% 100%;
@@ -284,7 +284,7 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
       wa-icon {
         position: relative;
         z-index: 2; /* above the timeline */
-        min-width: 1em; /* for empty icons */
+        min-width: 1.25em; /* for empty icons */
       }
       
       wa-dropdown-item {
@@ -347,7 +347,7 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
         
         border-image-source: var(--timeline-dot-image);
         border-image-slice: 0 0 0 100%;
-        border-image-outset: 0 1.5px;
+        border-image-outset: 0 0.5px;
         border-image-repeat: round;
         border-inline-start: var(--dot-size) solid transparent;
         
