@@ -307,6 +307,7 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
        * the other buttons to avoid partly-disabled border appearance. */
       &::part(base) {
         gap: 0;
+        flex-wrap: nowrap;
       }
       wa-button[slot="trigger"]::part(base) {
         margin-inline: calc(-1 * var(--wa-border-width-s));
@@ -411,7 +412,7 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
       align-items: center;
 
       small {
-        padding: 0.25em;
+        padding: 0.25em 0.5em;
       }
 
       &::before {
