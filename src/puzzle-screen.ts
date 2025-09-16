@@ -637,9 +637,14 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
     .toolbar {
       display: flex;
+      width: 100%;
       justify-content: flex-start;
       align-items: baseline;
       gap: var(--wa-space-s);
+      
+      > *:last-child {
+        margin-inline-start: auto;
+      }
     }
 
     puzzle-preset-menu {
