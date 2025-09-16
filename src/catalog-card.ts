@@ -196,6 +196,7 @@ export class CatalogCard extends LitElement {
 
     footer {
       display: flex;
+      width: 100%;
       justify-content: space-between;
       align-items: center;
       gap: var(--wa-space-l);
