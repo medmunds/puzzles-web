@@ -2,7 +2,7 @@ import type WaDropdownItem from "@awesome.me/webawesome/dist/components/dropdown
 import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, query, state } from "lit/decorators.js";
 import timelineArrowSvg from "../assets/timeline-arrow.svg";
 import timelineDotSvg from "../assets/timeline-dot.svg";
 import { puzzleContext } from "./contexts.ts";
@@ -10,16 +10,20 @@ import type { Puzzle } from "./puzzle.ts";
 
 // Component registration
 import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/button-group/button-group.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 
-@customElement("puzzle-checkpoints")
-export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
+@customElement("puzzle-history")
+export class PuzzleHistory extends SignalWatcher(LitElement) {
   @consume({ context: puzzleContext, subscribe: true })
   @state()
   private puzzle?: Puzzle;
+
+  @query("wa-dropdown")
+  private dropdown?: HTMLElementTagNameMap["wa-dropdown"];
 
   private dynamicStyleSheet?: CSSStyleSheet;
 
@@ -71,14 +75,45 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
 
   protected override render() {
     return html`
-      <wa-dropdown placement="top-start" @wa-select=${this.handleSelectCheckpoint}>
+      <wa-button-group>
+        <wa-button
+            appearance="filled outlined"
+            ?disabled=${!this.puzzle?.canUndo}
+            @pointerdown=${this.handleUndoRedoPointerDown}
+            @click=${this.handleUndo}>
+          <wa-icon name="undo" label="Undo"></wa-icon>
+        </wa-button>
+        ${this.renderHistoryButton()}
+        <wa-button
+            appearance="filled outlined"
+            ?disabled=${!this.puzzle?.canRedo}
+            @pointerdown=${this.handleUndoRedoPointerDown}
+            @click=${this.handleRedo}>
+          <wa-icon name="redo" label="Redo"></wa-icon>
+        </wa-button>
+      </wa-button-group>
+    `;
+  }
+
+  private renderHistoryButton() {
+    // TODO: keyboard nav doesn't work for history items wrapped in <ol>
+    return html`
+      <wa-dropdown 
+          placement="top"
+          @wa-select=${this.handleSelectCheckpoint}
+      >
         <wa-button slot="trigger" appearance="filled outlined" with-caret>
-          <wa-icon slot="start" name="checkpoint-list"></wa-icon>
-          Checkpoints
+          <wa-icon name="history" label="History"></wa-icon>
         </wa-button>
 
-        <label for="list">History</label>
-        <ol id="list">${this.renderHistoryItems()}</ol>
+        <header>
+          History
+          <wa-button appearance="plain" @click=${this.handleHistoryCloseButton}>
+            <wa-icon name="xmark" library="system" label="Close"></wa-icon>
+          </wa-button>
+        </header>
+        
+        <div id="list">${this.renderHistoryItems()}</div>
 
         <wa-divider></wa-divider>
         <wa-dropdown-item @click=${this.handleSaveCheckpoint}>
@@ -115,7 +150,7 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
         this.renderHistoryItem({
           label: html`Checkpoint <small>(${checkpoint + 1})</small>`,
           move: checkpoint,
-          icon: "checkpoint",
+          icon: "history-checkpoint",
           canDelete: true,
         }),
       );
@@ -148,7 +183,7 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
   }) {
     const isCurrentMove =
       move === this.puzzle?.currentMove && this.puzzle?.totalMoves > 0;
-    const iconName = isCurrentMove ? "checkpoint-current-move" : (icon ?? nothing);
+    const iconName = isCurrentMove ? "history-current-move" : (icon ?? nothing);
     const iconLabel = isCurrentMove ? "Current undo" : nothing;
 
     const deleteButton = canDelete
@@ -186,7 +221,7 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
       }
       result.push(html`
         <div class="undo-point">
-          <wa-icon name="checkpoint-current-move"></wa-icon>
+          <wa-icon name="history-current-move"></wa-icon>
           <span>Current undo <small>(${currentMove + 1})</small></span>
         </div>
       `);
@@ -205,6 +240,30 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
         ${moves > 1 ? html`<small>&hellip; ${moves} moves &hellip;</small>` : nothing}
       </div>
     `;
+  }
+
+  private handleHistoryCloseButton() {
+    const dropdown = this.dropdown;
+    if (dropdown) {
+      dropdown.open = false;
+    }
+  }
+
+  private handleUndoRedoPointerDown(event: PointerEvent) {
+    // If the dropdown is open, keep it open when clicking undo/redo buttons.
+    // (Prevents the pointerdown event from reaching the dropdown's backdrop,
+    // while allowing button click events to work normally.)
+    if (event.isPrimary && this.dropdown?.open) {
+      event.stopPropagation();
+    }
+  }
+
+  private async handleUndo() {
+    await this.puzzle?.undo();
+  }
+
+  private async handleRedo() {
+    await this.puzzle?.redo();
   }
 
   private async handleSelectCheckpoint(event: CustomEvent<{ item: WaDropdownItem }>) {
@@ -242,21 +301,40 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
       --dot-size: 5px;
     }
     
-    label {
-      padding: 0.5em 1em;
+    wa-button-group {
+      /* Collapse the gap between buttons, overlapping the borders.
+       * Stack the dropdown trigger (which is never disabled) above
+       * the other buttons to avoid partly-disabled border appearance. */
+      &::part(base) {
+        gap: 0;
+      }
+      wa-button[slot="trigger"]::part(base) {
+        margin-inline: calc(-1 * var(--wa-border-width-s));
+        position: relative;
+        z-index: 1;
+      }
+    }
+    
+    header {
+      display: flex;
+      align-items: center;
+
+      /* The plain "Close" button effectively pads top/bottom and part of right */
+      /*padding: 0.5em 1em;*/
+      padding-inline-start: 1em;
+      padding-inline-end: 0.5em;
       background-color: var(--background-color);
       /*font-family: var(--wa-font-family-heading);*/
       font-weight: var(--wa-font-weight-semibold);
       position: sticky;
       inset-block-start: -0.25em; /* wa-dropdown::part(menu) padding */
       z-index: 1;
+      
+      wa-button {
+        margin-inline-start: auto;
+      }
     }
     
-    ol {
-      padding: 0;
-      margin: 0;
-    }
-
     small {
       color: var(--wa-color-text-quiet);
       font-size: var(--wa-font-size-smaller);
@@ -293,8 +371,8 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
       }
     }
 
-    wa-icon[name="checkpoint"]::part(svg),
-    wa-icon[name="checkpoint-current-move"]::part(svg)
+    wa-icon[name="history-checkpoint"]::part(svg),
+    wa-icon[name="history-current-move"]::part(svg)
     {
       /* Use background fill on icons that overlap the timeline */
       fill: var(--background-color) !important;
@@ -383,6 +461,6 @@ export class PuzzleCheckpoints extends SignalWatcher(LitElement) {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "puzzle-checkpoints": PuzzleCheckpoints;
+    "puzzle-history": PuzzleHistory;
   }
 }

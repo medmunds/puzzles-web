@@ -6,7 +6,6 @@ import awardIcon from "lucide-static/icons/award.svg";
 import badgeQuestionMarkIcon from "lucide-static/icons/badge-question-mark.svg";
 import boxesIcon from "lucide-static/icons/boxes.svg";
 import circleCheckIcon from "lucide-static/icons/circle-check.svg";
-import circlePlayIcon from "lucide-static/icons/circle-play.svg";
 import circleQuestionMarkIcon from "lucide-static/icons/circle-question-mark.svg";
 import crownIcon from "lucide-static/icons/crown.svg";
 import deleteIcon from "lucide-static/icons/delete.svg";
@@ -14,6 +13,7 @@ import downloadIcon from "lucide-static/icons/download.svg";
 import frownIcon from "lucide-static/icons/frown.svg";
 import gemIcon from "lucide-static/icons/gem.svg";
 import hashIcon from "lucide-static/icons/hash.svg";
+import historyIcon from "lucide-static/icons/history.svg";
 import infoIcon from "lucide-static/icons/info.svg";
 import laughIcon from "lucide-static/icons/laugh.svg";
 import octagonAlertIcon from "lucide-static/icons/octagon-alert.svg";
@@ -47,13 +47,13 @@ import restartIcon from "./assets/restart.svg";
 const icons: Record<string, string> = {
   // general
   "back-to-catalog": boxesIcon,
-  "checkpoint-list": shieldCheckIcon,
-  "checkpoint": circleCheckIcon,
-  "checkpoint-add": circlePlayIcon,
+  "checkpoint-add": shieldCheckIcon,
   "checkpoint-remove": trash2Icon,
-  "checkpoint-current-move": playIcon,
   "gameid": hashIcon,
   "help": circleQuestionMarkIcon,
+  "history": historyIcon,
+  "history-checkpoint": circleCheckIcon,
+  "history-current-move": playIcon,
   "new-game": plusIcon,
   "puzzle-type": swatchBookIcon,
   "redo": redo2Icon,

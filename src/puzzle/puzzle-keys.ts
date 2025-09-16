@@ -77,7 +77,6 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     return html`
       <slot name="before"></slot>
       ${this.renderVirtualKeys()}
-      ${this.renderUndoRedo()}
       <slot name="after"></slot>
     `;
   }
@@ -114,27 +113,6 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
         >${content}</wa-button>
     `;
   };
-
-  private renderUndoRedo() {
-    return html`
-      <div class="group">
-        <wa-button
-            appearance="filled outlined"
-            ?disabled=${!this.puzzle?.canUndo}
-            @click=${() => this.puzzle?.undo()}>
-          <wa-icon slot="start" name="undo"></wa-icon>
-          Undo
-        </wa-button>
-        <wa-button
-            appearance="filled outlined"
-            ?disabled=${!this.puzzle?.canRedo}
-            @click=${() => this.puzzle?.redo()}>
-          Redo
-          <wa-icon slot="start" name="redo"></wa-icon>
-        </wa-button>
-      </div>
-    `;
-  }
 
   static styles = css`
     :host {

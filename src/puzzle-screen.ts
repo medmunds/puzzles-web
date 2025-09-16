@@ -17,8 +17,8 @@ import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
 import "./dynamic-content.ts";
 import "./head-matter.ts";
-import "./puzzle/puzzle-checkpoints.ts";
 import "./puzzle/puzzle-context.ts";
+import "./puzzle/puzzle-history.ts";
 import "./puzzle/puzzle-game-menu.ts";
 import "./puzzle/puzzle-keys.ts";
 import "./puzzle/puzzle-preset-menu.ts";
@@ -191,9 +191,10 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
             <wa-skeleton slot="loading" effect="sheen"></wa-skeleton>
           </puzzle-view-interactive>
 
-          <puzzle-keys>
-            <puzzle-checkpoints slot="after"></puzzle-checkpoints>
-          </puzzle-keys>
+          <div class="toolbar">
+            <puzzle-keys></puzzle-keys>
+            <puzzle-history></puzzle-history>
+          </div>
         </div>
 
         <puzzle-end-notification>
