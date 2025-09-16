@@ -270,6 +270,11 @@ export class ShareDialog extends SignalWatcher(LitElement) {
       outline: none;
     }
     
+    wa-input wa-copy-button {
+      /* Reduce horizontal spacing at start, overlap padding at end */
+      margin-inline: 0.5em -0.75em;
+    }
+    
     wa-textarea {
       &::part(textarea) {
         font-family: var(--wa-font-family-code);
@@ -285,7 +290,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
       inset-block-start: 
           calc(var(--wa-space-m) + var(--wa-form-control-padding-block) - 0.5em);
       inset-inline-end: 
-          calc(var(--wa-space-m) + var(--wa-form-control-padding-inline) - 0.5em);
+          calc(var(--wa-space-m) + var(--wa-form-control-padding-inline) - 0.75em);
       
       &:not(:hover)::part(button) {
         /* It's transparent by default; may have text under it */
