@@ -436,6 +436,8 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      /* Move inline padding to form to avoid clipping focus rings */
+      padding-inline: 0;
     }
     
     wa-scroller {
@@ -446,6 +448,13 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
           calc(2.5 * var(--wa-space-l)),
           calc((100% - var(--wa-form-control-height)) / 2) 
       );
+    }
+    
+    [part="form"]::part(form) {
+      /* Ensure focus rings don't get clipped.
+       * (No padding needed at top because label is there.) */
+      padding-inline: var(--wa-space-l); /* default dialog body padding */
+      padding-block-end: calc(var(--wa-focus-ring-offset) + var(--wa-focus-ring-width));
     }
 
     [part="footer"] {
