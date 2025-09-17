@@ -315,7 +315,14 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
         z-index: 1;
       }
     }
-    
+
+    wa-button {
+      /* Disable double-tap to zoom on keys that might be tapped quickly.
+       * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.)
+       */
+      touch-action: pinch-zoom;
+    }
+
     header {
       display: flex;
       align-items: center;

@@ -1,4 +1,3 @@
-import WaButton from "@awesome.me/webawesome/dist/components/button/button.js";
 import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing } from "lit";
@@ -39,24 +38,6 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
   private keyLabels?: KeyLabel[];
 
   private renderedParams?: string;
-
-  override connectedCallback() {
-    super.connectedCallback();
-    this.addEventListener("click", this.preventDoubleTapZoom);
-  }
-
-  override disconnectedCallback() {
-    super.disconnectedCallback();
-    this.removeEventListener("click", this.preventDoubleTapZoom);
-  }
-
-  private preventDoubleTapZoom = (event: MouseEvent) => {
-    if (event.composedPath().some((target) => target instanceof WaButton)) {
-      // Prevent double-tap zoom (on iOS) for all wa-buttons.
-      // (Sadly, CSS `touch-action: ...` doesn't achieve this on iOS.)
-      event.preventDefault();
-    }
-  };
 
   override async willUpdate() {
     // The available keys can vary with changes to puzzle params.

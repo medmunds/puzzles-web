@@ -50,3 +50,21 @@ export function hasCtrlKey(event: MouseEvent | KeyboardEvent) {
   // Windows reports the logo key as meta.
   return event.ctrlKey || (isAppleDevice && event.metaKey);
 }
+
+/**
+ * Install this as a click event listener to disable iOS's double-tap-zoom
+ * on all buttons (which are likely to be clicked rapidly in succession).
+ * (Sadly, CSS `touch-action: ...` doesn't achieve this on iOS.)
+ *
+ * Intended to be installed once, at a high level in the element tree,
+ * rather than on every individual button.
+ */
+export function preventDoubleTapZoomOnButtons(event: MouseEvent) {
+  if (event.composedPath().some(shouldPreventDoubleTapZoom)) {
+    event.preventDefault();
+  }
+}
+
+const doubleTapZoomExemptTagNames = new Set(["button", "wa-button"]);
+const shouldPreventDoubleTapZoom = (target: EventTarget) =>
+  target instanceof Element && doubleTapZoomExemptTagNames.has(target.localName);

@@ -8,6 +8,7 @@ import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { notifyError } from "./utils/errors.ts";
+import { preventDoubleTapZoomOnButtons } from "./utils/events.ts";
 import { debounced, sleep } from "./utils/timing.ts";
 
 // Register components
@@ -106,7 +107,8 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
     return html`
       <puzzle-context 
-          type=${this.puzzleType} 
+          type=${this.puzzleType}
+          @click=${preventDoubleTapZoomOnButtons}
           @puzzle-loaded=${this.handlePuzzleLoaded}
           @puzzle-params-change=${this.handlePuzzleParamsChange}
           @puzzle-game-state-change=${this.handlePuzzleGameStateChange}
