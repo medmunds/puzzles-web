@@ -4,8 +4,21 @@ import { repeat } from "lit/directives/repeat.js";
 
 type TagName = keyof HTMLElementTagNameMap;
 
-export interface DynamicLoaderItem<T extends TagName> {
+export interface DynamicContentItem<T extends TagName> {
+  /**
+   * The (lowercase) tag that uniquely identifies this dynamic element.
+   */
   tagName: T;
+
+  /**
+   * A render function for the dynamic content. The result must include
+   * a tagName element.
+   *
+   * Caution: any event listeners (`@click=...`) *must* be bound methods if
+   * you want a particular `this` object. Do not rely on Lit's automatic method
+   * binding, as it will end up using the DynamicContent instance as `this`
+   * (since the item's render() is executed within DynamicContent's render().)
+   */
   render: () => TemplateResult;
 }
 
@@ -20,7 +33,7 @@ export interface DynamicLoaderItem<T extends TagName> {
 @customElement("dynamic-content")
 export class DynamicContent extends LitElement {
   @state()
-  private dynamicItems: DynamicLoaderItem<TagName>[] = [];
+  private dynamicItems: DynamicContentItem<TagName>[] = [];
 
   override disconnectedCallback() {
     super.disconnectedCallback();
@@ -54,7 +67,7 @@ export class DynamicContent extends LitElement {
   async addItem<T extends TagName>({
     tagName,
     render,
-  }: DynamicLoaderItem<T>): Promise<HTMLElementTagNameMap[T] | null | undefined> {
+  }: DynamicContentItem<T>): Promise<HTMLElementTagNameMap[T] | null | undefined> {
     let element = this.querySelector(tagName);
     if (element) {
       return element;

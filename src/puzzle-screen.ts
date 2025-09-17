@@ -345,7 +345,8 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     }
   }
 
-  private async handleLoadGame(event: HTMLElementEventMap["load-game-load"]) {
+  private handleLoadGame = async (event: HTMLElementEventMap["load-game-load"]) => {
+    // (dynamic-content event listener: must be self-bound function)
     const dialog = event.target as HTMLElementTagNameMap["load-game-dialog"];
     const { filename } = event.detail;
     const puzzle = this.shadowRoot?.querySelector("puzzle-context")?.puzzle;
@@ -361,9 +362,10 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         dialog.open = false;
       }
     }
-  }
+  };
 
-  private async handleSaveGame(event: HTMLElementEventMap["save-game-save"]) {
+  private handleSaveGame = async (event: HTMLElementEventMap["save-game-save"]) => {
+    // (dynamic-content event listener: must be self-bound function)
     const dialog = event.target as HTMLElementTagNameMap["save-game-dialog"];
     const { filename } = event.detail;
     const puzzle = this.shadowRoot?.querySelector("puzzle-context")?.puzzle;
@@ -374,9 +376,12 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       this.savedFilename = filename;
       dialog.open = false;
     }
-  }
+  };
 
-  private async handleImportGame(_event: HTMLElementEventMap["load-game-import"]) {
+  private handleImportGame = async (
+    _event: HTMLElementEventMap["load-game-import"],
+  ) => {
+    // (dynamic-content event listener: must be self-bound function)
     const puzzle = this.shadowRoot?.querySelector("puzzle-context")?.puzzle;
     if (puzzle) {
       const input = Object.assign(document.createElement("input"), {
@@ -399,9 +404,10 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       });
       input.click();
     }
-  }
+  };
 
-  private async handleExportGame(event: HTMLElementEventMap["save-game-export"]) {
+  private handleExportGame = async (event: HTMLElementEventMap["save-game-export"]) => {
+    // (dynamic-content event listener: must be self-bound function)
     const puzzle = this.shadowRoot?.querySelector("puzzle-context")?.puzzle;
     if (puzzle) {
       const type = "application/octet-stream"; // or text/plain, or a type registered to us (upstream uses octet-stream)
@@ -419,7 +425,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       await sleep(10);
       URL.revokeObjectURL(url);
     }
-  }
+  };
 
   private get helpUrl(): string | undefined {
     return new URL(`help/${this.puzzleId}-overview.html`, this.router?.baseUrl).href;
