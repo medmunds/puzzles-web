@@ -52,7 +52,7 @@ export const PUZZLE_ID_MIN = Dexie.minKey;
 export const PUZZLE_ID_MAX = Dexie.maxKey;
 
 export interface SavedGameMetadata {
-  filename: string; // user filename or autoSaveId
+  filename: string; // user filename or autoSaveFilename
   puzzleId: PuzzleId;
   timestamp: number;
   status: GameStatus;

@@ -23,11 +23,9 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
 
   protected override render() {
     const favorites = settings.favoritePuzzles;
-    let puzzleTypes = Object.keys(puzzleDataMap);
+    let puzzleIds = Object.keys(puzzleDataMap);
     if (!settings.showUnfinishedPuzzles) {
-      puzzleTypes = puzzleTypes.filter(
-        (puzzleType) => !puzzleDataMap[puzzleType].unfinished,
-      );
+      puzzleIds = puzzleIds.filter((puzzleId) => !puzzleDataMap[puzzleId].unfinished);
     }
 
     return html`
@@ -47,8 +45,8 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
               <div class="puzzle-grid">
                 ${repeat(
                   [...favorites].sort(),
-                  (puzzleType) => puzzleType,
-                  (puzzleType) => this.renderCatalogCard(puzzleType, true),
+                  (puzzleId) => puzzleId,
+                  (puzzleId) => this.renderCatalogCard(puzzleId, true),
                 )}
               </div>
               <h2>All puzzles</h2>
@@ -58,10 +56,9 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
 
         <div class="puzzle-grid">
           ${repeat(
-            puzzleTypes,
-            (puzzleType) => puzzleType,
-            (puzzleType) =>
-              this.renderCatalogCard(puzzleType, favorites.has(puzzleType)),
+            puzzleIds,
+            (puzzleId) => puzzleId,
+            (puzzleId) => this.renderCatalogCard(puzzleId, favorites.has(puzzleId)),
           )}
         </div>
   
@@ -83,16 +80,16 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
     `;
   }
 
-  private renderCatalogCard(puzzleType: string, isFavorite: boolean) {
-    const { name, description, objective, unfinished } = puzzleDataMap[puzzleType];
+  private renderCatalogCard(puzzleId: string, isFavorite: boolean) {
+    const { name, description, objective, unfinished } = puzzleDataMap[puzzleId];
     return html`
       <catalog-card
-        puzzle-type=${puzzleType}
-        href=${this.router?.reverse({ name: "puzzle", params: { puzzleType } })?.href}
+        puzzleid=${puzzleId}
+        href=${this.router?.reverse({ name: "puzzle", params: { puzzleId } })?.href}
         name=${name}
         description=${description}
         objective=${objective}
-        ?resume=${savedGames.autoSavedPuzzles.has(puzzleType)}
+        ?resume=${savedGames.autoSavedPuzzles.has(puzzleId)}
         ?favorite=${isFavorite}
         ?unfinished=${unfinished}
       ></catalog-card>                    
@@ -135,8 +132,8 @@ export class CatalogScreen extends SignalWatcher(LitElement) {
   }
 
   private async handleFavoriteChange(event: FavoriteChangeEvent) {
-    const { puzzleType, isFavorite } = event.detail;
-    await settings.setFavoritePuzzle(puzzleType, isFavorite);
+    const { puzzleId, isFavorite } = event.detail;
+    await settings.setFavoritePuzzle(puzzleId, isFavorite);
   }
 
   static styles = css`

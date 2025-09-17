@@ -90,7 +90,7 @@ export class AppRouter extends LitElement {
 
     // We only have two routes to match, so this is not fancy:
     //   "catalog" (/ or /index or /index.html)
-    //   "puzzle" (/:puzzleType)
+    //   "puzzle" (/:puzzleId)
     const path = url.pathname
       // Remove baseUrl pathname
       .slice(this.baseUrl.pathname.length)
@@ -110,9 +110,9 @@ export class AppRouter extends LitElement {
             name: "puzzle",
             params: {
               ...params,
-              // Yes, this is confusing: the url is /:puzzleType?type=:puzzleParams
-              // (e.g., "/blackbox?type=3")
-              puzzleType: path,
+              // The url is /:puzzleId?type=:puzzleParams
+              // (e.g., "/blackbox?type=w8h8m5M5")
+              puzzleId: path,
               puzzleParams: url.searchParams.get("type"),
               puzzleGameId: url.searchParams.get("id"),
             },
@@ -133,10 +133,10 @@ export class AppRouter extends LitElement {
         path = "";
         break;
       case "puzzle":
-        if (typeof route.params.puzzleType !== "string") {
-          throw new Error(`Invalid puzzle type "${route.params.puzzleType}"`);
+        if (typeof route.params.puzzleId !== "string") {
+          throw new Error(`Invalid puzzleId "${route.params.puzzleId}"`);
         }
-        path = route.params.puzzleType;
+        path = route.params.puzzleId;
         if (route.params.puzzleGameId) {
           // puzzleGameId includes puzzle params, so supersedes `type` param
           searchParams.append("id", route.params.puzzleGameId.toString());
@@ -254,7 +254,7 @@ export class AppRouter extends LitElement {
         `;
       case "puzzle":
         if (import.meta.env.VITE_SENTRY_DSN) {
-          Sentry.setTag("screen", `puzzle/${params.puzzleType}`);
+          Sentry.setTag("screen", `puzzle/${params.puzzleId}`);
         }
         // Lazy load the puzzle-screen component when needed.
         // TODO: use lit task for loading
@@ -262,9 +262,9 @@ export class AppRouter extends LitElement {
         return html`
           <puzzle-screen 
               .router=${this} 
-              puzzle-type=${params.puzzleType} 
-              puzzle-gameid=${params.puzzleGameId ?? nothing}
-              puzzle-params=${params.puzzleParams ?? nothing}
+              puzzleid=${params.puzzleId} 
+              gameid=${params.puzzleGameId ?? nothing}
+              params=${params.puzzleParams ?? nothing}
               ?debug=${params.debug}
             ></puzzle-screen>
         `;

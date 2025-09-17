@@ -12,11 +12,11 @@ export type PuzzleEvent = CustomEvent<PuzzleEventDetail>;
 
 @customElement("puzzle-context")
 export class PuzzleContext extends SignalWatcher(LitElement) {
-  @property({ type: String })
-  type?: string;
+  @property({ type: String, attribute: "puzzleid" })
+  puzzleId?: string;
 
-  @property({ type: String, reflect: true })
-  gameid?: string;
+  @property({ type: String, reflect: true, attribute: "gameid" })
+  gameId?: string;
 
   @property({ type: String, reflect: true })
   params?: string;
@@ -55,9 +55,9 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
 
   protected override async willUpdate(changedProps: Map<string, unknown>) {
     if (
-      changedProps.has("type") &&
+      changedProps.has("puzzleId") &&
       this._puzzle &&
-      this._puzzle.puzzleId !== this.type
+      this._puzzle.puzzleId !== this.puzzleId
     ) {
       await this._unloadPuzzle();
       await this._loadPuzzle();
@@ -65,7 +65,7 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
     // Observe several properties for dispatching puzzle-game-state-change
     if (this.puzzle) {
       if (this.puzzle.currentGameId) {
-        this.gameid = this.puzzle.currentGameId;
+        this.gameId = this.puzzle.currentGameId;
       }
       if (this.puzzle.currentParams) {
         this.params = this.puzzle.currentParams;
@@ -86,7 +86,7 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
     }
     if (
       this.puzzle?.currentGameId &&
-      (changedProps.has("gameid") ||
+      (changedProps.has("gameId") ||
         changedProps.has("currentMove") ||
         changedProps.has("checkpoints") ||
         changedProps.has("statusbarText"))
@@ -96,10 +96,10 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
   }
 
   private async _loadPuzzle() {
-    if (!this.type) {
-      throw new Error("puzzle-context requires type");
+    if (!this.puzzleId) {
+      throw new Error("puzzle-context requires puzzleid");
     }
-    this._puzzle = await Puzzle.create(this.type);
+    this._puzzle = await Puzzle.create(this.puzzleId);
 
     // Notify puzzle-loaded. Listeners can preventDefault() to disable further setup.
     const event = this.dispatchPuzzleEvent("puzzle-loaded");
@@ -112,13 +112,13 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
         }
       }
 
-      if (this.gameid === "none") {
+      if (this.gameId === "none") {
         // Just set up the midend but don't create a new game
-      } else if (this.gameid) {
+      } else if (this.gameId) {
         // Use the specified game ID
-        const error = await this._puzzle.newGameFromId(this.gameid);
+        const error = await this._puzzle.newGameFromId(this.gameId);
         if (error) {
-          throw new Error(`Invalid puzzle-view gameid="${this.gameid}": ${error}`);
+          throw new Error(`Invalid puzzle-view gameid="${this.gameId}": ${error}`);
         }
       } else {
         // Create a new random game

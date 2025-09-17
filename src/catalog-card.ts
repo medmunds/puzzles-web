@@ -8,15 +8,15 @@ import "@awesome.me/webawesome/dist/components/card/card.js";
 import "@awesome.me/webawesome/dist/components/rating/rating.js";
 
 interface FavoriteChangeDetail {
-  puzzleType: string;
+  puzzleId: string;
   isFavorite: boolean;
 }
 export type FavoriteChangeEvent = CustomEvent<FavoriteChangeDetail>;
 
 @customElement("catalog-card")
 export class CatalogCard extends LitElement {
-  @property({ type: String, attribute: "puzzle-type" })
-  puzzleType = "";
+  @property({ type: String, attribute: "puzzleid" })
+  puzzleId = "";
 
   @property({ type: String })
   name = "";
@@ -45,14 +45,10 @@ export class CatalogCard extends LitElement {
       return html`<div class="icon unfinished" role="presentation">🚧</div>`;
     }
 
-    const icon1x = new URL(
-      `./assets/icons/${this.puzzleType}-64d8.png`,
-      import.meta.url,
-    ).href;
-    const icon2x = new URL(
-      `./assets/icons/${this.puzzleType}-128d8.png`,
-      import.meta.url,
-    ).href;
+    const icon1x = new URL(`./assets/icons/${this.puzzleId}-64d8.png`, import.meta.url)
+      .href;
+    const icon2x = new URL(`./assets/icons/${this.puzzleId}-128d8.png`, import.meta.url)
+      .href;
     const srcset = `${icon1x}, ${icon2x} 2x`;
     return html`
       <img class="icon" srcset=${srcset} src=${icon2x}
@@ -102,7 +98,7 @@ export class CatalogCard extends LitElement {
       new CustomEvent<FavoriteChangeDetail>("favorite-change", {
         bubbles: true,
         composed: true,
-        detail: { puzzleType: this.puzzleType, isFavorite },
+        detail: { puzzleId: this.puzzleId, isFavorite },
       }),
     );
   }

@@ -21,7 +21,7 @@ export type GameDialogEvent = CustomEvent<GameDialogEventDetail>;
  * Common functionality and styling for LoadGameDialog and SaveGameDialog
  */
 abstract class GameFileDialog extends LitElement {
-  @property({ type: String })
+  @property({ type: String, attribute: "puzzleid" })
   puzzleId?: string;
 
   @property({ type: String })
@@ -110,7 +110,7 @@ export class LoadGameDialog extends GameFileDialog {
         </wa-popover>
 
         <saved-game-list
-            puzzleId=${this.puzzleId}
+            puzzleid=${this.puzzleId}
             @dblclick=${this.handleSavedGameDoubleClick}
             @saved-game-list-select=${this.handleSavedGameSelect}
         >
@@ -197,7 +197,7 @@ export class SaveGameDialog extends GameFileDialog {
         </wa-popover>
         
         <saved-game-list 
-            puzzleId=${this.puzzleId}
+            puzzleid=${this.puzzleId}
             @saved-game-list-select=${this.handleSavedGameSelect}
         >
           <div slot="placeholder">(saved games will appear here)</div>
@@ -263,7 +263,6 @@ export class SaveGameDialog extends GameFileDialog {
   }
 
   private handleSaveClick() {
-    console.log(`Saving ${this.filename}`);
     this.dispatchEventAndClose("save-game-save");
   }
 }

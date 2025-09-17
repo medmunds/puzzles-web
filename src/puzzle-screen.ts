@@ -32,16 +32,16 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   router?: AppRouter;
 
   /** The puzzle type, e.g. "blackbox" */
-  @property({ type: String, attribute: "puzzle-type" })
-  puzzleType = "";
+  @property({ type: String, attribute: "puzzleid" })
+  puzzleId = "";
 
   /** A game ID or random seed, including encoded params */
-  @property({ type: String, attribute: "puzzle-gameid" })
-  puzzleGameId?: string;
+  @property({ type: String, attribute: "gameid" })
+  gameId?: string;
 
   /** Encoded params (ignored when puzzle-gameid provided) */
-  @property({ type: String, attribute: "puzzle-params" })
-  puzzleParams?: string;
+  @property({ type: String, attribute: "params" })
+  params?: string;
 
   @state()
   private puzzleData?: PuzzleData;
@@ -56,40 +56,41 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   savedFilename?: string;
   savedGameId?: string;
 
-  private _autoSaveId?: string;
-  private get autoSaveId(): string | undefined {
-    return this._autoSaveId;
+  private _autoSaveFilename?: string;
+  private get autoSaveFilename(): string | undefined {
+    return this._autoSaveFilename;
   }
-  private set autoSaveId(value: string | undefined) {
-    // Persist autoSaveId in history state; restored in connectedCallback
-    this._autoSaveId = value;
+  private set autoSaveFilename(value: string | undefined) {
+    // Persist autoSaveFilename in history state; restored in connectedCallback
+    this._autoSaveFilename = value;
     const newState = {
       ...window.history.state,
-      puzzleAutoSaveType: this.puzzleType,
-      puzzleAutoSaveId: value,
+      puzzleAutoSavePuzzleId: this.puzzleId,
+      puzzleAutoSaveFilename: value,
     };
     window.history.replaceState(newState, "");
   }
 
   override connectedCallback() {
     super.connectedCallback();
-    const { puzzleAutoSaveId, puzzleAutoSaveType } = window.history.state ?? {};
+    const { puzzleAutoSaveFilename, puzzleAutoSavePuzzleId } =
+      window.history.state ?? {};
     if (
-      typeof puzzleAutoSaveId === "string" &&
-      puzzleAutoSaveType === this.puzzleType
+      typeof puzzleAutoSaveFilename === "string" &&
+      puzzleAutoSavePuzzleId === this.puzzleId
     ) {
-      this._autoSaveId = puzzleAutoSaveId;
+      this._autoSaveFilename = puzzleAutoSaveFilename;
     }
   }
 
   protected override async willUpdate(changedProperties: Map<string, unknown>) {
-    if (changedProperties.has("puzzleType") && this.puzzleType) {
-      const data = puzzleDataMap[this.puzzleType];
+    if (changedProperties.has("puzzleId") && this.puzzleId) {
+      const data = puzzleDataMap[this.puzzleId];
       if (!data) {
-        throw new Error(`Unknown puzzle type ${this.puzzleType}`);
+        throw new Error(`Unknown puzzleId ${this.puzzleId}`);
       }
       this.puzzleData = data;
-      this.autoSaveId = undefined;
+      this.autoSaveFilename = undefined;
       this.puzzleLoaded = false;
     }
   }
@@ -99,15 +100,13 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       throw new Error("PuzzleScreen.render without puzzleData");
     }
 
-    const iconUrl = new URL(
-      `./assets/icons/${this.puzzleType}-64d8.png`,
-      import.meta.url,
-    ).href;
+    const iconUrl = new URL(`./assets/icons/${this.puzzleId}-64d8.png`, import.meta.url)
+      .href;
     const otherPuzzlesUrl = this.router?.reverse(this.router.defaultRoute)?.href;
 
     return html`
       <puzzle-context 
-          type=${this.puzzleType}
+          puzzleid=${this.puzzleId}
           @click=${preventDoubleTapZoomOnButtons}
           @puzzle-loaded=${this.handlePuzzleLoaded}
           @puzzle-params-change=${this.handlePuzzleParamsChange}
@@ -276,7 +275,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       tagName: "load-game-dialog",
       render: () => html`
         <load-game-dialog
-            puzzleId=${this.puzzleType}
+            puzzleid=${this.puzzleId}
             @load-game-import=${this.handleImportGame}
             @load-game-load=${this.handleLoadGame}
         ></load-game-dialog>
@@ -295,7 +294,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       tagName: "save-game-dialog",
       render: () => html`
         <save-game-dialog
-            puzzleId=${this.puzzleType}
+            puzzleid=${this.puzzleId}
             @save-game-export=${this.handleExportGame}
             @save-game-save=${this.handleSaveGame}
         ></save-game-dialog>
@@ -303,7 +302,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     });
     if (dialog && !dialog.open) {
       dialog.filename =
-        this.savedFilename ?? (await savedGames.makeUntitledFilename(this.puzzleType));
+        this.savedFilename ?? (await savedGames.makeUntitledFilename(this.puzzleId));
       dialog.open = true;
     }
   }
@@ -423,7 +422,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   }
 
   private get helpUrl(): string | undefined {
-    return new URL(`help/${this.puzzleType}-overview.html`, this.router?.baseUrl).href;
+    return new URL(`help/${this.puzzleId}-overview.html`, this.router?.baseUrl).href;
   }
 
   private async showHelp(event: UIEvent) {
@@ -458,7 +457,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     // This applies even when puzzleGameId is provided, to set the default
     // params for subsequent new games.
     const settingsParams = await settings.getParams(puzzle.puzzleId);
-    for (const params of [this.puzzleParams, settingsParams]) {
+    for (const params of [this.params, settingsParams]) {
       if (params) {
         const error = await puzzle.setParams(params);
         if (!error) {
@@ -485,22 +484,22 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     // - a new game
     let hasGame = false;
 
-    if (this.puzzleGameId) {
-      const error = await puzzle.newGameFromId(this.puzzleGameId);
+    if (this.gameId) {
+      const error = await puzzle.newGameFromId(this.gameId);
       if (!error) {
         hasGame = true;
-        this.autoSaveId = savedGames.makeAutoSaveId();
+        this.autoSaveFilename = savedGames.makeAutoSaveFilename();
       } else {
         void notifyError(`Ignoring invalid id= in URL (${error})`).then();
       }
     }
 
-    if (!this.autoSaveId) {
-      this.autoSaveId = await savedGames.findMostRecentAutoSave(puzzle.puzzleId);
+    if (!this.autoSaveFilename) {
+      this.autoSaveFilename = await savedGames.findMostRecentAutoSave(puzzle.puzzleId);
     }
-    if (!hasGame && !this.puzzleParams && this.autoSaveId) {
+    if (!hasGame && !this.params && this.autoSaveFilename) {
       // Restore a recent autosave, unless params in url (which might not match)
-      hasGame = await savedGames.restoreAutoSavedGame(puzzle, this.autoSaveId);
+      hasGame = await savedGames.restoreAutoSavedGame(puzzle, this.autoSaveFilename);
     }
 
     if (!hasGame) {
@@ -511,10 +510,10 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     await this.shadowRoot?.querySelector("puzzle-context")?.updateComplete;
 
     // Clear any specific type or game id params from the URL
-    if (this.router && (this.puzzleParams || this.puzzleGameId)) {
+    if (this.router && (this.params || this.gameId)) {
       const cleanUrl = this.router.reverse({
         name: "puzzle",
-        params: { puzzleType: this.puzzleType },
+        params: { puzzleId: this.puzzleId },
       });
       this.router.navigate(cleanUrl, true);
     }
@@ -543,13 +542,13 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       if (puzzle.totalMoves > 0 && !puzzle.isSolved) {
         // Wait to autosave until the user has made at least one actual move,
         // to avoid autosaving from just browsing through puzzles.
-        this.autoSaveId ??= savedGames.makeAutoSaveId();
-        await savedGames.autoSaveGame(puzzle, this.autoSaveId);
-      } else if (this.autoSaveId) {
+        this.autoSaveFilename ??= savedGames.makeAutoSaveFilename();
+        await savedGames.autoSaveGame(puzzle, this.autoSaveFilename);
+      } else if (this.autoSaveFilename) {
         // Don't retain autosave for solved or unstarted puzzle.
-        const autoSaveId = this.autoSaveId;
-        this.autoSaveId = undefined;
-        await savedGames.removeAutoSavedGame(puzzle, autoSaveId);
+        const autoSaveFilename = this.autoSaveFilename;
+        this.autoSaveFilename = undefined;
+        await savedGames.removeAutoSavedGame(puzzle, autoSaveFilename);
       }
     }
   }

@@ -140,7 +140,7 @@ class SavedGames {
     return record?.filename;
   }
 
-  makeAutoSaveId(): string {
+  makeAutoSaveFilename(): string {
     // This could be a uuid or some random chars to avoid possible duplication,
     // but a timestamp is probably sufficient for now.
     return `autosave-${Date.now()}`;
@@ -149,29 +149,32 @@ class SavedGames {
   /**
    * Create or update the autosave record for puzzle.
    */
-  async autoSaveGame(puzzle: Puzzle, autoSaveId: string) {
+  async autoSaveGame(puzzle: Puzzle, autoSaveFilename: string) {
     await this.saveToDB({
       puzzle,
-      filename: autoSaveId,
+      filename: autoSaveFilename,
       saveType: SaveType.Auto,
     });
   }
 
-  async removeAutoSavedGame(puzzleOrId: Puzzle | PuzzleId, autoSaveId: string) {
+  async removeAutoSavedGame(puzzleOrId: Puzzle | PuzzleId, autoSaveFilename: string) {
     const puzzleId = typeof puzzleOrId === "string" ? puzzleOrId : puzzleOrId.puzzleId;
     // (Table.delete does nothing if primary key not in table.)
     // (Unlike Table.get, compound primary key must be passed as array.)
-    await db.savedGames.delete([puzzleId, SaveType.Auto, autoSaveId]);
+    await db.savedGames.delete([puzzleId, SaveType.Auto, autoSaveFilename]);
   }
 
-  async restoreAutoSavedGame(puzzle: Puzzle, autoSaveId: string): Promise<boolean> {
+  async restoreAutoSavedGame(
+    puzzle: Puzzle,
+    autoSaveFilename: string,
+  ): Promise<boolean> {
     const { found, error } = await this.loadFromDB({
       puzzle,
       saveType: SaveType.Auto,
-      filename: autoSaveId,
+      filename: autoSaveFilename,
     });
     if (error) {
-      throw new Error(`Error restoring autosave ${autoSaveId}: ${error}`);
+      throw new Error(`Error restoring autosave ${autoSaveFilename}: ${error}`);
     }
     return found;
   }

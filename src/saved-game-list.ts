@@ -58,7 +58,7 @@ export class SavedGameList extends SignalWatcher(LitElement) {
    * If provided, shows only saved files for this puzzle id.
    * Otherwise shows all saved files (and includes Puzzle column).
    */
-  @property({ type: String })
+  @property({ type: String, attribute: "puzzleid" })
   puzzleId?: string;
 
   @property({ type: String, reflect: true })

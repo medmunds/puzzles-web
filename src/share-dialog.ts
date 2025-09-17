@@ -59,7 +59,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
       throw new Error("share-dialog missing required router");
     }
 
-    const gameParams = this.puzzle?.currentParams;
+    const puzzleParams = this.puzzle?.currentParams;
     const gameId = this.puzzle?.currentGameId;
     const randomSeed = this.puzzle?.randomSeed;
     const preferredId = randomSeed ?? gameId;
@@ -68,16 +68,16 @@ export class ShareDialog extends SignalWatcher(LitElement) {
       ? `type “${this.gameTypeDescription}”`
       : "this custom type";
 
-    const puzzleTypeLink = gameParams
+    const puzzleTypeLink = puzzleParams
       ? this.router.reverse({
           name: "puzzle",
-          params: { puzzleType: puzzleId, puzzleParams: gameParams },
+          params: { puzzleId, puzzleParams },
         })
       : undefined;
     const currentGameLink = preferredId
       ? this.router.reverse({
           name: "puzzle",
-          params: { puzzleType: puzzleId, puzzleGameId: preferredId },
+          params: { puzzleId, puzzleGameId: preferredId },
         })
       : undefined;
 
