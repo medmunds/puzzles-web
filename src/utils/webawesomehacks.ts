@@ -6,6 +6,7 @@ import WaDropdown from "@awesome.me/webawesome/dist/components/dropdown/dropdown
 import WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
 import WaRadio from "@awesome.me/webawesome/dist/components/radio/radio.js";
 import WaRadioGroup from "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
+import WaScroller from "@awesome.me/webawesome/dist/components/scroller/scroller.js";
 import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
 import WaSlider from "@awesome.me/webawesome/dist/components/slider/slider.js";
 import WaTextarea from "@awesome.me/webawesome/dist/components/textarea/textarea.js";
@@ -43,6 +44,45 @@ function fixWaButtonIconWithCaret() {
     css`
       .button.caret.is-icon-button {
         width: calc(var(--wa-form-control-height) + 0.75em + 1.25em);
+      }
+    `,
+  );
+}
+
+/**
+ * wa-scroller has two focus-related issues:
+ * 1. It participates in the tab order even if unnecessary
+ *    (because slotted content already is focusable).
+ * 2. It doesn't indicate when it has focus.
+ *
+ * This adds a "without-tabindex" boolean attribute that suppresses tab order
+ * participation, and adds a basic focus ring when appropriate.
+ *
+ * https://github.com/shoelace-style/webawesome/discussions/1459
+ */
+function fixWaScrollerFocusIndication() {
+  // Fix problem 1 by patching updated() to remove the internal tabindex
+  // after each render when "without-tabindex" is requested.
+  // @ts-expect-error[TS2445]: monkey patching protected method
+  const origUpdated = WaScroller.prototype.updated;
+  // @ts-expect-error[TS2445]: monkey patching protected method
+  WaScroller.prototype.updated = function (...args) {
+    origUpdated?.apply(this, args);
+    if (this.hasAttribute("without-tabindex")) {
+      const content = this.shadowRoot?.getElementById("content");
+      if (content) {
+        content.removeAttribute("tabindex");
+        content.tabIndex = -1;
+      }
+    }
+  };
+
+  // Fix problem 2 by adding visible focus ring
+  WaScroller.elementStyles.push(
+    css`
+      :host:has(#content:focus-visible) {
+        outline: var(--wa-focus-ring);
+        outline-offset: var(--wa-focus-ring-offset);
       }
     `,
   );
@@ -158,6 +198,7 @@ function flipWaDropdownCaretForTopPlacement() {
 export function installWebAwesomeHacks() {
   disableWaChangedInUpdateWarnings();
   fixWaButtonIconWithCaret();
+  fixWaScrollerFocusIndication();
   enableCustomWaDialogAnimations();
   rotateWaButtonCaretWhenExpanded();
   flipWaDropdownCaretForTopPlacement();
