@@ -15,7 +15,9 @@ jobs:
       actions: write  # cache, artifacts
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -52,9 +54,10 @@ jobs:
       actions: write   # cache, artifacts
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0  # need history for vcsid UPSTREAM_SHA
+          persist-credentials: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -123,12 +126,14 @@ jobs:
       actions: write   # cache, artifacts
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Apply site overlay
@@ -148,19 +153,19 @@ jobs:
         run: npm ci
 
       - name: Download icons artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: icons
           path: src/assets/icons
 
       - name: Download help artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: help
           path: public/help
 
       - name: Download puzzles artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: puzzles
           path: src/assets/puzzles
@@ -189,13 +194,13 @@ jobs:
       id-token: write  # configure-aws-credentials
     steps:
       - name: Download dist artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: dist
           path: dist
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.AWS_PUBLISHING_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
