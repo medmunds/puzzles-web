@@ -82,7 +82,9 @@ function(build_platform_extras)
         add_custom_command(OUTPUT ${help_dir}/en/index.html
                 COMMAND ${HALIBUT} --html ${HALIBUT_OPTIONS}
                 ${CMAKE_CURRENT_SOURCE_DIR}/puzzles.but
-                ${CMAKE_CURRENT_SOURCE_DIR}/emcccopy.but
+                # Skip hardcoded, possibly outdated additional licenses in emcccopy.but.
+                # We extract required notices using in emcc-dependency-info.py.
+                # ${CMAKE_CURRENT_SOURCE_DIR}/emcccopy.but
                 DEPENDS
                 ${help_dir}/en
                 ${CMAKE_CURRENT_SOURCE_DIR}/puzzles.but
