@@ -285,11 +285,11 @@ export class AboutDialog extends LitElement {
       gap: var(--wa-space-m);
     }
 
-    p, ul, h2 {
+    p, ul, h1, h2 {
       margin: 0;
     }
     
-    h2 {
+    h1, h2 {
       font-family: var(--wa-font-family-heading);
       font-size: var(--wa-font-size-m);
       font-weight: var(--wa-font-weight-heading);
