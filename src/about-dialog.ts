@@ -138,13 +138,12 @@ export class AboutDialog extends LitElement {
           </p>
         </div>
         
-        <wa-details summary="Privacy" name="section">
+        <wa-details summary="Privacy">
           ${unsafeHTML(privacyHtml)}
         </wa-details>
 
         <wa-details 
             summary="Copyright notices and licenses" 
-            name="section" 
             @wa-show=${this.loadDependencies}
         >
           ${licenseTextToHTML(
@@ -160,14 +159,14 @@ export class AboutDialog extends LitElement {
               (expand each item to view its copyright and license terms)</p>
           </div>
           
-          <wa-details appearance="plain" icon-placement="start" name="license">
+          <wa-details appearance="plain" icon-placement="start">
             <div slot="summary">Simon Tatham’s Portable Puzzles Collection</div>
             ${licenseTextToHTML(sgtPuzzlesLicenseText)}
           </wa-details>
 
           ${this.dependencies?.map(
             ({ name, license, notice }) => html`
-              <wa-details appearance="plain" icon-placement="start" name="license">
+              <wa-details appearance="plain" icon-placement="start">
                 <div slot="summary">${name}</div>
                 ${licenseTextToHTML(notice ?? `${license} license (no license text provided)`)}
               </wa-details>
