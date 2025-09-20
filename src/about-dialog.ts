@@ -180,15 +180,7 @@ export class AboutDialog extends LitElement {
   }
 
   private renderOffsiteLink(link: string, text?: string) {
-    // The html is meant to prevent wrapping the offsite-link icon
-    // separately from the trailing word in the text.
-    const words = (text ?? link).split(" ");
-    const lastWord = words.pop();
-    return html`
-      <a href=${link} target="_blank">${words.join(" ")}
-        <span class="nowrap">${lastWord}<wa-icon 
-          name="offsite-link" label="Opens in new tab"></wa-icon></span></a>
-    `;
+    return html`<a href=${link} target="_blank">${text ?? link}</a>`;
   }
 
   private renderUpdateInfo() {
@@ -304,15 +296,6 @@ export class AboutDialog extends LitElement {
           text-decoration: var(--wa-link-decoration-hover);
         }
       }
-    }
-    
-    .nowrap {
-      white-space: nowrap;
-    }
-    
-    wa-icon[name="offsite-link"] {
-      margin-inline-start: 0.1em;
-      vertical-align: -2px; /* visual baseline alignment*/
     }
     
     wa-spinner {
