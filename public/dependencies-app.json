@@ -7,6 +7,10 @@
       "notice": "This is a development-time placeholder\n\nIt will be replaced in production builds by rollup-plugin-license.\n\n"
     },
     {
+      "name": "dependencies.json divider handling",
+      "notice": "-----\n\nThere should be one divider, here:\n\n=====\n\n(between paragraphs)\n\n-----\n\n"
+    },
+    {
       "name": "@some-other/package",
       "version": "2025.8",
       "license": "BSD-3-Clause",

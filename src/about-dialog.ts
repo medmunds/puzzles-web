@@ -1,4 +1,11 @@
-import { css, type HTMLTemplateResult, html, LitElement, nothing } from "lit";
+import {
+  css,
+  type HTMLTemplateResult,
+  html,
+  LitElement,
+  nothing,
+  type TemplateResult,
+} from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
@@ -45,22 +52,36 @@ function licenseTextToHTML(
   label?: string | HTMLTemplateResult,
 ): HTMLTemplateResult[] {
   const result: HTMLTemplateResult[] = [];
-  const divider = /^\s*(?:={5,}|-{5,})\s*$/;
+  const divider = /^\s*(?:={3,}|-{3,})\s*$/;
   let firstParagraph = true;
+  let lastParagraphWasDivider = false;
   for (const paragraph of text.trim().split("\n\n")) {
     if (divider.test(paragraph)) {
-      // (It seems more readable to just omit the <hr>.)
-      // result.push(html`<wa-divider></wa-divider>`);
+      if (!firstParagraph) {
+        result.push(html`<wa-divider></wa-divider>`);
+        lastParagraphWasDivider = true;
+      }
       continue;
     }
+    lastParagraphWasDivider = false;
     const lines = paragraph
       .replace(/[-=]{5,}/g, "")
       .split("\r")
+      .filter((line) => line.trim() !== "")
       .map((line, i) => (i > 0 ? html`<br>${line}` : line));
-    result.push(html`<p>${firstParagraph ? label : nothing}${lines}</p>`);
-    firstParagraph = false;
+    if (lines.length > 0) {
+      result.push(html`<p>${firstParagraph ? label : nothing}${lines}</p>`);
+      firstParagraph = false;
+    }
   }
-
+  if (lastParagraphWasDivider) {
+    // Skip trailing <hr>
+    result.pop();
+  }
+  if (firstParagraph && label) {
+    // Didn't get a chance to add the label (no paragraphs in the lines)
+    result.push(html`<p>${label}</p>`);
+  }
   return result;
 }
 
@@ -124,9 +145,10 @@ export class AboutDialog extends LitElement {
             A web adaptation of
             <cite>${this.renderOffsiteLink(
               "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/",
-              "Simon Tatham’s Portable Puzzles Collection",
+              html`<span class="nowrap">Simon Tatham’s</span> 
+                <span class="nowrap">Portable Puzzles Collection</span>`,
             )}</cite>
-            by Mike Edmunds
+            <span class="nowrap">by Mike Edmunds</span>
           </p>
           <p>
             Version <span class="version">${version}</span><br>
@@ -178,7 +200,7 @@ export class AboutDialog extends LitElement {
     `;
   }
 
-  private renderOffsiteLink(link: string, text?: string) {
+  private renderOffsiteLink(link: string, text?: string | TemplateResult) {
     return html`<a href=${link} target="_blank">${text ?? link}</a>`;
   }
 
@@ -225,7 +247,7 @@ export class AboutDialog extends LitElement {
     }
 
     wa-dialog {
-      --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
+      --width: min(calc(100vw - 2 * var(--wa-space-l)), 65ch);
     }
 
     wa-dialog::part(body) {
@@ -274,6 +296,10 @@ export class AboutDialog extends LitElement {
       display: flex;
       flex-direction: column;
       gap: var(--wa-space-m);
+    }
+    
+    .nowrap {
+      white-space: nowrap;
     }
 
     p, ul, h1, h2 {
