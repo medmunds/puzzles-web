@@ -12,7 +12,7 @@ const defaultSettings = {
   rightButtonAudioVolume: 40,
   rightButtonHoldTime: 350,
   rightButtonDragThreshold: 8,
-  maximizePuzzleSize: 5,
+  maxScale: Number.POSITIVE_INFINITY,
   showStatusbar: true,
 } as const;
 
@@ -36,7 +36,7 @@ class Settings {
   private _rightButtonDragThreshold = signal<number>(
     defaultSettings.rightButtonDragThreshold,
   );
-  private _maximizePuzzleSize = signal<number>(defaultSettings.maximizePuzzleSize);
+  private _maxScale = signal<number>(defaultSettings.maxScale);
   private _showStatusbar = signal<boolean>(defaultSettings.showStatusbar);
 
   private constructor() {}
@@ -66,7 +66,7 @@ class Settings {
       update(this._rightButtonAudioVolume, commonSettings.rightButtonAudioVolume);
       update(this._rightButtonHoldTime, commonSettings.rightButtonHoldTime);
       update(this._rightButtonDragThreshold, commonSettings.rightButtonDragThreshold);
-      update(this._maximizePuzzleSize, commonSettings.maximizePuzzleSize);
+      update(this._maxScale, commonSettings.maxScale);
       update(this._showStatusbar, commonSettings.showStatusbar);
     }
   }
@@ -144,12 +144,12 @@ class Settings {
     this.saveCommonSettingOrLogError("rightButtonDragThreshold", value);
   }
 
-  get maximizePuzzleSize(): number {
-    return this._maximizePuzzleSize.get();
+  get maxScale(): number {
+    return this._maxScale.get();
   }
-  set maximizePuzzleSize(value: number) {
-    this._maximizePuzzleSize.set(value);
-    this.saveCommonSettingOrLogError("maximizePuzzleSize", value);
+  set maxScale(value: number) {
+    this._maxScale.set(value);
+    this.saveCommonSettingOrLogError("maxScale", value);
   }
 
   get showStatusbar(): boolean {

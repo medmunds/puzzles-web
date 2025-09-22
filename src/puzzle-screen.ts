@@ -182,7 +182,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
               secondaryButtonAudioVolume=${settings.rightButtonAudioVolume}
               secondaryButtonHoldTime=${settings.rightButtonHoldTime}
               secondaryButtonDragThreshold=${settings.rightButtonDragThreshold}
-              ?maximize=${settings.maximizePuzzleSize !== 0}
+              max-scale=${settings.maxScale}
           >
             <wa-skeleton slot="loading" effect="sheen"></wa-skeleton>
           </puzzle-view-interactive>

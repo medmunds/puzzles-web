@@ -9,6 +9,7 @@ import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
 import { settings } from "./store/settings.ts";
 import { audioClick } from "./utils/audio.ts";
 import { autoBind } from "./utils/autobind.ts";
+import { clamp } from "./utils/math.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -17,6 +18,10 @@ import "@awesome.me/webawesome/dist/components/details/details.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/slider/slider.js";
+
+const MAX_SCALE_MIN = 0.5;
+const MAX_SCALE_MAX = 4; // stand-in for "infinity" in maxScale slider
+const MAX_SCALE_STEP = 0.5;
 
 @customElement("settings-dialog")
 export class SettingsDialog extends SignalWatcher(LitElement) {
@@ -79,15 +84,26 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             ?checked=${autoBind(settings, "showStatusbar")}
             hint="Text below some puzzles (you might need it to solve them)"
           >Show status bar</wa-checkbox>
-        <wa-checkbox
-            hint="Make the puzzle as large as possible"
-            ?checked=${settings.maximizePuzzleSize !== 0}
+        <wa-slider
+            label="Maximum puzzle scale"
+            hint="How far to stretch smaller puzzles to fill the screen"
+            .value=${clamp(MAX_SCALE_MIN, settings.maxScale, MAX_SCALE_MAX)}
+            min=${MAX_SCALE_MIN}
+            max=${MAX_SCALE_MAX}
+            step=${MAX_SCALE_STEP}
+            with-markers
+            with-tooltip
+            .valueFormatter=${(value: number) => (value >= MAX_SCALE_MAX ? "As large as fits" : `${value}x`)}
             @change=${(event: Event) => {
               // (Special case for non-standard handling; no data-setting attr.)
-              const checked = (event.target as HTMLInputElement).checked;
-              settings.maximizePuzzleSize = checked ? 999 : 0;
+              const value = Number.parseFloat((event.target as HTMLInputElement).value);
+              settings.maxScale =
+                value >= MAX_SCALE_MAX ? Number.POSITIVE_INFINITY : value;
             }}
-          >Stretch puzzle to fit</wa-checkbox>
+        >
+          <span slot="reference" class="scale-1x">1x</span>
+          <span slot="reference">No limit</span>
+        </wa-slider>
       </wa-details>
     `;
   }
@@ -222,6 +238,12 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       display: flex;
       flex-direction: column;
       gap: var(--wa-space-l);
+    }
+    
+    .scale-1x {
+      /* Place the maxScale 1x label below the second marker */
+      margin-inline-start: ${100 / ((MAX_SCALE_MAX - MAX_SCALE_MIN) / MAX_SCALE_STEP)}%;
+      transform: translateX(-50%);
     }
     
     .help {

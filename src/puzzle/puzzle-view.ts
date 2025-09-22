@@ -26,11 +26,12 @@ ColorSpace.register(OKLCH);
 @customElement("puzzle-view")
 export class PuzzleView extends SignalWatcher(LitElement) {
   /**
-   * If maximize is true, the puzzle will grow to fill the available space
-   * in its container.
+   * Maximum scale to stretch the puzzle beyond its preferred size.
+   * Set to "1" to limit puzzle to preferred size or smaller.
+   * Default: no limit (will fill available space).
    */
-  @property({ type: Boolean })
-  maximize = false;
+  @property({ type: Number, attribute: "max-scale" })
+  maxScale: number = Number.POSITIVE_INFINITY;
 
   /**
    * Whether to show the status bar.
@@ -84,7 +85,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       let needsRedraw = false;
 
       if (
-        changedProperties.has("maximize") ||
+        changedProperties.has("maxScale") ||
         changedProperties.has("renderedPuzzleParams")
       ) {
         // Changing game params may alter desired canvas size.
@@ -208,7 +209,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   // Returns true if canvasSize changed.
   // If changed and canvasReady, redraws puzzle.
-  protected async resize(isUserSize = false): Promise<boolean> {
+  protected async resize(_isUserSize = false): Promise<boolean> {
     // (Resize observer may call this before first render,
     // so avoid initializing cached @query props unless hasUpdated.)
     if (!this.hasUpdated || !this.puzzlePart) {
@@ -220,16 +221,22 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     // midend_size() is only valid while there's a game; just report full
     // availableSize before that. (We'll get called again once there's a game:
     // see renderingFirstGame in updated()).
-    // TODO: implement maximize (maximum scale factor)
-    //   midend_reset_tilesize() // (reverts effects of earlier isUserSize=true)
-    //   preferredSize = midend_size(INT_MAX, isUserSize=false)
-    //   maximizedSize = preferredSize * maxScaleFactor
-    //   size = midend_size(min(maximizedSize, availableSize), isUserSize=true)
-    const size = this.puzzle?.currentGameId
-      ? await this.puzzle.size(availableSize, isUserSize || this.maximize, 1)
-      : availableSize;
-    const changed = size.w !== this.canvasSize?.w || size.h !== this.canvasSize?.h;
+    let size = availableSize;
+    if (this.puzzle?.currentGameId) {
+      if (this.maxScale > 0 && this.maxScale < Number.POSITIVE_INFINITY) {
+        // Limit available size to maxScale * preferredSize
+        const preferredSize = await this.puzzle.preferredSize();
+        const scaledSize = {
+          w: this.maxScale * preferredSize.w,
+          h: this.maxScale * preferredSize.h,
+        };
+        availableSize.w = Math.min(scaledSize.w, availableSize.w);
+        availableSize.h = Math.min(scaledSize.h, availableSize.h);
+      }
+      size = await this.puzzle.size(availableSize, true, 1);
+    }
 
+    const changed = size.w !== this.canvasSize?.w || size.h !== this.canvasSize?.h;
     if (changed) {
       // const { w: currentW, h: currentH } = this.canvasSize ?? { w: "---", h: "---" };
       // console.log(

@@ -21,7 +21,7 @@ export interface CommonSettings {
   rightButtonDragThreshold?: number; // css pixel radius
 
   // Appearance
-  maximizePuzzleSize?: number;
+  maxScale?: number;
   showStatusbar?: boolean;
 }
 
