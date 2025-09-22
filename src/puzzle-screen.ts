@@ -255,8 +255,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     await import("./share-dialog.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "share-dialog",
-      render: () =>
-        html`<share-dialog puzzle-name=${this.puzzleData?.name} .router=${this.router}></share-dialog>`,
+      render: () => html`<share-dialog .router=${this.router}></share-dialog>`,
     });
     if (dialog && !dialog.open) {
       await dialog.reset();
@@ -306,9 +305,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     await import("./enter-gameid-dialog.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "enter-gameid-dialog",
-      render: () => html`
-        <enter-gameid-dialog puzzle-name=${this.puzzleData?.name}></enter-gameid-dialog>
-      `,
+      render: () => html`<enter-gameid-dialog></enter-gameid-dialog>`,
     });
     if (dialog && !dialog.open) {
       dialog.reset();
@@ -331,9 +328,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     await import("./settings-dialog.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "settings-dialog",
-      render: () => html`
-        <settings-dialog puzzle-name=${this.puzzleData?.name}></settings-dialog>
-      `,
+      render: () => html`<settings-dialog></settings-dialog>`,
     });
     if (dialog && !dialog.open) {
       await dialog.show();

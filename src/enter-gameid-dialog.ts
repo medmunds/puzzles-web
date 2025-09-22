@@ -2,7 +2,7 @@ import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 
@@ -47,9 +47,6 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
   @state()
   private puzzle?: Puzzle;
 
-  @property({ type: String, attribute: "puzzle-name" })
-  puzzleName = "";
-
   @state()
   private gameid?: string;
 
@@ -74,12 +71,13 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
   }
 
   protected override render() {
+    const puzzleName = this.puzzle?.displayName ?? "Unknown puzzle";
     const callout = this.error
       ? html`
           <wa-callout variant="danger">
             <wa-icon slot="icon" name="error"></wa-icon>
             <strong>Unable to use that id</strong>&hairsp;&mdash;&hairsp;are you 
-            sure it’s for <cite>${this.puzzleName}</cite>? (Error: ${this.error}.)
+            sure it’s for <cite>${puzzleName}</cite>? (Error: ${this.error}.)
           </wa-callout>
         `
       : this.puzzle?.totalMoves
@@ -103,7 +101,7 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
             @keydown=${this.handleInputKeydown}
         >
           <div slot="label">
-            Enter a <cite>${this.puzzleName}</cite> game ID or random seed
+            Enter a <cite>${puzzleName}</cite> game ID or random seed
           </div>
           <div slot="hint">
             Copied from any compatible <cite>Portable Puzzles Collection</cite> app

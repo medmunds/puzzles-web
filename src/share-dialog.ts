@@ -23,9 +23,6 @@ export class ShareDialog extends SignalWatcher(LitElement) {
   @state()
   private puzzle?: Puzzle;
 
-  @property({ type: String, attribute: "puzzle-name" })
-  puzzleName = "";
-
   @property({ type: Object })
   router?: AppRouter;
 
@@ -59,6 +56,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
       throw new Error("share-dialog missing required router");
     }
 
+    const puzzleName = this.puzzle?.displayName ?? "Unknown puzzle";
     const puzzleParams = this.puzzle?.currentParams;
     const gameId = this.puzzle?.currentGameId;
     const randomSeed = this.puzzle?.randomSeed;
@@ -95,7 +93,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
         <div slot="label">Share</div>
         
         <wa-details open name="share">
-          <div slot="summary">Link to <cite>${this.puzzleName}</cite></div>
+          <div slot="summary">Link to <cite>${puzzleName}</cite></div>
           ${this.renderCopyableInput({
             label: "This specific game",
             value: currentGameLink,

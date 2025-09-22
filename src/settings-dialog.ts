@@ -2,7 +2,7 @@ import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.
 import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, query, state } from "lit/decorators.js";
 import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
@@ -29,9 +29,6 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
   @state()
   private puzzle?: Puzzle;
 
-  @property({ type: String, attribute: "puzzle-name" })
-  puzzleName = "";
-
   @query("wa-dialog", true)
   private dialog?: WaDialog;
 
@@ -52,9 +49,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       return nothing;
     }
 
-    // Puzzle.displayName is sometimes wrong (e.g., "Train Tracks" for "Tracks").
-    // Allow override from catalog data via property.
-    const puzzleName = this.puzzleName || this.puzzle.displayName;
+    const puzzleName = this.puzzle.displayName;
 
     // Use autosubmit on the puzzle-preferences-form to apply changes immediately.
     // (settings-dialog does not use OK/Cancel flow.)

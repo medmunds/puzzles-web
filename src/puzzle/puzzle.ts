@@ -7,6 +7,7 @@ import {
   uninstallWorkerErrorReceivers,
 } from "../utils/errors.ts";
 import { nextAnimationFrame } from "../utils/timing.ts";
+import { puzzleDataMap } from "./catalog.ts";
 import type {
   ChangeNotification,
   Colour,
@@ -68,7 +69,11 @@ export class Puzzle {
       wantsStatusbar,
     }: PuzzleStaticAttributes,
   ) {
-    this.displayName = displayName;
+    const catalogData = puzzleDataMap[puzzleId];
+    // Prefer catalog name to midend API name
+    // (e.g., catalog "Tracks" vs API "Train Tracks")
+    this.displayName = catalogData?.name ?? displayName;
+    this.isUnfinished = catalogData?.unfinished ?? false;
     this.canConfigure = canConfigure;
     this.canSolve = canSolve;
     this.needsRightButton = needsRightButton;
@@ -135,6 +140,7 @@ export class Puzzle {
 
   // Static properties (no reactivity needed)
   public readonly displayName: string;
+  public readonly isUnfinished: boolean; // "experimental" puzzle status
   public readonly canConfigure: boolean;
   public readonly canSolve: boolean;
   public readonly needsRightButton: boolean;
