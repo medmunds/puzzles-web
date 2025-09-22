@@ -414,8 +414,11 @@ export class PuzzleViewInteractive extends PuzzleView {
     ...PuzzleView.styles,
     css`
       :host(:focus-visible) {
-        outline: var(--wa-focus-ring);
-        outline-offset: var(--wa-focus-ring-offset);
+        outline: none;
+        & [part="content"] {
+          outline: var(--wa-focus-ring);
+          outline-offset: var(--wa-focus-ring-offset);
+        }
       }
 
       [part="puzzle"], 
@@ -436,6 +439,7 @@ export class PuzzleViewInteractive extends PuzzleView {
         -webkit-user-select: none;
         -moz-user-select: none;
         user-select: none;
+        cursor: default;
       }
     `,
   ];

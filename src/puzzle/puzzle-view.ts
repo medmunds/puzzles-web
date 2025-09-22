@@ -38,13 +38,6 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   @property({ attribute: "hide-statusbar", type: Boolean })
   hideStatusbar = false;
 
-  /**
-   * An additional element whose size can affect the puzzle-view.
-   * Added to the ResizeObserver the puzzle-view uses to compute canvas size.
-   */
-  @property({ type: Element })
-  resizeElement?: Element;
-
   @consume({ context: puzzleContext, subscribe: true })
   @state()
   protected puzzle?: Puzzle;
@@ -55,11 +48,14 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   @state()
   protected renderedPuzzleParams?: string;
 
-  @query("#canvasWrap", true)
-  protected canvasWrap?: HTMLDivElement;
+  @query("[part=content]")
+  protected contentPart?: HTMLElement;
 
-  @query("[part=puzzle]", true)
+  @query("[part=puzzle]")
   protected puzzlePart?: HTMLElement;
+
+  @query("#canvasPlaceholder")
+  protected canvasPlaceholder?: HTMLElement;
 
   protected resizeController = new ResizeController(this, {
     // Throttle to at least the canvas size transition time,
@@ -67,33 +63,12 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     callback: throttle(() => this.resize(), 100),
   });
 
-  private observedResizeElement?: Element; // set to resizeElement when observed
-  private observeResizeElement(element?: Element) {
-    if (element !== this.observedResizeElement) {
-      if (this.observedResizeElement) {
-        this.resizeController.unobserve(this.observedResizeElement);
-        this.observedResizeElement = undefined;
-      }
-      if (element) {
-        this.resizeController.observe(element);
-        this.observedResizeElement = element;
-      }
-    }
-  }
-
-  protected override willUpdate(changedProperties: Map<string, unknown>) {
+  protected override willUpdate(_changedProperties: Map<string, unknown>) {
     // Since lit signals doesn't yet support effects on reactive properties, copy the
     // puzzle's reactive currentGameId and currentParams into local reactive state.
     // If they have changed, this will cause "effects" via updated().
     this.renderedPuzzleGameId = this.puzzle?.currentGameId;
     this.renderedPuzzleParams = this.puzzle?.currentParams;
-
-    if (changedProperties.has("resizeElement")) {
-      // Altering ResizeController's observables will requestUpdate().
-      // Apply changes in willUpdate() to avoid triggering a second update
-      // on initial render (Lit change-in-update warning).
-      this.observeResizeElement(this.resizeElement);
-    }
   }
 
   protected override async updated(changedProperties: Map<string, unknown>) {
@@ -141,19 +116,22 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     super.connectedCallback();
     document.addEventListener("visibilitychange", this.redrawWhenVisible);
     window.addEventListener("focus", this.redrawWhenVisible);
-    this.observeResizeElement(this.resizeElement);
   }
 
   override async disconnectedCallback() {
     super.disconnectedCallback();
-    this.observeResizeElement(undefined);
-    this.resizeElement = undefined; // try to break circular reference?
     document.removeEventListener("visibilitychange", this.redrawWhenVisible);
     window.removeEventListener("focus", this.redrawWhenVisible);
   }
 
   protected override render() {
-    return [this.renderPuzzle(), this.renderStatusbar(), this.renderLoadingIndicator()];
+    return html`
+      <div part="content">
+        ${this.renderPuzzle()}
+        ${this.renderStatusbar()}
+        ${this.renderLoadingIndicator()}
+      </div>
+    `;
   }
 
   protected renderPuzzle() {
@@ -163,17 +141,15 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   }
 
   protected renderCanvas() {
-    return html`
-      <div id="canvasWrap">
-        <div id="canvasPlaceholder"></div>
-      </div>
-    `;
+    return html`<div id="canvasPlaceholder"></div>`;
   }
 
   protected renderStatusbar() {
-    return !this.hideStatusbar && this.puzzle?.wantsStatusbar
-      ? html`<div part="statusbar">${this.puzzle?.statusbarText}</div>`
-      : nothing;
+    if (this.hideStatusbar || !this.puzzle?.wantsStatusbar) {
+      return nothing;
+    }
+    const style = this.canvasSize ? `max-width: ${this.canvasSize?.w}px` : nothing;
+    return html`<div part="statusbar" style=${style}>${this.puzzle?.statusbarText}</div>`;
   }
 
   protected renderLoadingIndicator() {
@@ -205,41 +181,60 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     }
   }
 
+  protected minPuzzleDimension = 64;
+
+  protected getAvailableCanvasSize(): Size {
+    // Available canvas size is free space plus current canvas size.
+    // Free space is my size minus current content size.
+    // (When resizing smaller, free space may be negative.)
+    // Content includes the current canvas, statusbar, padding/spacing/borders, etc.
+    let { width, height } = this.getBoundingClientRect();
+    const content = this.contentPart;
+    if (content) {
+      width -= content.offsetWidth;
+      height -= content.offsetHeight;
+    }
+    // This must use the actual canvas (or placeholder) in the DOM
+    // (not this.canvasSize, which may not have been applied yet).
+    const canvas = this.canvas ?? this.canvasPlaceholder;
+    if (canvas) {
+      width += canvas.offsetWidth;
+      height += canvas.offsetHeight;
+    }
+    width = Math.floor(Math.max(width, this.minPuzzleDimension));
+    height = Math.floor(Math.max(height, this.minPuzzleDimension));
+    return { w: width, h: height };
+  }
+
   // Returns true if canvasSize changed.
   // If changed and canvasReady, redraws puzzle.
   protected async resize(isUserSize = false): Promise<boolean> {
     // (Resize observer may call this before first render,
     // so avoid initializing cached @query props unless hasUpdated.)
-    if (!this.hasUpdated || !this.canvasWrap || !this.puzzlePart) {
+    if (!this.hasUpdated || !this.puzzlePart) {
       return false;
     }
 
-    const classes = ["resizing"];
-    if (!isUserSize && this.maximize) {
-      // Make the puzzlePart full page size, and getBoundingClientRect() should
-      // tell us the maximum size the canvas is able to grow within our container.
-      classes.push("maximize");
-    }
-    this.puzzlePart.classList.add(...classes);
-    const { width, height } = this.canvasWrap.getBoundingClientRect();
-    const availableSize = { w: width, h: height };
-    this.puzzlePart.classList.remove(...classes);
+    const availableSize = this.getAvailableCanvasSize();
 
-    // midend_size() is only valid while there's a game;
-    // use a square fitting availableSize before that.
-    // We'll get called again once there's a game (see renderingFirstGame in updated()).
-    // TODO: unclear if we should pass dpr to midend as 1 or actual dpr
-    //   (since we use css pixels and scale to dpr in the drawing context)
+    // midend_size() is only valid while there's a game; just report full
+    // availableSize before that. (We'll get called again once there's a game:
+    // see renderingFirstGame in updated()).
+    // TODO: implement maximize (maximum scale factor)
+    //   midend_reset_tilesize() // (reverts effects of earlier isUserSize=true)
+    //   preferredSize = midend_size(INT_MAX, isUserSize=false)
+    //   maximizedSize = preferredSize * maxScaleFactor
+    //   size = midend_size(min(maximizedSize, availableSize), isUserSize=true)
     const size = this.puzzle?.currentGameId
       ? await this.puzzle.size(availableSize, isUserSize || this.maximize, 1)
-      : { w: Math.min(width, height), h: Math.min(width, height) };
+      : availableSize;
     const changed = size.w !== this.canvasSize?.w || size.h !== this.canvasSize?.h;
 
     if (changed) {
       // const { w: currentW, h: currentH } = this.canvasSize ?? { w: "---", h: "---" };
       // console.log(
       //   `Resize: current ${currentW}x${currentH},` +
-      //     ` available ${width}x${height},` +
+      //     ` available ${availableSize.w}x${availableSize.h},` +
       //     ` used ${size.w}x${size.h}`,
       // );
       this.canvasSize = size;
@@ -268,8 +263,10 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     if (this.canvas) {
       throw new Error("PuzzleView.createCanvas called when canvas already exists");
     }
-    if (!this.canvasWrap) {
-      throw new Error("PuzzleView.createCanvas called before canvasWrap available");
+    if (!this.canvasPlaceholder?.parentElement) {
+      throw new Error(
+        "PuzzleView.createCanvas called before canvasPlaceholder rendered",
+      );
     }
     if (!this.puzzle) {
       throw new Error("PuzzleView.createCanvas called before puzzle available");
@@ -287,7 +284,10 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     this.canvas = document.createElement("canvas");
     // Safari wants the canvas in the dom before transferring it offscreen.
     // (Else offscreen drawing doesn't always get mirrored onscreen.)
-    this.canvasWrap.insertBefore(this.canvas, this.canvasWrap.firstChild);
+    this.canvasPlaceholder.parentElement.insertBefore(
+      this.canvas,
+      this.canvasPlaceholder,
+    );
     const offscreenCanvas = this.canvas.transferControlToOffscreen();
 
     const { fontFamily, fontWeight, fontStyle } = window.getComputedStyle(this.canvas);
@@ -329,14 +329,11 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   protected async updateCanvasSize() {
     if (this.canvasSize) {
       const { w, h } = this.canvasSize;
-      if (this.canvas) {
-        this.canvas.style.width = `${w}px`;
-        this.canvas.style.height = `${h}px`;
-      }
-      const placeholder = this.shadowRoot?.getElementById("canvasPlaceholder");
-      if (placeholder) {
-        placeholder.style.width = `${w}px`;
-        placeholder.style.height = `${h}px`;
+      for (const element of [this.canvas, this.canvasPlaceholder]) {
+        if (element) {
+          element.style.width = `${w}px`;
+          element.style.height = `${h}px`;
+        }
       }
       if (this.puzzle && this.canvasReady) {
         await this.puzzle.resizeDrawing(this.canvasSize, this.canvasDpr);
@@ -349,13 +346,13 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   //
 
   protected async updateColorPalette() {
-    if (!this.puzzle || !this.canvas) {
+    if (!this.puzzle || !this.contentPart || !this.canvas) {
       throw new Error("updateColorPalette called before puzzle ready");
     }
 
-    // Get our (original) CSS background color, as RGB.
-    this.style.backgroundColor = ""; // undo any earlier local style override
-    const bgcolor = window.getComputedStyle(this).backgroundColor;
+    // Get our content's (original) CSS background color, as RGB.
+    this.contentPart.style.removeProperty("--background-color"); // undo any earlier local style override
+    const bgcolor = window.getComputedStyle(this.contentPart).backgroundColor;
     const bgrgb = convert(parse(bgcolor), "srgb");
 
     // The puzzle will generate a palette from a default background color, but
@@ -394,7 +391,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     // Almost all puzzles use index 0 as the background.
     // (Untangle is the exception, and it always uses the defaultBackground.)
     const COL_BACKGROUND = this.puzzle.puzzleId === "untangle" ? 1 : 0;
-    this.style.backgroundColor = palette[COL_BACKGROUND];
+    this.contentPart.style.setProperty("--background-color", palette[COL_BACKGROUND]);
   }
 
   //
@@ -408,14 +405,13 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         --spacing: var(--wa-space-s);
 
         display: flex;
-        flex-direction: column;
         align-items: center;
+        justify-content: center;
 
-        /* Necessary for getDefaultColour to access computed backgroundColor */
-        background-color: inherit;
-
-        /* For sizing the loadingIndicator */
-        position: relative;
+        /* Content area properties, for parent overrides */
+        --background-color: inherit;
+        --border: none;
+        --border-radius: none;
       }
 
       canvas {
@@ -435,7 +431,16 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         }
       }
       
-      canvas, #canvasWrap {
+      [part="content"] {
+        background-color: var(--background-color);
+        border: var(--border);
+        border-radius: var(--border-radius);
+
+        /* For sizing the loadingIndicator */
+        position: relative;
+      }
+      
+      canvas, #canvasPlaceholder {
         /* Required for accurate sizing calculations */
         padding: 0 !important;
         border-width: 0 !important;
@@ -446,28 +451,9 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         padding: var(--spacing);
       }
       
-      [part="puzzle"].resizing {
-        /* Allow full flexing during resize calculations, but disable
-         * otherwise to prevent vertical stretching */
-        flex: 1 1 auto;
-        min-height: 1px;
-
-        /* Prevent growing into overflow during resizing calculations */
-        &.maximize {
-          max-width: 100%;
-          max-height: 100%;
-        }
-
-        /* See how big canvas can get. */
-        #canvasWrap {
-          width: 100vw;
-          height: 100vh;
-          max-width: 100%;
-          max-height: 100%;
-        }
-      }
-
       [part="statusbar"] {
+        text-align: center;
+        
         /* (Top spacing is redundant with [part="puzzle"] bottom) */
         padding: 0 var(--spacing) var(--spacing);
 

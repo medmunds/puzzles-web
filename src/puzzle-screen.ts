@@ -183,11 +183,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
               secondaryButtonHoldTime=${settings.rightButtonHoldTime}
               secondaryButtonDragThreshold=${settings.rightButtonDragThreshold}
               ?maximize=${settings.maximizePuzzleSize !== 0}
-              .resizeElement=${
-                // puzzle-view observes its own size, but we also want it to grow
-                // when we're getting larger (without enabling flex-grow).
-                this
-              }
           >
             <wa-skeleton slot="loading" effect="sheen"></wa-skeleton>
           </puzzle-view-interactive>
@@ -586,7 +581,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
+      align-items: stretch;
 
       /* The padding is split between vertical padding and horizontal margin
        * on children to allow the puzzle-view (alone) to extend into the 
@@ -660,17 +655,13 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     }
 
     puzzle-view-interactive {
-      /* Shrink to fit, but don't grow beyond natural height to keep
-       * bottom toolbar snug against puzzle. (Our ResizeController lets
-       * the puzzle grow when we have more space available.) */
-      flex: 0 1 auto;
+      flex: 1 1 auto;
       min-height: 5rem; /* allows flexing */
-      overflow: auto; /* scrollbars if it still can't fit */
-      background-color: var(--wa-color-surface-default);
-      border-radius: var(--wa-form-control-border-radius);
-      /*border: 1px solid var(--wa-form-control-border-color);*/
-      /*border: 1px solid var(--wa-color-surface-border);*/
       --spacing: var(--wa-space-m);
+      --background-color: var(--wa-color-surface-default);
+      --border-radius: var(--wa-form-control-border-radius);
+      /*--border: 1px solid var(--wa-form-control-border-color);*/
+      /*--border: 1px solid var(--wa-color-surface-border);*/
     }
     
     @container (max-width: 25rem) {
