@@ -84,10 +84,15 @@ export class Drawing implements DrawingImpl<Blitter> {
     // https://web.dev/articles/canvas-hidipi
     // Most canvas operations will be scaled by the dpr,
     // allowing the puzzle to work in CSS pixels.
-    this.dpr = dpr;
-    this.canvas.width = w * dpr;
-    this.canvas.height = h * dpr;
-    this.context.scale(dpr, dpr);
+    // The drawing API expects rects and vertical/horizontal lines
+    // are constrained to integer pixel boundaries (no anti-aliasing),
+    // so round a fractional dpr up. (It's OK that the onscreen results
+    // will anti-alias the integral offscreen original.)
+    const effectiveDpr = Math.ceil(dpr);
+    this.dpr = effectiveDpr;
+    this.canvas.width = w * effectiveDpr;
+    this.canvas.height = h * effectiveDpr;
+    this.context.scale(effectiveDpr, effectiveDpr);
   }
 
   /*
