@@ -221,6 +221,9 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       display: flex;
       flex-direction: column;
       gap: var(--wa-space-l);
+      
+      /* De-emphasize slider/input labels to match checkbox/radio labels */
+      --wa-form-control-label-font-weight: var(--wa-form-control-value-font-weight);
     }
     
     wa-dialog::part(dialog) {
