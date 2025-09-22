@@ -9,7 +9,7 @@ import {
 import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { version } from "./catalog.ts";
+import { version } from "./puzzle/catalog.ts";
 import { pwaManager } from "./utils/pwa.ts";
 
 // Register components

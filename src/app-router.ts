@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/browser";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { puzzleDataMap } from "./catalog.ts";
+import { puzzleDataMap } from "./puzzle/catalog.ts";
 
 // Register components (note some are lazy-loaded)
 import "./catalog-screen.ts";

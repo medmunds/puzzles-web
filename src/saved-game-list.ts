@@ -2,7 +2,7 @@ import { computed, type Signal, SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
-import { puzzleDataMap } from "./catalog.ts";
+import { puzzleDataMap } from "./puzzle/catalog.ts";
 import type { SavedGameMetadata } from "./store/db.ts";
 import { savedGames } from "./store/saved-games.ts";
 

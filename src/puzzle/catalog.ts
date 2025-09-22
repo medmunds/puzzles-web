@@ -1,4 +1,4 @@
-import catalog from "./assets/puzzles/catalog.json";
+import catalog from "../assets/puzzles/catalog.json";
 
 export interface PuzzleDataMap {
   [id: string]: PuzzleData;

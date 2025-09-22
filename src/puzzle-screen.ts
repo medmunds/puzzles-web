@@ -3,7 +3,7 @@ import { css, html, LitElement } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import type { AppRouter } from "./app-router.ts";
-import { type PuzzleData, puzzleDataMap } from "./catalog.ts";
+import { type PuzzleData, puzzleDataMap } from "./puzzle/catalog.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
