@@ -348,6 +348,10 @@ export class Puzzle {
     return result;
   }
 
+  public async preferredSize(): Promise<Size> {
+    return this.workerPuzzle.preferredSize();
+  }
+
   public async formatAsText(): Promise<string | undefined> {
     return this.workerPuzzle.formatAsText();
   }

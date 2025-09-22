@@ -1056,6 +1056,20 @@ public:
         return {x, y};
     }
 
+	/**
+     * Resizes the puzzle to its preferred size (at its preferred tilesize)
+     * without any constraints on available size. (So the result might be
+     * larger than the window. You probably want to call size() after this.)
+     * Returns the preferred size.
+     */
+	[[nodiscard]] Size preferredSize() const {
+		midend_reset_tilesize(me());
+		int x = INT_MAX;
+		int y = INT_MAX;
+		midend_size(me(), &x, &y, false, 1.0);
+		return {x, y};
+	}
+
     void resetTileSize() const { midend_reset_tilesize(me()); }
 
     void newGame() const {
@@ -1566,6 +1580,7 @@ EMSCRIPTEN_BINDINGS(frontend) {
         .property("needsRightButton", &frontend::getNeedsRightButton)
         .property("isTimed", &frontend::getIsTimed)
         .function("size(maxSize, isUserSize, devicePixelRatio)", &frontend::size)
+        .function("preferredSize", &frontend::preferredSize)
         .function("resetTileSize", &frontend::resetTileSize)
         .function("newGame", &frontend::newGame)
         .function("restartGame", &frontend::restartGame)

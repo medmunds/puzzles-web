@@ -197,6 +197,10 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
     return this.frontend.size(maxSize, isUserSize, devicePixelRatio);
   }
 
+  preferredSize(): Size {
+    return this.frontend.preferredSize();
+  }
+
   formatAsText(): string | undefined {
     return this.frontend.formatAsText();
   }
