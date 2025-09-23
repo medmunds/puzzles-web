@@ -38,8 +38,33 @@ export const debounce = <T extends (...args: unknown[]) => unknown>(
  */
 export const debounced =
   (delayMs: number) =>
-  (_target: unknown, _propertyKey: string, descriptor: PropertyDescriptor) => {
-    descriptor.value = debounce(descriptor.value, delayMs);
+  (_target: unknown, propertyKey: string, descriptor: PropertyDescriptor) => {
+    const originalMethod = descriptor.value;
+    const cache = new WeakMap<object, (...args: unknown[]) => void>();
+
+    descriptor.get = function (this: object) {
+      // Lazily create a debounced wrapper per instance
+      let fn = cache.get(this);
+      if (!fn) {
+        fn = debounce(originalMethod.bind(this), delayMs);
+        cache.set(this, fn);
+      }
+      return fn;
+    };
+
+    // Keep set behavior if someone reassigns the method on the instance
+    descriptor.set = function (this: object, val: unknown) {
+      Object.defineProperty(this, propertyKey, {
+        value: val,
+        configurable: true,
+        writable: true,
+      });
+    };
+
+    // Prevent the original value from being used
+    delete descriptor.value;
+    delete descriptor.writable;
+
     return descriptor;
   };
 
@@ -69,13 +94,3 @@ export const throttle = <T extends (...args: unknown[]) => unknown>(
     }
   };
 };
-
-/**
- * Method decorator version of throttle().
- */
-export const throttled =
-  (delayMs: number) =>
-  (_target: unknown, _propertyKey: string, descriptor: PropertyDescriptor) => {
-    descriptor.value = throttle(descriptor.value, delayMs);
-    return descriptor;
-  };
