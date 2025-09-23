@@ -1,9 +1,11 @@
 import { SignalWatcher } from "@lit-labs/signals";
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
+import { when } from "lit/directives/when.js";
 import type { AppRouter } from "./app-router.ts";
 import { type PuzzleData, puzzleDataMap } from "./puzzle/catalog.ts";
+import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
@@ -14,13 +16,14 @@ import { debounced, sleep } from "./utils/timing.ts";
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
+import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
 import "./dynamic-content.ts";
 import "./head-matter.ts";
 import "./puzzle/puzzle-context.ts";
 import "./puzzle/puzzle-history.ts";
-import "./puzzle/puzzle-game-menu.ts";
 import "./puzzle/puzzle-keys.ts";
 import "./puzzle/puzzle-preset-menu.ts";
 import "./puzzle/puzzle-view-interactive.ts";
@@ -51,6 +54,13 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
   @query("dynamic-content")
   private dynamicContent?: HTMLElementTagNameMap["dynamic-content"];
+
+  @query("puzzle-context")
+  private puzzleContext?: HTMLElementTagNameMap["puzzle-context"];
+
+  get puzzle(): Puzzle | undefined {
+    return this.puzzleContext?.puzzle;
+  }
 
   /** If the current game has been saved or loaded, its filename. */
   savedFilename?: string;
@@ -130,41 +140,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           </header>
 
           <div class="toolbar">
-            <puzzle-game-menu @wa-select=${this.handleGameMenuCommand}>
-              <wa-divider></wa-divider>
-              <wa-dropdown-item value="share">
-                <wa-icon slot="icon" name="share"></wa-icon>
-                Share…
-              </wa-dropdown-item>
-              <wa-dropdown-item value="load">
-                <wa-icon slot="icon" name="load-game"></wa-icon>
-                Load…
-              </wa-dropdown-item>
-              <wa-dropdown-item value="save">
-                <wa-icon slot="icon" name="save-game"></wa-icon>
-                Save…
-              </wa-dropdown-item>
-              <wa-dropdown-item value="gameid">
-                <wa-icon slot="icon" name="gameid"></wa-icon>
-                Enter ID&hairsp;/&hairsp;seed…
-              </wa-dropdown-item>
-              <wa-divider></wa-divider>
-              <wa-dropdown-item value="preferences">
-                <wa-icon slot="icon" name="settings"></wa-icon>
-                Preferences…
-              </wa-dropdown-item>
-              <wa-divider></wa-divider>
-              <wa-dropdown-item value="catalog">
-                <wa-icon slot="icon" name="back-to-catalog"></wa-icon>
-                Other puzzles
-              </wa-dropdown-item>
-              <wa-dropdown-item value="about">
-                <wa-icon slot="icon" name="info"></wa-icon>
-                About
-              </wa-dropdown-item>
-              <wa-divider></wa-divider>
-              <wa-dropdown-item value="redraw">Redraw puzzle</wa-dropdown-item>
-            </puzzle-game-menu>
+            ${this.renderGameMenu()}
             <puzzle-preset-menu></puzzle-preset-menu>
             <wa-button appearance="filled outlined" href=${this.helpUrl} @click=${this.showHelp}>
               <wa-icon slot="start" name="help"></wa-icon>
@@ -217,9 +193,80 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     `;
   }
 
+  private renderGameMenu(): TemplateResult {
+    return html`
+      <wa-dropdown @wa-select=${this.handleGameMenuCommand}>
+        <wa-button slot="trigger" appearance="filled outlined" with-caret>
+          <wa-icon slot="start" name="game"></wa-icon>
+          ${this.puzzleData?.name ?? "Game"}
+        </wa-button>
+        <wa-dropdown-item value="new">
+          <wa-icon slot="icon" name="new-game"></wa-icon>
+          New game
+        </wa-dropdown-item>
+        <wa-dropdown-item value="restart">
+          <wa-icon slot="icon" name="restart-game"></wa-icon>
+          Restart game
+        </wa-dropdown-item>
+        ${when(
+          this.puzzle?.canSolve,
+          () =>
+            html`
+                  <wa-dropdown-item value="solve" ?disabled=${this.puzzle?.status === "solved"}>
+                    <wa-icon slot="icon" name="show-solution"></wa-icon>
+                    Solve
+                  </wa-dropdown-item>
+                `,
+        )}
+        <wa-divider></wa-divider>
+        <wa-dropdown-item value="share">
+          <wa-icon slot="icon" name="share"></wa-icon>
+          Share…
+        </wa-dropdown-item>
+        <wa-dropdown-item value="load">
+          <wa-icon slot="icon" name="load-game"></wa-icon>
+          Load…
+        </wa-dropdown-item>
+        <wa-dropdown-item value="save">
+          <wa-icon slot="icon" name="save-game"></wa-icon>
+          Save…
+        </wa-dropdown-item>
+        <wa-dropdown-item value="gameid">
+          <wa-icon slot="icon" name="gameid"></wa-icon>
+          Enter ID&hairsp;/&hairsp;seed…
+        </wa-dropdown-item>
+        <wa-divider></wa-divider>
+        <wa-dropdown-item value="preferences">
+          <wa-icon slot="icon" name="settings"></wa-icon>
+          Preferences…
+        </wa-dropdown-item>
+        <wa-divider></wa-divider>
+        <wa-dropdown-item value="catalog">
+          <wa-icon slot="icon" name="back-to-catalog"></wa-icon>
+          Other puzzles
+        </wa-dropdown-item>
+        <wa-dropdown-item value="about">
+          <wa-icon slot="icon" name="info"></wa-icon>
+          About
+        </wa-dropdown-item>
+        <wa-divider></wa-divider>
+        <wa-dropdown-item value="redraw">Redraw puzzle</wa-dropdown-item>
+      </wa-dropdown>
+    `;
+  }
+
   private async handleGameMenuCommand(event: CustomEvent<{ item: { value: string } }>) {
     const value = event.detail.item.value;
     switch (value) {
+      case "new":
+        await this.puzzle?.newGame();
+        break;
+      case "restart":
+        await this.puzzle?.restartGame();
+        break;
+      case "solve":
+        await this.puzzle?.solve();
+        break;
       case "share":
         await this.showShareDialog();
         break;
@@ -246,7 +293,9 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         this.shadowRoot?.querySelector("puzzle-view-interactive")?.redraw();
         break;
       default:
-        // Other commands are handled by puzzle-game-menu
+        if (!import.meta.env.PROD) {
+          throw new Error(`Unknown game menu command: ${value}`);
+        }
         break;
     }
   }
