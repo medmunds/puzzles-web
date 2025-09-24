@@ -5,6 +5,7 @@ import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import timelineArrowSvg from "../assets/timeline-arrow.svg";
 import timelineDotSvg from "../assets/timeline-dot.svg";
+import { cssDefaultButtonStyle } from "../utils/css.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 
@@ -77,7 +78,6 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
     return html`
       <wa-button-group>
         <wa-button
-            appearance="filled outlined"
             ?disabled=${!this.puzzle?.canUndo}
             @pointerdown=${this.handleUndoRedoPointerDown}
             @click=${this.handleUndo}>
@@ -85,7 +85,6 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
         </wa-button>
         ${this.renderHistoryButton()}
         <wa-button
-            appearance="filled outlined"
             ?disabled=${!this.puzzle?.canRedo}
             @pointerdown=${this.handleUndoRedoPointerDown}
             @click=${this.handleRedo}>
@@ -102,7 +101,7 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
           placement="top"
           @wa-select=${this.handleSelectCheckpoint}
       >
-        <wa-button slot="trigger" appearance="filled outlined" with-caret>
+        <wa-button slot="trigger" with-caret>
           <wa-icon name="history" label="History"></wa-icon>
         </wa-button>
 
@@ -294,7 +293,9 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
     this.puzzle?.addCheckpoint();
   }
 
-  static override styles = css`
+  static override styles = [
+    cssDefaultButtonStyle,
+    css`
     :host {
       --timeline-color: var(--wa-color-neutral-border-normal);
       --background-color: var(--wa-color-surface-default);
@@ -464,7 +465,8 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
       }
       */
     }
-  `;
+    `,
+  ];
 }
 
 declare global {

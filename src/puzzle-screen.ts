@@ -9,6 +9,7 @@ import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
+import { cssDefaultButtonStyle } from "./utils/css.ts";
 import { notifyError } from "./utils/errors.ts";
 import { preventDoubleTapZoomOnButtons } from "./utils/events.ts";
 import { debounced, sleep } from "./utils/timing.ts";
@@ -52,6 +53,9 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   @state()
   private puzzleLoaded = false;
 
+  @state()
+  private themeColor?: string;
+
   @query("dynamic-content")
   private dynamicContent?: HTMLElementTagNameMap["dynamic-content"];
 
@@ -91,6 +95,9 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     ) {
       this._autoSaveFilename = puzzleAutoSaveFilename;
     }
+    this.themeColor = window
+      .getComputedStyle(this)
+      .getPropertyValue("--puzzle-theme-color");
   }
 
   protected override async willUpdate(changedProperties: Map<string, unknown>) {
@@ -130,23 +137,19 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           <meta name="application-name" content="${this.puzzleData.name}">
           <meta name="application-title" content="${this.puzzleData.name}">
           <meta name="description" content="${this.puzzleData.description}">
+          ${when(this.themeColor, () => html`<meta name="theme-color" content=${this.themeColor}>`)}
           <link rel="icon" href=${iconUrl}>
         </head-matter>
         
-        <div class="app">
+        <main>
           <header>
-            <h1>${this.puzzleData.name}</h1>
-            <div class="subtitle">from Simon Tatham’s portable puzzle collection</div>
-          </header>
-
-          <div class="toolbar">
             ${this.renderGameMenu()}
             <puzzle-preset-menu></puzzle-preset-menu>
-            <wa-button appearance="filled outlined" href=${this.helpUrl} @click=${this.showHelp}>
+            <wa-button variant="brand" href=${this.helpUrl} @click=${this.showHelp}>
               <wa-icon slot="start" name="help"></wa-icon>
               Help
             </wa-button>
-          </div>
+          </header>
 
           <puzzle-view-interactive 
               tabIndex="0"
@@ -163,16 +166,15 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
             <wa-skeleton slot="loading" effect="sheen"></wa-skeleton>
           </puzzle-view-interactive>
 
-          <div class="toolbar">
+          <footer>
             <puzzle-keys></puzzle-keys>
             <puzzle-history></puzzle-history>
-          </div>
-        </div>
+          </footer>
+        </main>
 
         <puzzle-end-notification>
           <wa-button
               slot="extra-actions-solved"
-              appearance="filled outlined"
               @click=${this.handleChangeType}
           >
             <wa-icon slot="start" name="puzzle-type"></wa-icon>
@@ -180,7 +182,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           </wa-button>
           <wa-button
               slot="extra-actions-solved"
-              appearance="filled outlined"
               href=${otherPuzzlesUrl}
           >
             <wa-icon slot="start" name="back-to-catalog"></wa-icon>
@@ -196,7 +197,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   private renderGameMenu(): TemplateResult {
     return html`
       <wa-dropdown @wa-select=${this.handleGameMenuCommand}>
-        <wa-button slot="trigger" appearance="filled outlined" with-caret>
+        <wa-button slot="trigger" class="game-menu-trigger" variant="brand" with-caret>
           <wa-icon slot="start" name="game"></wa-icon>
           ${this.puzzleData?.name ?? "Game"}
         </wa-button>
@@ -602,23 +603,19 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   // Styles
   //
 
-  static styles = css`
+  static styles = [
+    cssDefaultButtonStyle,
+    css`
     :host {
       display: block;
       width: 100%;
       height: 100%;
       container-type: size;
+      
+      --puzzle-theme-color: var(--wa-color-brand-fill-loud);
     }
     
-    .app {
-      --app-padding: var(--wa-space-xl);
-      --app-spacing: var(--wa-space-l);
-
-      @container (max-width: 40rem) {
-        --app-padding: var(--wa-space-l);
-        --app-spacing: var(--wa-space-m);
-      }
-
+    main {
       height: 100%;
       box-sizing: border-box;
       position: relative;
@@ -627,94 +624,70 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       flex-direction: column;
       align-items: stretch;
 
-      /* The padding is split between vertical padding and horizontal margin
-       * on children to allow the puzzle-view (alone) to extend into the 
-       * horizontal "padding" on narrow screens. (Negative margin doesn't
-       * work with puzzle-view's automatic size calculations.) */
-      gap: var(--app-spacing);
-      padding: var(--app-padding) 0;
-      & > * {
-        margin: 0 var(--app-padding);
-        max-width: calc(100% - 2 * var(--app-padding));
-      }
-      
-      @media (prefers-reduced-motion: no-preference) {
-        transition:
-          gap var(--wa-transition-fast)  var(--wa-transition-easing),
-          padding var(--wa-transition-fast)  var(--wa-transition-easing);
-        & > * {
-          transition: margin var(--wa-transition-fast) var(--wa-transition-easing);
-        }
-      }
-
-      background-color: var(--wa-color-surface-lowered);
+      background-color: var(--wa-color-brand-fill-quiet);
       color: var(--wa-color-text-normal);
     }
 
-    h1 {
-      margin: 0;
-      color: var(--wa-color-neutral-20);
-      font-weight: var(--wa-font-weight-bold);
-      font-size: var(--wa-font-size-xl);
-      line-height: var(--wa-line-height-condensed);
-    }
-    .subtitle {
-      font-size: var(--wa-font-size-m);
-      font-weight: var(--wa-font-weight-normal);
-      color: var(--wa-color-text-quiet);
-    }
-    @container (max-width: 36rem) {
-      /* This sizing is just kind of eyeballed with "Same Game",
-       * which seems to have the longest name. */
-      /* TODO: should really combine the header and top toolbar on small screens */
-      .subtitle {
-        display: none;
+    header, footer {
+      box-sizing: border-box;
+      width: 100%;
+
+      display: flex;
+      justify-content: flex-start;
+      gap: var(--wa-space-s);
+
+      > *:last-child {
+        margin-inline-start: auto;
       }
     }
 
     header {
-      display: flex;
       align-items: baseline;
-      text-wrap: nowrap;
-      h1 {
-        margin-inline-end: 0.5em;
-      }
+      padding: var(--wa-space-xs);
+      background-color: var(--puzzle-theme-color);
     }
 
-    .toolbar {
-      display: flex;
-      width: 100%;
-      justify-content: flex-start;
-      align-items: baseline;
-      gap: var(--wa-space-s);
+    puzzle-view-interactive {
+      flex: 1 1 auto;
+      min-height: 5rem; /* allows flexing */
+      margin-block: var(--wa-space-m);
+      margin-inline: var(--wa-space-l);
+
+      --spacing: var(--wa-space-m);
+      --background-color: var(--wa-color-surface-default);
+      --border-radius: var(--wa-form-control-border-radius);
+    }
+
+    footer {
+      align-items: end;
+      padding-inline: var(--wa-space-l);
+      padding-block-end: var(--wa-space-l);
+    }
       
-      > *:last-child {
-        margin-inline-start: auto;
+    @container (min-width: 40rem) {
+      .game-menu-trigger {
+        font-size: var(--wa-font-size-l);
+      }
+      puzzle-view-interactive {
+        margin-block: var(--wa-space-l);
+        margin-inline: var(--wa-space-xl);
+        --spacing: var(--wa-space-l);
+      }
+      footer {
+        padding-inline: var(--wa-space-xl);
+        padding-block-end: var(--wa-space-xl);
+      }
+    }
+    @container (max-width: 25rem) {
+      puzzle-view-interactive {
+        margin-inline: 0;
+        min-width: 100%;
       }
     }
 
     puzzle-preset-menu {
       flex: 0 1 auto;
       min-width: 5rem;
-    }
-
-    puzzle-view-interactive {
-      flex: 1 1 auto;
-      min-height: 5rem; /* allows flexing */
-      --spacing: var(--wa-space-m);
-      --background-color: var(--wa-color-surface-default);
-      --border-radius: var(--wa-form-control-border-radius);
-      /*--border: 1px solid var(--wa-form-control-border-color);*/
-      /*--border: 1px solid var(--wa-color-surface-border);*/
-    }
-    
-    @container (max-width: 25rem) {
-      .app puzzle-view-interactive {
-        margin: 0;
-        border-radius: 0;
-        min-width: 100%;
-        --spacing: var(--wa-space-l); /* --app-padding */
-      }
     }
 
     wa-skeleton {
@@ -724,7 +697,14 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         border-radius: 0;
       }
     }
-  `;
+
+    @media (prefers-reduced-motion: no-preference) {
+      .game-menu-trigger {
+        transition: font-size var(--wa-transition-fast) var(--wa-transition-easing);
+      }
+    }
+    `,
+  ];
 }
 
 declare global {

@@ -5,6 +5,7 @@ import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
+import { cssDefaultButtonStyle } from "../utils/css.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { ConfigDescription, ConfigItem, ConfigValues } from "./types.ts";
@@ -372,7 +373,7 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
         </wa-scroller>
         
         <div slot="footer" part="footer">
-          <wa-button appearance="filled outlined" @click=${this.handleCancel}>${this.cancelLabel}</wa-button>
+          <wa-button @click=${this.handleCancel}>${this.cancelLabel}</wa-button>
           <wa-button variant="brand" @click=${this.handleSubmit}>${this.submitLabel}</wa-button>
         </div>
       </wa-dialog>
@@ -426,7 +427,9 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
     return this.form?.reloadValues();
   }
 
-  static styles = css`
+  static styles = [
+    cssDefaultButtonStyle,
+    css`
     :host {
       display: contents;
     }
@@ -465,7 +468,8 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
       align-items: center;
       gap: var(--wa-space-s);
     }
-  `;
+    `,
+  ];
 }
 // change-in-update is necessary because title is retrieved
 // from PuzzleConfigForm after first render.

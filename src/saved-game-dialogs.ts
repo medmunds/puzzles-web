@@ -1,6 +1,7 @@
 import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property } from "lit/decorators.js";
+import { cssDefaultButtonStyle } from "./utils/css.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -51,7 +52,9 @@ abstract class GameFileDialog extends LitElement {
     }
   }
 
-  static styles = css`
+  static styles = [
+    cssDefaultButtonStyle,
+    css`
     wa-dialog {
       --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
     }
@@ -83,7 +86,8 @@ abstract class GameFileDialog extends LitElement {
         margin-block-start: var(--wa-space-l);
       }
     }
-  `;
+    `,
+  ];
 }
 
 @customElement("load-game-dialog")
@@ -130,13 +134,11 @@ export class LoadGameDialog extends GameFileDialog {
         
         <wa-button
             slot="footer" class="start"
-            appearance="filled outlined"
             @click=${this.handleImportClick}
         >Import&hellip;</wa-button>
         
         <wa-button
             slot="footer"
-            appearance="filled outlined"
             @click=${this.handleCancelClick}
         >Cancel</wa-button>
         <wa-button
@@ -213,12 +215,10 @@ export class SaveGameDialog extends GameFileDialog {
         
         <wa-button
             slot="footer" class="start"
-            appearance="filled outlined"
             @click=${this.handleExportClick}
         >Export&hellip;</wa-button>
         <wa-button 
             slot="footer"
-            appearance="filled outlined"
             @click=${this.handleCancelClick}
         >Cancel</wa-button>
         <wa-button 

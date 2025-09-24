@@ -70,6 +70,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
       "dropdown-label-content": true,
       "show-value": this.puzzle !== undefined && !this.open,
     });
+    // TODO: trigger uses variant=brand for use in app bar; need better solution
     return html`
       <wa-dropdown 
           @wa-show=${this.handleDropdownShow}
@@ -77,7 +78,7 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
           @wa-hide=${this.handleDropdownHide}
           @wa-select=${this.handleDropdownSelect}
       >
-        <wa-button slot="trigger" appearance="filled outlined" with-caret>
+        <wa-button slot="trigger" variant="brand" with-caret>
           <wa-icon slot="start" name="puzzle-type"></wa-icon>
           <div class="dropdown-label">
             <div class=${labelContentClasses}>

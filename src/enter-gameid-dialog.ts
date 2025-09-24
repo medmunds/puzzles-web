@@ -5,6 +5,7 @@ import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
+import { cssDefaultButtonStyle } from "./utils/css.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -112,7 +113,6 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
 
         <footer slot="footer">
           <wa-button
-              appearance="filled outlined"
               @click=${this.handleCancelClick}
           >Cancel</wa-button>
           <wa-button
@@ -164,7 +164,9 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
     this.open = false;
   }
 
-  static styles = css`
+  static styles = [
+    cssDefaultButtonStyle,
+    css`
     :host {
       display: contents;
     }
@@ -191,7 +193,8 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
     wa-input::part(label) {
       margin-bottom: var(--wa-space-s);
     }
-  `;
+    `,
+  ];
 }
 
 declare global {

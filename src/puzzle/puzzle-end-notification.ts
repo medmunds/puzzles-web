@@ -5,6 +5,7 @@ import { css, html, LitElement } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
+import { cssDefaultButtonStyle } from "../utils/css.ts";
 import { sleep } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
@@ -83,7 +84,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   private renderLostActions() {
     const actions = [
       html`
-        <wa-button appearance="filled outlined" @click=${this.restartGame}>
+        <wa-button @click=${this.restartGame}>
           <wa-icon slot="start" name="restart-game"></wa-icon>
           Restart
         </wa-button>
@@ -91,7 +92,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     ];
     if (this.puzzle?.canUndo) {
       actions.push(html`
-        <wa-button appearance="filled outlined" @click=${this.undo}>
+        <wa-button @click=${this.undo}>
           <wa-icon slot="start" name="undo"></wa-icon>
           Undo
         </wa-button>
@@ -100,7 +101,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     if (this.puzzle?.canSolve) {
       // TODO: && !usedSolveButton
       actions.push(html`
-        <wa-button appearance="filled outlined" @click=${this.showSolution}>
+        <wa-button @click=${this.showSolution}>
           <wa-icon slot="start" name="show-solution"></wa-icon>
           Show solution
         </wa-button>
@@ -206,7 +207,9 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
 
   // TODO: investigate whether we need the equivalent of `pointer-events: none`
   //   on wa-dialog's backdrop while the dialog is animating in. (iOS touch issue.)
-  static styles = css`
+  static styles = [
+    cssDefaultButtonStyle,
+    css`
     wa-dialog {
       --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
     }
@@ -240,7 +243,8 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     wa-dialog.solved wa-icon[slot="label"] {
       color: var(--wa-color-brand-fill-loud);
     }
-  `;
+    `,
+  ];
 }
 
 declare global {

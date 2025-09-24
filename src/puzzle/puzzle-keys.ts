@@ -3,6 +3,7 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
+import { cssDefaultButtonStyle } from "../utils/css.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { KeyLabel } from "./types.ts";
@@ -88,14 +89,15 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
       : label;
     return html`            
       <wa-button
-          appearance="filled outlined"
           class=${classMap(classes)}
           @click=${() => this.puzzle?.processKey(key.button)}
         >${content}</wa-button>
     `;
   };
 
-  static styles = css`
+  static styles = [
+    cssDefaultButtonStyle,
+    css`
     :host {
       --gap: var(--wa-space-s); 
 
@@ -121,7 +123,8 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
        */
       touch-action: pinch-zoom;
     }
-  `;
+    `,
+  ];
 }
 
 declare global {

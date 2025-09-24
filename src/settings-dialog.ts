@@ -9,6 +9,7 @@ import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
 import { settings } from "./store/settings.ts";
 import { audioClick } from "./utils/audio.ts";
 import { autoBind } from "./utils/autobind.ts";
+import { cssDefaultButtonStyle } from "./utils/css.ts";
 import { clamp } from "./utils/math.ts";
 
 // Register components
@@ -207,7 +208,9 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     }
   }
 
-  static styles = css`
+  static styles = [
+    cssDefaultButtonStyle,
+    css`
     :host {
       display: contents;
     }
@@ -251,7 +254,8 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       font-weight: var(--wa-form-control-hint-font-weight);
       line-height: var(--wa-form-control-hint-line-height);
     }
-  `;
+    `,
+  ];
 }
 
 declare global {
