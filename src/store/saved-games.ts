@@ -18,10 +18,10 @@ class SavedGames {
    */
   async listSavedGames(puzzleId?: PuzzleId): Promise<readonly SavedGameMetadata[]> {
     return db.savedGames
-      .where("[puzzleId+saveType+timestamp]")
+      .where("[saveType+puzzleId+timestamp]")
       .between(
-        [puzzleId ?? PUZZLE_ID_MIN, SaveType.User, TIMESTAMP_MIN],
-        [puzzleId ?? PUZZLE_ID_MAX, SaveType.User, TIMESTAMP_MAX],
+        [SaveType.User, puzzleId ?? PUZZLE_ID_MIN, TIMESTAMP_MIN],
+        [SaveType.User, puzzleId ?? PUZZLE_ID_MAX, TIMESTAMP_MAX],
       )
       .toArray();
   }
@@ -69,7 +69,7 @@ class SavedGames {
   /**
    * Delete saved puzzle. Does nothing if filename doesn't exist.
    */
-  async deleteSavedGame(puzzleOrId: Puzzle | PuzzleId, filename: string) {
+  async removeSavedGame(puzzleOrId: Puzzle | PuzzleId, filename: string) {
     const puzzleId = typeof puzzleOrId === "string" ? puzzleOrId : puzzleOrId.puzzleId;
     await db.savedGames.delete([puzzleId, SaveType.User, filename]);
   }
@@ -110,15 +110,15 @@ class SavedGames {
   private _autoSavedPuzzles = liveQuerySignal<Set<PuzzleId>>(
     new Set(),
     async () => {
-      // Extract puzzleIds from the puzzleId+saveType index where SaveType.Auto
+      // Extract puzzleIds from the saveType+puzzleId index where SaveType.Auto
       const keys = (await db.savedGames
-        .where("[puzzleId+saveType+timestamp]")
+        .where("[saveType+puzzleId+timestamp]")
         .between(
-          [PUZZLE_ID_MIN, SaveType.Auto, TIMESTAMP_MIN],
-          [PUZZLE_ID_MAX, SaveType.Auto, TIMESTAMP_MAX],
+          [SaveType.Auto, PUZZLE_ID_MIN, TIMESTAMP_MIN],
+          [SaveType.Auto, PUZZLE_ID_MAX, TIMESTAMP_MAX],
         )
-        .uniqueKeys()) as unknown as [PuzzleId, SaveType, number][];
-      return new Set(keys.map((key) => key[0]));
+        .uniqueKeys()) as unknown as [SaveType, PuzzleId, number][];
+      return new Set(keys.map((key) => key[1]));
     },
     {
       equals: equalSet,
@@ -130,10 +130,10 @@ class SavedGames {
    */
   async findMostRecentAutoSave(puzzleId: PuzzleId): Promise<string | undefined> {
     const record = await db.savedGames
-      .where("[puzzleId+saveType+timestamp]")
+      .where("[saveType+puzzleId+timestamp]")
       .between(
-        [puzzleId, SaveType.Auto, TIMESTAMP_MIN],
-        [puzzleId, SaveType.Auto, TIMESTAMP_MAX],
+        [SaveType.Auto, puzzleId, TIMESTAMP_MIN],
+        [SaveType.Auto, puzzleId, TIMESTAMP_MAX],
       )
       .last();
 

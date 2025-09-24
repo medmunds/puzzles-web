@@ -71,12 +71,12 @@ class Database extends Dexie {
 
   constructor() {
     super("PuzzleAppData");
-    this.version(1).stores({
+    this.version(2).stores({
       settings: ["id", "type"].join(", "),
 
       savedGames: [
         "&[puzzleId+saveType+filename]", // compound primary key
-        "[puzzleId+saveType+timestamp]", // supports "most recent" query
+        "[saveType+puzzleId+timestamp]", // supports query by saveType, most recent
       ].join(", "),
     });
   }
