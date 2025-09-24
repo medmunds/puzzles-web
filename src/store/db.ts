@@ -21,7 +21,7 @@ export interface CommonSettings {
   rightButtonDragThreshold?: number; // css pixel radius
 
   // Appearance
-  maxScale?: number;
+  maxScale?: number | null; // null in DB/json === Infinity in exposed value
   showStatusbar?: boolean;
 }
 

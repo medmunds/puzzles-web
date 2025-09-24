@@ -1,3 +1,4 @@
+import type { WaSelectEvent } from "@awesome.me/webawesome";
 import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
@@ -6,17 +7,21 @@ import { customElement, query, state } from "lit/decorators.js";
 import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
+import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { audioClick } from "./utils/audio.ts";
 import { autoBind } from "./utils/autobind.ts";
 import { cssDefaultButtonStyle } from "./utils/css.ts";
 import { clamp } from "./utils/math.ts";
+import { sleep } from "./utils/timing.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
 import "@awesome.me/webawesome/dist/components/details/details.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
+import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
+import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/slider/slider.js";
 
@@ -39,6 +44,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         ${this.renderPuzzleSection()}
         ${this.renderAppearanceSection()}
         ${this.renderMouseButtonsSection()}
+        ${this.renderDataSection()}
         ${this.renderAdvancedSection()}
       </wa-dialog>
     `;
@@ -110,7 +116,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     // https://github.com/shoelace-style/webawesome/issues/1273
     return html`
       <wa-details summary="Mouse buttons">
-        <div class="help">
+        <div class="hint">
           Options for emulating the right mouse button on touch devices
         </div>
         <wa-checkbox
@@ -164,16 +170,123 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     `;
   }
 
+  private renderDataSection() {
+    const isApp = !window.matchMedia("(display-mode: browser)").matches;
+    return html`
+      <wa-details summary="Data" @wa-select=${this.handleDataCommand}>
+        <div class="hint">
+          Saved games, preferences and other puzzle data are kept in
+          ${isApp ? "this app’s" : "your browser’s"} local storage
+        </div>
+        <div>
+          <wa-dropdown>
+            <wa-button slot="trigger" with-caret>Backups</wa-button>
+            <wa-dropdown-item value="settings-backup">Export preferences file&hellip;</wa-dropdown-item>
+            <wa-dropdown-item value="settings-restore">Import preferences file&hellip;</wa-dropdown-item>
+          </wa-dropdown>
+          <div class="hint">
+            Copy your settings to another device 
+            (or preserve them when deleting and reinstalling the app) 
+          </div>
+        </div>
+        <div>
+          <wa-dropdown>
+            <wa-button 
+                slot="trigger" 
+                appearance="filled outlined" 
+                variant="danger" 
+                with-caret
+            >Clear data&hellip;</wa-button>
+            <wa-dropdown-item value="clear-settings">Reset preferences and favorites</wa-dropdown-item>
+            <wa-dropdown-item value="clear-games-autosave">Delete games in progress</wa-dropdown-item>
+            <wa-dropdown-item value="clear-games-user">Delete saved games</wa-dropdown-item>
+            <wa-dropdown-item value="clear-all" variant="danger">
+              Clear <strong>ALL</strong> saved data</wa-dropdown-item>
+          </wa-dropdown>
+          <div class="hint">
+            Delete some or all stored data <em>(permanently!)</em>
+          </div>
+        </div>
+      </wa-details>
+    `;
+  }
+
   private renderAdvancedSection() {
     return html`
       <wa-details summary="Advanced">
-        <div><wa-button appearance="filled outlined" variant="danger">Clear data</wa-button></div>
         <wa-checkbox
             hint="Experimental puzzles in development (may have lots of bugs!)"
             ?checked=${autoBind(settings, "showUnfinishedPuzzles")}
           >Show unfinished puzzles</wa-checkbox>
       </wa-details>
     `;
+  }
+
+  // private async handleDataCommand(event: HTMLElementEventMap["wa-select"]) {
+  private async handleDataCommand(event: WaSelectEvent) {
+    const item = event.detail.item as HTMLElementTagNameMap["wa-dropdown-item"];
+    const command = item.value;
+    switch (command) {
+      case "clear-settings":
+        await settings.clearAllSettings();
+        break;
+      case "clear-games-autosave":
+        await savedGames.removeAllAutoSavedGames();
+        break;
+      case "clear-games-user":
+        await savedGames.removeAllSavedGames();
+        break;
+      case "clear-all":
+        await Promise.all([settings.clearAllSettings(), savedGames.removeAll()]);
+        break;
+      case "settings-backup":
+        await this.settingsBackup();
+        break;
+      case "settings-restore":
+        await this.settingsRestore();
+        break;
+      default:
+        if (!import.meta.env.PROD) {
+          throw new Error(`Unknown command: ${command}`);
+        }
+        console.error(`Unknown settings-dialog data command: ${command}`);
+        break;
+    }
+  }
+
+  private async settingsBackup() {
+    const backup = await settings.serialize();
+    const blob = new Blob([JSON.stringify(backup)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const filename = `puzzle-settings-${new Date().toISOString().slice(0, 10)}.json`;
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    await sleep(10);
+    URL.revokeObjectURL(url);
+  }
+
+  private async settingsRestore() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (file) {
+        try {
+          const text = await file.text();
+          const backup = JSON.parse(text);
+          await settings.deserialize(backup);
+          await this.reload();
+          // TODO: Show success toast
+        } catch (error) {
+          // TODO: Show error toast
+          console.error("Failed to restore settings:", error);
+        }
+      }
+    };
+    input.click();
   }
 
   private async handlePuzzlePreferencesChange(event: PuzzleConfigChangeEvent) {
@@ -192,10 +305,15 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     }
   }
 
+  async reload() {
+    // (Everything except puzzle-preferences-form is reactive)
+    await this.shadowRoot?.querySelector("puzzle-preferences-form")?.reloadValues();
+  }
+
   async show() {
     if (!this.dialog?.open) {
       // Make sure puzzle-preferences-form is displaying current values
-      await this.shadowRoot?.querySelector("puzzle-preferences-form")?.reloadValues();
+      await this.reload();
     }
     if (this.dialog) {
       this.dialog.open = true;
@@ -247,12 +365,16 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       transform: translateX(-50%);
     }
     
-    .help {
+    .hint {
       /* match hint in various controls */
       color: var(--wa-form-control-hint-color);
       font-size: var(--wa-font-size-smaller);
       font-weight: var(--wa-form-control-hint-font-weight);
       line-height: var(--wa-form-control-hint-line-height);
+    }
+      
+    wa-dropdown + .hint {
+      margin-block-start: var(--wa-space-xs);
     }
     `,
   ];

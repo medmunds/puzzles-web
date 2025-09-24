@@ -75,6 +75,19 @@ class SavedGames {
   }
 
   /**
+   * Delete all (user-)saved puzzles.
+   */
+  async removeAllSavedGames() {
+    await db.savedGames
+      .where("[saveType+puzzleId+timestamp]")
+      .between(
+        [SaveType.User, PUZZLE_ID_MIN, TIMESTAMP_MIN],
+        [SaveType.User, PUZZLE_ID_MAX, TIMESTAMP_MAX],
+      )
+      .delete();
+  }
+
+  /**
    * Return a name of the form `${baseName}${number}` that doesn't currently
    * exist in SavedGames for puzzleId.
    */
@@ -177,6 +190,23 @@ class SavedGames {
       throw new Error(`Error restoring autosave ${autoSaveFilename}: ${error}`);
     }
     return found;
+  }
+
+  async removeAllAutoSavedGames() {
+    await db.savedGames
+      .where("[saveType+puzzleId+timestamp]")
+      .between(
+        [SaveType.Auto, PUZZLE_ID_MIN, TIMESTAMP_MIN],
+        [SaveType.Auto, PUZZLE_ID_MAX, TIMESTAMP_MAX],
+      )
+      .delete();
+  }
+
+  /**
+   * Delete all saved games of any type (clear the savedGames table)
+   */
+  async removeAll() {
+    await db.savedGames.clear();
   }
 
   /**

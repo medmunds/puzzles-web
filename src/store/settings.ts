@@ -2,7 +2,27 @@ import { type Signal, signal } from "@lit-labs/signals";
 import * as Sentry from "@sentry/browser";
 import type { ConfigValues } from "../puzzle/types.ts";
 import { equalSet } from "../utils/equal.ts";
-import { type CommonSettings, db, type PuzzleId, type PuzzleSettings } from "./db.ts";
+import {
+  type CommonSettings,
+  db,
+  type PuzzleId,
+  type PuzzleSettings,
+  type SettingsRecord,
+} from "./db.ts";
+
+const SETTINGS_BACKUP_SCHEMA =
+  "https://twistymaze.com/puzzles/schemas/puzzle-settings-backup-v1.json";
+export interface SerializedSettings {
+  $schema: string;
+  data: SettingsRecord[];
+}
+
+export const isSerializedSettings = (obj: unknown): obj is SerializedSettings =>
+  typeof obj === "object" &&
+  obj !== null &&
+  "$schema" in obj &&
+  "data" in obj &&
+  Array.isArray(obj.data);
 
 const defaultSettings = {
   favoritePuzzles: new Set<PuzzleId>(),
@@ -15,6 +35,8 @@ const defaultSettings = {
   maxScale: Number.POSITIVE_INFINITY,
   showStatusbar: true,
 } as const;
+
+const COMMON_SETTINGS_ID = "puzzle-common";
 
 class Settings {
   // Reactive signals for individual settings
@@ -66,7 +88,7 @@ class Settings {
       update(this._rightButtonAudioVolume, commonSettings.rightButtonAudioVolume);
       update(this._rightButtonHoldTime, commonSettings.rightButtonHoldTime);
       update(this._rightButtonDragThreshold, commonSettings.rightButtonDragThreshold);
-      update(this._maxScale, commonSettings.maxScale);
+      update(this._maxScale, commonSettings.maxScale ?? Number.POSITIVE_INFINITY);
       update(this._showStatusbar, commonSettings.showStatusbar);
     }
   }
@@ -145,11 +167,16 @@ class Settings {
   }
 
   get maxScale(): number {
-    return this._maxScale.get();
+    const value = this._maxScale.get();
+    return value === null ? Number.POSITIVE_INFINITY : value;
   }
   set maxScale(value: number) {
     this._maxScale.set(value);
-    this.saveCommonSettingOrLogError("maxScale", value);
+    // Store Infinity as null (for json serialization)
+    this.saveCommonSettingOrLogError(
+      "maxScale",
+      value === Number.POSITIVE_INFINITY ? null : value,
+    );
   }
 
   get showStatusbar(): boolean {
@@ -162,7 +189,7 @@ class Settings {
 
   // Settings methods
   private async getCommonSettings(): Promise<CommonSettings> {
-    const record = await db.settings.get("puzzle-common");
+    const record = await db.settings.get(COMMON_SETTINGS_ID);
     return record?.type === "puzzle-common" ? record.data : { puzzlePreferences: {} };
   }
 
@@ -180,7 +207,7 @@ class Settings {
         delete updated[name];
       }
       await db.settings.put({
-        id: "puzzle-common",
+        id: COMMON_SETTINGS_ID,
         type: "puzzle-common",
         data: updated,
       });
@@ -240,7 +267,7 @@ class Settings {
       };
 
       await db.settings.put({
-        id: "puzzle-common",
+        id: COMMON_SETTINGS_ID,
         type: "puzzle-common",
         data: updated,
       });
@@ -298,6 +325,43 @@ class Settings {
       type: "puzzle",
       data: updated,
     });
+  }
+
+  async clearCommonSettings() {
+    await db.settings.delete(COMMON_SETTINGS_ID);
+    await this.loadSettings();
+  }
+
+  async clearPuzzleSettings(puzzleId: PuzzleId) {
+    await db.settings.delete(puzzleId);
+    // TODO: this needs to somehow trigger Puzzle(puzzleId) reload default settings
+    await this.loadSettings();
+  }
+
+  async clearAllSettings() {
+    await db.settings.clear();
+    // TODO: this may need to trigger current Puzzle reload default settings
+    await this.loadSettings();
+  }
+
+  /*
+   * Serialization (for backup/restore)
+   */
+
+  async serialize(): Promise<SerializedSettings> {
+    const data = await db.settings.toArray();
+    return { $schema: SETTINGS_BACKUP_SCHEMA, data };
+  }
+
+  async deserialize(backup: unknown): Promise<void> {
+    if (!isSerializedSettings(backup)) {
+      throw new Error("Invalid settings backup format");
+    }
+    if (backup.$schema !== SETTINGS_BACKUP_SCHEMA) {
+      throw new Error("Incompatible settings backup schema");
+    }
+    await db.settings.bulkPut(backup.data);
+    await this.loadSettings();
   }
 }
 
