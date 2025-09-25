@@ -2,6 +2,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property } from "lit/decorators.js";
 import { cssDefaultButtonStyle } from "./utils/css.ts";
+import { isRunningAsApp } from "./utils/pwa.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -96,8 +97,6 @@ export class LoadGameDialog extends GameFileDialog {
   gameInProgress: boolean = false;
 
   protected override render() {
-    const isApp = !window.matchMedia("(display-mode: browser)").matches;
-
     return html`
       <wa-dialog>
         <div slot="label">Load game</div>
@@ -109,7 +108,7 @@ export class LoadGameDialog extends GameFileDialog {
         </wa-button>
         <wa-popover for="help">
           <p>Pick a game you saved earlier to resume play.</p>
-          <p>Or use <em>Import</em> to ${isApp ? "load" : "upload"} a file saved 
+          <p>Or use <em>Import</em> to ${isRunningAsApp ? "load" : "upload"} a file saved 
             from any compatible <cite>Portable Puzzles Collection</cite> app.</p>
         </wa-popover>
 
@@ -178,8 +177,6 @@ export class LoadGameDialog extends GameFileDialog {
 @customElement("save-game-dialog")
 export class SaveGameDialog extends GameFileDialog {
   protected override render() {
-    const isApp = !window.matchMedia("(display-mode: browser)").matches;
-
     return html`
       <wa-dialog>
         <div slot="label">Save game</div>
@@ -191,9 +188,9 @@ export class SaveGameDialog extends GameFileDialog {
         </wa-button>
         <wa-popover for="help">
           <p>Save the current game so you can return to it later. 
-            (Saved games are kept in ${isApp ? "this app’s" : "your browser’s"} 
+            (Saved games are kept in ${isRunningAsApp ? "this app’s" : "your browser’s"} 
             local storage.)</p>
-          <p>Or use <em>Export</em> to ${isApp ? "create" : "download"} a file 
+          <p>Or use <em>Export</em> to ${isRunningAsApp ? "create" : "download"} a file 
             you can load into any compatible <cite>Portable Puzzles Collection</cite> 
             app.</p>
         </wa-popover>

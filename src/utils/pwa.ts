@@ -9,6 +9,11 @@ if (typeof window === "undefined") {
   throw new Error("PWAManager must run on main thread");
 }
 
+/**
+ * True if running as a standalone PWA app (not browser tab)
+ */
+export const isRunningAsApp = !window.matchMedia("(display-mode: browser)").matches;
+
 export enum UpdateStatus {
   Unknown = 0,
   UpToDate,

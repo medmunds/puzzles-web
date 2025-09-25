@@ -13,6 +13,7 @@ import { audioClick } from "./utils/audio.ts";
 import { autoBind } from "./utils/autobind.ts";
 import { cssDefaultButtonStyle } from "./utils/css.ts";
 import { clamp } from "./utils/math.ts";
+import { isRunningAsApp } from "./utils/pwa.ts";
 import { sleep } from "./utils/timing.ts";
 
 // Register components
@@ -171,12 +172,11 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
   }
 
   private renderDataSection() {
-    const isApp = !window.matchMedia("(display-mode: browser)").matches;
     return html`
       <wa-details summary="Data" @wa-select=${this.handleDataCommand}>
         <div class="hint">
           Saved games, preferences and other puzzle data are kept in
-          ${isApp ? "this app’s" : "your browser’s"} local storage
+          ${isRunningAsApp ? "this app’s" : "your browser’s"} local storage
         </div>
         <div>
           <wa-dropdown>
