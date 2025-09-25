@@ -6,7 +6,7 @@ import * as Sentry from "@sentry/browser";
 import * as Comlink from "comlink";
 import { transfer } from "comlink";
 import createModule from "../assets/puzzles/emcc-runtime";
-import { installErrorHandlersInWorker } from "../utils/errors.ts";
+import { installErrorHandlersInWorker } from "../utils/errors-worker.ts";
 import { Drawing } from "./drawing.ts";
 import type {
   ChangeNotification,
