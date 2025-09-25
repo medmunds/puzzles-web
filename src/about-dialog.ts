@@ -1,3 +1,4 @@
+import { SignalWatcher } from "@lit-labs/signals";
 import {
   css,
   type HTMLTemplateResult,
@@ -10,7 +11,7 @@ import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { version } from "./puzzle/catalog.ts";
-import { pwaManager } from "./utils/pwa.ts";
+import { pwaManager, UpdateStatus } from "./utils/pwa.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -86,7 +87,7 @@ function licenseTextToHTML(
 }
 
 @customElement("about-dialog")
-export class AboutDialog extends LitElement {
+export class AboutDialog extends SignalWatcher(LitElement) {
   @query("wa-dialog", true)
   protected dialog?: HTMLElementTagNameMap["wa-dialog"];
 
@@ -98,9 +99,6 @@ export class AboutDialog extends LitElement {
       this.dialog.open = value;
     }
   }
-
-  @state()
-  private updateAvailable: boolean | null = null; // null means check in progress
 
   @state()
   private dependencies?: DependencyInfo["dependencies"];
@@ -205,21 +203,31 @@ export class AboutDialog extends LitElement {
   }
 
   private renderUpdateInfo() {
-    if (this.updateAvailable === null) {
-      return html`<wa-spinner></wa-spinner> Checking for update&hellip;`;
+    // Reactive updateStatus
+    switch (pwaManager.updateStatus) {
+      case UpdateStatus.Unknown:
+        // Shouldn't really occur (certainly not for long)
+        return html`<wa-spinner></wa-spinner> Initializing&hellip;`;
+      case UpdateStatus.UpToDate:
+        return html`
+          Up to date 
+          (<a href="#" @click=${this.checkForUpdate}>check again</a>)
+        `;
+      case UpdateStatus.Checking:
+        return html`<wa-spinner></wa-spinner> Checking for update&hellip;`;
+      case UpdateStatus.Available:
+        return html`
+          Update available: 
+          <a href="#" @click=${this.installUpdate}>install now</a>
+        `;
+      case UpdateStatus.Installing:
+        return html`<wa-spinner></wa-spinner> Installing update&hellip;`;
+      case UpdateStatus.Error:
+        return html`
+          <wa-icon name="error"></wa-icon> Update error
+          (<a href="#" @click=${this.reloadApp}>reload app</a>)
+        `;
     }
-
-    if (this.updateAvailable) {
-      return html`
-        Update available: 
-        <a href="#" @click=${this.installUpdate}>install now</a>
-      `;
-    }
-
-    return html`
-      Up to date 
-      (<a href="#" @click=${this.checkForUpdate}>check again</a>)
-    `;
   }
 
   private async handleDialogShow(event: Event) {
@@ -232,13 +240,15 @@ export class AboutDialog extends LitElement {
   }
 
   private async checkForUpdate() {
-    this.updateAvailable = null;
-    this.updateAvailable = await pwaManager.checkForUpdate();
+    await pwaManager.checkForUpdate();
   }
 
   private async installUpdate() {
     await pwaManager.installUpdate();
-    this.updateAvailable = false;
+  }
+
+  private reloadApp() {
+    window.location.reload();
   }
 
   static styles = css`
