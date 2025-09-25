@@ -306,7 +306,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
         min-width: 1px;
         flex: 1 1 auto;
         overflow: hidden;
-        text-wrap: nowrap;
+        white-space: nowrap;
         text-overflow: ellipsis;
         
         color: var(--wa-color-text-link);
