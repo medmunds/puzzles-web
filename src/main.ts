@@ -53,9 +53,8 @@ import { installWebAwesomeHacks } from "./utils/webawesomehacks.ts";
 
 installWebAwesomeHacks();
 
-// Register components (that are used here or directly by index.html)
+// Install our icon library
 import "./icons";
-import "./app-router";
 
 // Install PWA service worker
 import { pwaManager } from "./utils/pwa.ts";

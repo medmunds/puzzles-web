@@ -1,0 +1,73 @@
+@import url("/node_modules/@awesome.me/webawesome/dist/styles/themes/default.css");
+
+:root {
+  font-family: var(--wa-font-family-body), sans-serif;
+  line-height: var(--wa-line-height-normal);
+  font-weight: var(--wa-font-weight-normal);
+
+  /* TODO: color-scheme: light dark;*/
+  color: var(--wa-color-text-normal);
+  background-color: var(--wa-color-brand-95);
+
+  /* Lighten default accent buttons slightly (usually neutral-20) */
+  --wa-color-neutral-fill-loud: var(--wa-color-neutral-30);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (any-pointer: coarse) {
+  :root {
+    font-size: 120%;
+  }
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+h1,
+h2 {
+  margin: 0;
+  color: var(--wa-color-text-normal);
+}
+
+h1 {
+  font-weight: var(--wa-font-weight-bold);
+  font-size: var(--wa-font-size-xl);
+}
+h2 {
+  font-weight: var(--wa-font-weight-semibold);
+  font-size: var(--wa-font-size-l);
+}
+
+p {
+  margin: var(--wa-space-m) 0 0 0;
+  font-size: var(--wa-font-size-m);
+  font-weight: var(--wa-font-weight-normal);
+}
+
+a {
+  color: var(--wa-color-text-link);
+  text-decoration: var(--wa-link-decoration-default);
+
+  @media (hover: hover) {
+    &:hover {
+      text-decoration: var(--wa-link-decoration-hover);
+    }
+  }
+}
+
+body:not(.js-ready) .js {
+  display: none;
+}
+body.js-ready .nojs {
+  display: none;
+}

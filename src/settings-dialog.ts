@@ -53,7 +53,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
 
   private renderPuzzleSection() {
     if (!this.puzzle) {
-      // Preferences from catalog-screen: skip puzzle specific section.
+      // Preferences from index page: skip puzzle specific section.
       return nothing;
     }
 

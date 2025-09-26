@@ -3,10 +3,10 @@ import { css, html, LitElement, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
-import type { AppRouter } from "./app-router.ts";
 import { type PuzzleData, puzzleDataMap } from "./puzzle/catalog.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
+import { helpUrl, indexPageUrl, navigateToIndexPage } from "./routing.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { cssDefaultButtonStyle } from "./utils/css.ts";
@@ -32,9 +32,6 @@ import "./puzzle/puzzle-end-notification.ts";
 
 @customElement("puzzle-screen")
 export class PuzzleScreen extends SignalWatcher(LitElement) {
-  @property({ type: Object })
-  router?: AppRouter;
-
   /** The puzzle type, e.g. "blackbox" */
   @property({ type: String, attribute: "puzzleid" })
   puzzleId = "";
@@ -119,7 +116,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
     const iconUrl = new URL(`./assets/icons/${this.puzzleId}-64d8.png`, import.meta.url)
       .href;
-    const otherPuzzlesUrl = this.router?.reverse(this.router.defaultRoute)?.href;
+    const otherPuzzlesUrl = indexPageUrl().href;
 
     return html`
       <puzzle-context 
@@ -145,7 +142,11 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           <header>
             ${this.renderGameMenu()}
             <puzzle-preset-menu></puzzle-preset-menu>
-            <wa-button variant="brand" href=${this.helpUrl} @click=${this.showHelp}>
+            <wa-button 
+                variant="brand" 
+                href=${helpUrl(this.puzzleId).href} 
+                @click=${this.showHelp}
+            >
               <wa-icon slot="start" name="help"></wa-icon>
               Help
             </wa-button>
@@ -284,7 +285,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         await this.showAboutDialog();
         break;
       case "catalog":
-        this.router?.navigate(this.router.defaultRoute);
+        navigateToIndexPage();
         break;
       case "preferences":
         await this.showSettingsDialog();
@@ -305,7 +306,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     await import("./share-dialog.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "share-dialog",
-      render: () => html`<share-dialog .router=${this.router}></share-dialog>`,
+      render: () => html`<share-dialog></share-dialog>`,
     });
     if (dialog && !dialog.open) {
       await dialog.reset();
@@ -467,17 +468,16 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     }
   };
 
-  private get helpUrl(): string | undefined {
-    return new URL(`help/${this.puzzleId}-overview.html`, this.router?.baseUrl).href;
-  }
-
   private async showHelp(event: UIEvent) {
     event.preventDefault();
     await import("./help-viewer.ts");
     const helpViewer = await this.dynamicContent?.addItem({
       tagName: "help-viewer",
       render: () => html`
-        <help-viewer src=${this.helpUrl} label=${`${this.puzzleData?.name} Help`}></help-viewer>
+        <help-viewer 
+            src=${helpUrl(this.puzzleId).href} 
+            label=${`${this.puzzleData?.name} Help`}
+        ></help-viewer>
       `,
     });
     helpViewer?.show();
@@ -554,15 +554,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
     this.puzzleLoaded = true;
     await this.shadowRoot?.querySelector("puzzle-context")?.updateComplete;
-
-    // Clear any specific type or game id params from the URL
-    if (this.router && (this.params || this.gameId)) {
-      const cleanUrl = this.router.reverse({
-        name: "puzzle",
-        params: { puzzleId: this.puzzleId },
-      });
-      this.router.navigate(cleanUrl, true);
-    }
   }
 
   private async handlePuzzleParamsChange(event: PuzzleEvent) {

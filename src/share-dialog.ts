@@ -2,10 +2,10 @@ import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
-import { customElement, property, state } from "lit/decorators.js";
-import type { AppRouter } from "./app-router.ts";
+import { customElement, state } from "lit/decorators.js";
 import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
+import { puzzlePageUrl } from "./routing.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -22,9 +22,6 @@ export class ShareDialog extends SignalWatcher(LitElement) {
   @consume({ context: puzzleContext, subscribe: true })
   @state()
   private puzzle?: Puzzle;
-
-  @property({ type: Object })
-  router?: AppRouter;
 
   @query("wa-dialog", true)
   protected dialog?: HTMLElementTagNameMap["wa-dialog"];
@@ -52,10 +49,6 @@ export class ShareDialog extends SignalWatcher(LitElement) {
   }
 
   protected override render() {
-    if (!this.router) {
-      throw new Error("share-dialog missing required router");
-    }
-
     const puzzleName = this.puzzle?.displayName ?? "Unknown puzzle";
     const puzzleParams = this.puzzle?.currentParams;
     const gameId = this.puzzle?.currentGameId;
@@ -66,18 +59,14 @@ export class ShareDialog extends SignalWatcher(LitElement) {
       ? `type “${this.gameTypeDescription}”`
       : "this custom type";
 
-    const puzzleTypeLink = puzzleParams
-      ? this.router.reverse({
-          name: "puzzle",
-          params: { puzzleId, puzzleParams },
-        })
-      : undefined;
-    const currentGameLink = preferredId
-      ? this.router.reverse({
-          name: "puzzle",
-          params: { puzzleId, puzzleGameId: preferredId },
-        })
-      : undefined;
+    const puzzleTypeLink =
+      puzzleId && puzzleParams
+        ? puzzlePageUrl({ puzzleId, puzzleParams }).href
+        : undefined;
+    const currentGameLink =
+      puzzleId && preferredId
+        ? puzzlePageUrl({ puzzleId, puzzleGameId: preferredId })
+        : undefined;
 
     // TODO: Skip sgt links for puzzles not on SGT's site (unfinished, unreleased, etc.)
     const sgtBaseUrl = `https://www.chiark.greenend.org.uk/~sgtatham/puzzles/js/${encodeURIComponent(puzzleId ?? "unknown")}.html`;

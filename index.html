@@ -7,14 +7,49 @@
     <title>Puzzles&thinsp;&ndash;&thinsp;from Simon Tatham’s portable puzzle collection</title>
     <meta name="application-name" content="Puzzles">
     <link rel="stylesheet" href="/src/index.css">
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/index-page.ts"></script>
   </head>
   <body>
-    <app-router></app-router>
-    
-    <noscript>
-      <p>These puzzles are interactive games implemented in JavaScript.
-        To play them, you will need to enable JavaScript in your browser.</p>
-    </noscript>
+    <div id="app">
+      <header>
+        <img class="logo" src="/favicon.svg" role="presentation">
+        <div class="title">
+          <h1>Puzzles</h1>
+          <div class="subtitle">from Simon Tatham’s portable puzzle collection</div>
+        </div>
+      </header>
+
+      <section id="intro">
+        <p>This is a collection of some forty logic puzzles and games.
+          There are familiar classics similar to
+          Sudoku (“<a href="solo">Solo</a>”),
+          Mastermind (“<a href="guess">Guess</a>”)
+          and Minesweeper (“<a href="mines">Mines</a>”),
+          plus some clever challenges that may be completely new to you.</p>
+
+        <p>Each puzzle offers multiple difficulty levels and variations.
+          With unlimited, randomly generated games,
+          you’ll never run out of puzzles to solve.</p>
+
+        <p>This web app should run in any modern browser.
+          It supports touch screens, mouse and keyboard control.
+          It even works offline (you can “install app” or “add to home screen”).</p>
+
+        <p>And it’s completely free: no in-app purchases, no ads, no trackers.
+          (For real! All thanks to open source contributors: details in the
+          <a class="nojs" href="https://github.com/medmunds/puzzles">source code</a>
+          <a class="js" href="#about">about box</a>.)</p>
+
+        <p>Enjoy!</p>
+      </section>
+
+      <catalog-list></catalog-list>
+      <dynamic-content></dynamic-content>
+
+      <noscript>
+        <p>The puzzles are implemented in JavaScript.
+          To play them, you will need to enable JavaScript in your browser.</p>
+      </noscript>
+    </div>
   </body>
 </html>
