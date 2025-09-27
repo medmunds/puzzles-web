@@ -6,6 +6,7 @@ import { customElement, state } from "lit/decorators.js";
 import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import { puzzlePageUrl } from "./routing.ts";
+import { commonLinkStyle } from "./utils/css.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -203,7 +204,9 @@ export class ShareDialog extends SignalWatcher(LitElement) {
     (event.target as HTMLInputElement | HTMLTextAreaElement).select();
   }
 
-  static styles = css`
+  static styles = [
+    commonLinkStyle,
+    css`
     :host {
       display: contents;
     }
@@ -297,15 +300,6 @@ export class ShareDialog extends SignalWatcher(LitElement) {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        
-        color: var(--wa-color-text-link);
-        text-decoration: var(--wa-link-decoration-default);
-        
-        @media (hover: hover) {
-          &:hover {
-            text-decoration: var(--wa-link-decoration-hover);
-          }
-        }
       }
     }
 
@@ -316,7 +310,8 @@ export class ShareDialog extends SignalWatcher(LitElement) {
       font-weight: var(--wa-form-control-hint-font-weight);
       line-height: var(--wa-form-control-hint-line-height);
     }
-  `;
+  `,
+  ];
 }
 
 declare global {

@@ -11,6 +11,7 @@ import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { version } from "./puzzle/catalog.ts";
+import { commonLinkStyle } from "./utils/css.ts";
 import { pwaManager, UpdateStatus } from "./utils/pwa.ts";
 
 // Register components
@@ -251,7 +252,9 @@ export class AboutDialog extends SignalWatcher(LitElement) {
     window.location.reload();
   }
 
-  static styles = css`
+  static styles = [
+    commonLinkStyle,
+    css`
     :host {
       display: contents;
     }
@@ -322,17 +325,6 @@ export class AboutDialog extends SignalWatcher(LitElement) {
       font-weight: var(--wa-font-weight-heading);
     }
     
-    a {
-      color: var(--wa-color-text-link);
-      text-decoration: var(--wa-link-decoration-default);
-
-      @media (hover: hover) {
-        &:hover {
-          text-decoration: var(--wa-link-decoration-hover);
-        }
-      }
-    }
-    
     wa-spinner {
       vertical-align: -2px; /* visual text-middle alignment*/
     }
@@ -340,7 +332,8 @@ export class AboutDialog extends SignalWatcher(LitElement) {
     .version {
       user-select: all;
     }
-  `;
+  `,
+  ];
 }
 
 declare global {

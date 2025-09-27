@@ -14,3 +14,21 @@ export const cssDefaultButtonStyle = css`
     }
   }
 `;
+
+export const commonLinkStyle = css`
+  a {
+    color: var(--wa-color-text-link);
+    text-decoration: var(--wa-link-decoration-default);
+    -webkit-text-decoration: var(--wa-link-decoration-default); /* Safari */
+    text-decoration-thickness: 0.09375em;
+    text-underline-offset: 0.125em;
+
+    @media (hover: hover) {
+      &:hover {
+        color: color-mix(in oklab, var(--wa-color-text-link), var(--wa-color-mix-hover));
+        text-decoration: var(--wa-link-decoration-hover);
+        -webkit-text-decoration: var(--wa-link-decoration-hover); /* Safari */
+      }
+    }
+  }
+`;

@@ -3,6 +3,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
+import { commonLinkStyle } from "./utils/css.ts";
 
 // Components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -253,7 +254,9 @@ export class HelpViewer extends LitElement {
   // Styles
   //
 
-  static styles = css`
+  static styles = [
+    commonLinkStyle,
+    css`
     :host {
       display: contents;
     }
@@ -315,7 +318,8 @@ export class HelpViewer extends LitElement {
         vertical-align: -2px; /* visual baseline alignment*/
       }
     }
-  `;
+  `,
+  ];
 }
 
 declare global {
