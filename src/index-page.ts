@@ -2,10 +2,63 @@ import "./main.ts";
 import { html } from "lit";
 import { puzzleDataMap } from "./puzzle/catalog.ts";
 import { parsePuzzleUrl } from "./routing.ts";
+import { clamp } from "./utils/math.ts";
 
 // Register components
 import "./catalog-list.ts";
 import "./dynamic-content.ts";
+
+function setupScrollAnimationFallback() {
+  if (CSS.supports("animation-timeline: scroll()")) {
+    return; // Native support available, no fallback needed
+  }
+
+  const scrollContainer = document.getElementById("app");
+  if (!scrollContainer) {
+    throw new Error("#app is missing");
+  }
+
+  const header = document.querySelector("header");
+  if (!header) {
+    throw new Error("header is missing");
+  }
+
+  const rangeEndStr = window
+    .getComputedStyle(header)
+    .getPropertyValue("--scroll-range-end");
+  let rangeEnd = Number.parseFloat(rangeEndStr);
+  if (Number.isNaN(rangeEnd) || rangeEnd <= 0) {
+    console.warn(`Couldn't parse --scroll-range-end=${rangeEndStr}`);
+    rangeEnd = 120;
+  }
+
+  const animationDuration = 1000; // all css animations are set to this duration
+
+  function updateScrollAnimation() {
+    if (!header || !scrollContainer) {
+      return;
+    }
+    const scrollY = scrollContainer.scrollTop ?? 0;
+    const currentTime = clamp(
+      0,
+      (animationDuration * scrollY) / rangeEnd,
+      animationDuration,
+    );
+    const animations = header
+      .getAnimations({ subtree: true })
+      .filter(
+        (animation) =>
+          animation instanceof CSSAnimation &&
+          animation.animationName.startsWith("scroll-"),
+      );
+    for (const animation of animations) {
+      animation.currentTime = currentTime;
+    }
+  }
+
+  updateScrollAnimation(); // get initial state
+  scrollContainer.addEventListener("scroll", updateScrollAnimation, { passive: true });
+}
 
 async function showAboutDialog() {
   await import("./about-dialog.ts");
@@ -64,6 +117,7 @@ function randomizePuzzleLink() {
 function initialize() {
   document.addEventListener("click", interceptHrefClick);
   randomizePuzzleLink();
+  setupScrollAnimationFallback();
   document.body.classList.add("js-ready");
 }
 

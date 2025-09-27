@@ -47,7 +47,12 @@ header {
   }
 
   h1 {
+    font-size: var(--wa-font-size-xl);
     line-height: var(--wa-line-height-condensed);
+
+    /* Allow subtitle to slide behind h1 in scroll animation */
+    background-color: var(--wa-color-brand-fill-normal);
+    z-index: 2;
   }
   .subtitle {
     font-size: var(--wa-font-size-m);
@@ -65,4 +70,98 @@ del {
   text-decoration-thickness: 0.15em;
   text-decoration-style: wavy;
   text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+
+/*
+ * Shrink header on scroll.
+ * Where animation-timeline not supported, apply a paused 1000ms animation
+ * that will be manually advanced in JS.
+ */
+
+@property --scroll-range-end {
+  /* Have getComputedStyle return px for this property */
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0;
+}
+
+header {
+  --scroll-range-end: calc(3.5em + var(--app-padding));
+  --scroll-animation-options: 1000ms linear forwards paused;
+}
+
+@supports (animation-timeline: scroll()) {
+  header {
+    --scroll-animation-options: linear forwards;
+  }
+}
+
+header {
+  animation: scroll-header var(--scroll-animation-options);
+  animation-timeline: scroll();
+  animation-range: 0 var(--scroll-range-end);
+
+  .logo {
+    animation: scroll-logo var(--scroll-animation-options);
+    animation-timeline: scroll();
+    animation-range: 0 var(--scroll-range-end);
+  }
+
+  h1 {
+    animation: scroll-h1 var(--scroll-animation-options);
+    animation-timeline: scroll();
+    animation-range: 0 var(--scroll-range-end);
+  }
+
+  .subtitle {
+    animation: scroll-subtitle var(--scroll-animation-options);
+    animation-timeline: scroll();
+    animation-range: 0 var(--scroll-range-end);
+  }
+}
+
+@keyframes scroll-header {
+  from {
+    padding-block: var(--app-padding);
+    box-shadow: none;
+  }
+  to {
+    padding-block: var(--app-spacing);
+    box-shadow: var(--wa-shadow-l);
+  }
+}
+
+@keyframes scroll-logo {
+  from {
+    height: calc(
+      /* h1 + subtitle */
+      (var(--wa-font-size-xl) * var(--wa-line-height-condensed)) +
+      (var(--wa-font-size-m) * var(--wa-line-height-normal))
+    );
+  }
+  to {
+    height: calc(var(--wa-font-size-l) * var(--wa-line-height-condensed));
+  }
+}
+
+@keyframes scroll-h1 {
+  from {
+    font-size: var(--wa-font-size-xl);
+  }
+  to {
+    font-size: var(--wa-font-size-l);
+  }
+}
+
+@keyframes scroll-subtitle {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+    margin-block-end: 0;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+    margin-block-end: calc(-1 * var(--wa-font-size-m) * var(--wa-line-height-normal));
+  }
 }

@@ -36,6 +36,10 @@ body,
 h1,
 h2 {
   margin: 0;
+  /* Safari gives precedence to its user-agent stylesheet margin-inline
+   * and margin-block values (over margin shorthand) during CSS animations. */
+  margin-inline: 0;
+  margin-block: 0;
   color: var(--wa-color-text-normal);
 }
 
