@@ -32,9 +32,12 @@ header {
   gap: var(--app-spacing);
 
   .logo {
-    height: 100%;
+    height: calc(
+      /* h1 + subtitle */
+      (var(--wa-font-size-xl) * var(--wa-line-height-condensed)) +
+      (var(--wa-font-size-m) * var(--wa-line-height-normal))
+    );
     width: auto;
-    max-width: 3em;
     object-fit: contain;
   }
 
