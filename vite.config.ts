@@ -133,8 +133,8 @@ export default defineConfig({
       manifest: {
         name: process.env.VITE_APP_NAME ?? "Puzzles web app",
         short_name: "Puzzles",
-        background_color: "#e8f3ff", // --wa-color-brand-95
-        theme_color: "#0071ec", // --wa-color-brand-50
+        background_color: "#e8f3ff", // --wa-color-brand-fill-quiet (page bg)
+        theme_color: "#d1e8ff", // --wa-color-brand-fill-normal (app bar)
       },
       registerType: "prompt",
       pwaAssets: {

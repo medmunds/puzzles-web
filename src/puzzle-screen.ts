@@ -141,9 +141,11 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         <main>
           <header>
             ${this.renderGameMenu()}
-            <puzzle-preset-menu></puzzle-preset-menu>
-            <wa-button 
-                variant="brand" 
+            <puzzle-preset-menu
+                trigger-appearance="filled" trigger-variant="brand"
+            ></puzzle-preset-menu>
+            <wa-button
+                appearance="filled" variant="brand"
                 href=${helpUrl(this.puzzleId).href} 
                 @click=${this.showHelp}
             >
@@ -198,7 +200,12 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   private renderGameMenu(): TemplateResult {
     return html`
       <wa-dropdown @wa-select=${this.handleGameMenuCommand}>
-        <wa-button slot="trigger" class="game-menu-trigger" variant="brand" with-caret>
+        <wa-button 
+            slot="trigger" 
+            class="game-menu-trigger" 
+            appearance="filled" variant="brand" 
+            with-caret
+        >
           <wa-icon slot="start" name="game"></wa-icon>
           ${this.puzzleData?.name ?? "Game"}
         </wa-button>
@@ -603,7 +610,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       height: 100%;
       container-type: size;
       
-      --puzzle-theme-color: var(--wa-color-brand-fill-loud);
+      --puzzle-theme-color: var(--wa-color-brand-fill-normal);
     }
     
     main {
@@ -636,6 +643,11 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       align-items: baseline;
       padding: var(--wa-space-xs);
       background-color: var(--puzzle-theme-color);
+      
+      wa-button[appearance="filled"]::part(base),
+      puzzle-preset-menu::part(trigger-base) {
+        color: var(--wa-color-text-normal);
+      }
     }
 
     puzzle-view-interactive {

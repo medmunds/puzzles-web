@@ -1,7 +1,8 @@
+import type WaButton from "@awesome.me/webawesome/dist/components/button/button.js";
 import type WaDropdownItem from "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { puzzleContext } from "./contexts.ts";
@@ -28,6 +29,12 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
    */
   @property({ type: String })
   label = "Type";
+
+  @property({ type: String, attribute: "trigger-appearance" })
+  triggerAppearance?: WaButton["appearance"];
+
+  @property({ type: String, attribute: "trigger-variant" })
+  triggerVariant?: WaButton["variant"];
 
   // Game presets, with submenus flattened
   @state()
@@ -70,7 +77,6 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
       "dropdown-label-content": true,
       "show-value": this.puzzle !== undefined && !this.open,
     });
-    // TODO: trigger uses variant=brand for use in app bar; need better solution
     return html`
       <wa-dropdown 
           @wa-show=${this.handleDropdownShow}
@@ -78,7 +84,14 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
           @wa-hide=${this.handleDropdownHide}
           @wa-select=${this.handleDropdownSelect}
       >
-        <wa-button slot="trigger" variant="brand" with-caret>
+        <wa-button 
+            slot="trigger"
+            part="trigger"
+            exportparts="base:trigger-base"
+            appearance=${this.triggerAppearance ?? nothing}
+            variant=${this.triggerVariant ?? nothing}
+            with-caret
+        >
           <wa-icon slot="start" name="puzzle-type"></wa-icon>
           <div class="dropdown-label">
             <div class=${labelContentClasses}>
