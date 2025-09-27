@@ -1,5 +1,6 @@
 import "./main.ts";
 import { html } from "lit";
+import { puzzleDataMap } from "./puzzle/catalog.ts";
 import { parsePuzzleUrl } from "./routing.ts";
 
 // Register components
@@ -44,8 +45,25 @@ async function interceptHrefClick(event: MouseEvent) {
   }
 }
 
+function randomizePuzzleLink() {
+  // Swap a random puzzle into the intro.
+  const link = document.querySelector<HTMLAnchorElement>(
+    '#intro a[href="random-puzzle"]',
+  );
+  if (link) {
+    // Get all ids that aren't otherwise mentioned in the intro
+    const puzzleIds = Object.keys(puzzleDataMap)
+      .filter((id) => !puzzleDataMap[id].unfinished)
+      .filter((id) => !document.querySelector(`#intro a[href="${id}"]`));
+    const randomId = puzzleIds[Math.floor(Math.random() * puzzleIds.length)];
+    link.href = randomId;
+    link.textContent = puzzleDataMap[randomId].name;
+  }
+}
+
 function initialize() {
   document.addEventListener("click", interceptHrefClick);
+  randomizePuzzleLink();
   document.body.classList.add("js-ready");
 }
 

@@ -56,3 +56,10 @@ header {
 section {
   max-width: 55ch;
 }
+
+del {
+  text-decoration-line: line-through;
+  text-decoration-thickness: 0.15em;
+  text-decoration-style: wavy;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
