@@ -56,8 +56,11 @@ function setupScrollAnimationFallback() {
     }
   }
 
-  updateScrollAnimation(); // get initial state
   scrollContainer.addEventListener("scroll", updateScrollAnimation, { passive: true });
+
+  // Get initial state. pageshow covers scroll position restoration after navigation.
+  updateScrollAnimation();
+  window.addEventListener("pageshow", updateScrollAnimation, { once: true });
 }
 
 async function showAboutDialog() {
