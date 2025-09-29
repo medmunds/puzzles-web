@@ -74,6 +74,11 @@ a {
   }
 }
 
+small {
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+}
+
 body:not(.js-ready) .js {
   display: none;
 }

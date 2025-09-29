@@ -98,16 +98,18 @@ async function interceptHrefClick(event: MouseEvent) {
   }
 }
 
-function randomizePuzzleLink() {
-  // Swap a random puzzle into the intro.
-  const link = document.querySelector<HTMLAnchorElement>(
-    '#intro a[href="random-puzzle"]',
-  );
+function randomizePuzzleLink(sectionId: string) {
+  // Swap a random puzzle into the xrefs.
+  const section = document.getElementById(sectionId);
+  if (!section) {
+    return;
+  }
+  const link = section.querySelector<HTMLAnchorElement>('a[href="random-puzzle"]');
   if (link) {
     // Get all ids that aren't otherwise mentioned in the intro
     const puzzleIds = Object.keys(puzzleDataMap)
       .filter((id) => !puzzleDataMap[id].unfinished)
-      .filter((id) => !document.querySelector(`#intro a[href="${id}"]`));
+      .filter((id) => !section.querySelector(`a[href="${id}"]`));
     const randomId = puzzleIds[Math.floor(Math.random() * puzzleIds.length)];
     link.href = randomId;
     link.textContent = puzzleDataMap[randomId].name;
@@ -116,7 +118,7 @@ function randomizePuzzleLink() {
 
 function initialize() {
   document.addEventListener("click", interceptHrefClick);
-  randomizePuzzleLink();
+  randomizePuzzleLink("xrefs");
   setupScrollAnimationFallback();
   document.body.classList.add("js-ready");
 }
