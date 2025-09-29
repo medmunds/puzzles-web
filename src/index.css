@@ -1,14 +1,10 @@
 @import url("./common.css");
 
-#app {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-
+:root {
   --app-padding: var(--wa-space-xl);
   --app-spacing: var(--wa-space-l);
-}
-@media (max-width: 40rem) {
-  #app {
+
+  @media (max-width: 40rem) {
     --app-padding: var(--wa-space-l);
     --app-spacing: var(--wa-space-m);
   }

@@ -8,15 +8,27 @@ import { clamp } from "./utils/math.ts";
 import "./catalog-list.ts";
 import "./dynamic-content.ts";
 
-function setupScrollAnimationFallback() {
+/**
+ * Emulate animation-timeline: scroll() for our CSS shrinking header animations
+ * in browsers that don't support it. This assumes that in those browsers,
+ * the CSS animations:
+ *   - are installed as ordinary animations in "paused" state
+ *   - have a duration of 1000ms
+ *   - have names starting with "scroll-"
+ */
+function setupScrollAnimationFallback(scrollContainerSelector: string = "html") {
   if (CSS.supports("animation-timeline: scroll()")) {
     return; // Native support available, no fallback needed
   }
 
-  const scrollContainer = document.getElementById("app");
-  if (!scrollContainer) {
-    throw new Error("#app is missing");
+  const scrollElement = document.querySelector(scrollContainerSelector);
+  if (!scrollElement) {
+    throw new Error(`Couldn't find ${scrollContainerSelector}`);
   }
+
+  // <html> element scroll events are delivered to the document, not the element
+  const scrollListener =
+    scrollElement === document.documentElement ? document : scrollElement;
 
   const header = document.querySelector("header");
   if (!header) {
@@ -35,10 +47,10 @@ function setupScrollAnimationFallback() {
   const animationDuration = 1000; // all css animations are set to this duration
 
   function updateScrollAnimation() {
-    if (!header || !scrollContainer) {
+    if (!header || !scrollElement) {
       return;
     }
-    const scrollY = scrollContainer.scrollTop ?? 0;
+    const scrollY = scrollElement.scrollTop ?? 0;
     const currentTime = clamp(
       0,
       (animationDuration * scrollY) / rangeEnd,
@@ -56,7 +68,7 @@ function setupScrollAnimationFallback() {
     }
   }
 
-  scrollContainer.addEventListener("scroll", updateScrollAnimation, { passive: true });
+  scrollListener.addEventListener("scroll", updateScrollAnimation, { passive: true });
 
   // Get initial state. pageshow covers scroll position restoration after navigation.
   updateScrollAnimation();
