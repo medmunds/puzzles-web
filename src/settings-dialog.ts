@@ -26,9 +26,9 @@ import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/slider/slider.js";
 
-const MAX_SCALE_MIN = 0.5;
-const MAX_SCALE_MAX = 4; // stand-in for "infinity" in maxScale slider
-const MAX_SCALE_STEP = 0.5;
+const MAX_SCALE_MIN = 0.25;
+const MAX_SCALE_MAX = 2.75; // stand-in for "infinity" in maxScale slider
+const MAX_SCALE_STEP = 0.25;
 
 @customElement("settings-dialog")
 export class SettingsDialog extends SignalWatcher(LitElement) {
@@ -96,7 +96,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             step=${MAX_SCALE_STEP}
             with-markers
             with-tooltip
-            .valueFormatter=${(value: number) => (value >= MAX_SCALE_MAX ? "As large as fits" : `${value}x`)}
+            .valueFormatter=${(value: number) => (value >= MAX_SCALE_MAX ? "As large as fits" : `${Math.round(value * 100)}%`)}
             @change=${(event: Event) => {
               // (Special case for non-standard handling; no data-setting attr.)
               const value = Number.parseFloat((event.target as HTMLInputElement).value);
@@ -104,8 +104,10 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
                 value >= MAX_SCALE_MAX ? Number.POSITIVE_INFINITY : value;
             }}
         >
-          <span slot="reference" class="scale-1x">1x</span>
-          <span slot="reference">No limit</span>
+          <span slot="reference">${Math.round(MAX_SCALE_MIN * 100)}%</span>
+          <span slot="reference" class="scale-1x">100%</span>
+          <span slot="reference" class="scale-2x">200%</span>
+          <span slot="reference">Max</span>
         </wa-slider>
       </wa-details>
     `;
@@ -358,11 +360,17 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       flex-direction: column;
       gap: var(--wa-space-l);
     }
-    
+
+    /* Place the maxScale 100% and 200% labels below the appropriate markers */
+    .scale-1x, .scale-2x {
+      position: absolute;
+      transform: translateX(calc(-50% + 0.5ch)); /* visually center */
+    }
     .scale-1x {
-      /* Place the maxScale 1x label below the second marker */
-      margin-inline-start: ${100 / ((MAX_SCALE_MAX - MAX_SCALE_MIN) / MAX_SCALE_STEP)}%;
-      transform: translateX(-50%);
+      inset-inline-start: ${(100 * (1.0 - MAX_SCALE_MIN)) / (MAX_SCALE_MAX - MAX_SCALE_MIN)}%;
+    }
+    .scale-2x {
+      inset-inline-start: ${(100 * (2.0 - MAX_SCALE_MIN)) / (MAX_SCALE_MAX - MAX_SCALE_MIN)}%;
     }
     
     .hint {
