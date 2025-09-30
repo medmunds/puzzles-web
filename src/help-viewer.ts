@@ -273,7 +273,7 @@ export class HelpViewer extends LitElement {
       padding-inline-start: 0;
     }
     wa-drawer::part(header) {
-      border-bottom: 1px solid var(--wa-color-neutral-80);
+      border-bottom: 1px solid var(--wa-color-neutral-border-normal);
     }
     
     /* TODO: share the base page styles somehow */
@@ -300,7 +300,7 @@ export class HelpViewer extends LitElement {
       
       hr {
         border: none;
-        border-top: 1px solid var(--wa-color-neutral-80);
+        border-top: 1px solid var(--wa-color-neutral-border-normal);
       }
       
       a > code {

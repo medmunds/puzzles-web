@@ -7,9 +7,10 @@
 
   /* TODO: color-scheme: light dark;*/
   color: var(--wa-color-text-normal);
-  background-color: var(--wa-color-brand-95);
+  background-color: var(--wa-color-brand-fill-quiet);
 
   /* Lighten default accent buttons slightly (usually neutral-20) */
+  /* TODO: --wa-color-neutral-70 for dark mode */
   --wa-color-neutral-fill-loud: var(--wa-color-neutral-30);
 
   font-synthesis: none;

@@ -20,7 +20,7 @@ header {
   position: sticky;
   top: 0;
   z-index: 1;
-  background-color: var(--wa-color-brand-90);
+  background-color: var(--wa-color-brand-fill-normal);
 
   display: grid;
   grid-template-columns: auto 1fr;
