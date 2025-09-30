@@ -133,8 +133,7 @@ export class HelpViewer extends LitElement {
   private updateSrc() {
     this.baseUrl = new URL(this.src, window.location.href);
     this.basePath = this.baseUrl.pathname.replace(/\/[^/]*$/, "");
-    const url = new URL(this.src, this.baseUrl);
-    this.history = [url];
+    this.history = [this.baseUrl];
     this.historyIndex = 0;
   }
 
