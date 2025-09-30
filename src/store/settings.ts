@@ -61,13 +61,21 @@ class Settings {
   private _maxScale = signal<number>(defaultSettings.maxScale);
   private _showStatusbar = signal<boolean>(defaultSettings.showStatusbar);
 
-  private constructor() {}
+  private constructor() {
+    window.addEventListener("pageshow", this.handlePageShow);
+  }
 
   static async create(): Promise<Settings> {
     const settings = new Settings();
     await settings.loadSettings();
     return settings;
   }
+
+  private handlePageShow = async (event: PageTransitionEvent) => {
+    if (event.persisted) {
+      await this.loadSettings();
+    }
+  };
 
   private async loadSettings(): Promise<void> {
     function update<T>(signal: Signal.State<T>, newValue: T | undefined) {
