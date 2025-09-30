@@ -2,7 +2,7 @@ import { puzzleDataMap } from "./puzzle/catalog.ts";
 
 export const validPuzzleIds = new Set(Object.keys(puzzleDataMap));
 
-const baseUrl = new URL(import.meta.env.BASE_URL, window.location.href);
+export const baseUrl = new URL(import.meta.env.BASE_URL, window.location.href);
 
 export const indexPageUrl = () => new URL("", baseUrl);
 
@@ -34,21 +34,33 @@ export const puzzlePageUrl = ({
 export const helpUrl = (puzzleId: string) =>
   new URL(`help/${puzzleId}-overview.html`, baseUrl);
 
+export const isHelpUrl = (href: string | URL): boolean =>
+  relativePathname(href)?.startsWith("help") ?? false;
+
+/**
+ * If href is relative to baseUrl, returns its pathname portion after
+ * baseUrl.pathname, with leading and trailing slashes removed.
+ */
+export const relativePathname = (href: string | URL): string | undefined => {
+  const url = href instanceof URL ? href : new URL(href, baseUrl);
+  if (url.origin !== baseUrl.origin || !url.pathname.startsWith(baseUrl.pathname)) {
+    return undefined;
+  }
+  return (
+    url.pathname
+      // Remove baseUrl pathname
+      .slice(baseUrl.pathname.length)
+      // Strip leading/trailing slashes
+      .replace(/^\/+/, "")
+      .replace(/\/+$/, "")
+  );
+};
+
 export function parsePuzzleUrl(href?: string | URL): PuzzleUrlParams | undefined {
   // Extract puzzleId from /:puzzleId
   const url = new URL(href ?? window.location.href, baseUrl);
-  if (!url.pathname.startsWith(baseUrl.pathname)) {
-    return undefined;
-  }
-
-  const path = url.pathname
-    // Remove baseUrl pathname
-    .slice(baseUrl.pathname.length)
-    // Strip leading/trailing slashes and trailing .html
-    .replace(/^\/+/, "")
-    .replace(/(\/+|\.html)$/, "");
-
-  if (!validPuzzleIds.has(path)) {
+  const path = relativePathname(url);
+  if (path === undefined || !validPuzzleIds.has(path)) {
     return undefined;
   }
 

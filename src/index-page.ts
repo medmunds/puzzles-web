@@ -1,10 +1,12 @@
 import "./main.ts";
 import { html } from "lit";
 import { puzzleDataMap } from "./puzzle/catalog.ts";
-import { parsePuzzleUrl } from "./routing.ts";
+import { isHelpUrl, parsePuzzleUrl } from "./routing.ts";
 import { clamp } from "./utils/math.ts";
 
 // Register components
+import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "./catalog-list.ts";
 import "./dynamic-content.ts";
 
@@ -87,6 +89,16 @@ async function showAboutDialog() {
   }
 }
 
+async function showHelpViewer(href: string) {
+  await import("./help-viewer.ts");
+  const dynamicContent = document.querySelector("dynamic-content");
+  const helpViewer = await dynamicContent?.addItem({
+    tagName: "help-viewer",
+    render: () => html`<help-viewer src=${href}></help-viewer>`,
+  });
+  helpViewer?.show();
+}
+
 async function interceptHrefClick(event: MouseEvent) {
   if (event.defaultPrevented) {
     // Don't intercept clicks that have already been handled
@@ -102,12 +114,14 @@ async function interceptHrefClick(event: MouseEvent) {
       if (puzzleUrl?.puzzleId) {
         // Navigate to a puzzle (e.g., from catalog-card click)
         window.location.href = href;
+      } else if (isHelpUrl(href)) {
+        event.preventDefault();
+        await showHelpViewer(href);
       } else if (href === "#about") {
         event.preventDefault();
         await showAboutDialog();
       }
       // TODO: #settings for settings-dialog
-      // TODO: show help-viewer for our help urls
       break; // stop at first element with an href
     }
   }
