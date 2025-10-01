@@ -1268,14 +1268,16 @@ static void draw_tile(drawing *dr, game_drawstate *ds, int r, int c,
     draw_update(dr, x, y, TILESIZE + WIDTH, TILESIZE + WIDTH);
 }
 
-static void draw_cursor(drawing *dr, game_drawstate *ds,
-                        int cur_x, int cur_y, bool legacy_cursor)
+static void get_cursor_location(
+    const game_drawstate *ds, int cur_x, int cur_y, bool legacy_cursor,
+    int *center_x, int *center_y, int *w, int *h, bool *corners)
 {
     int off_x = cur_x % 2, off_y = cur_y % 2;
 
     /* Figure out the tile coordinates corresponding to these cursor
      * coordinates. */
-    int x = MARGIN + TILESIZE * (cur_x / 2), y = MARGIN + TILESIZE * (cur_y / 2);
+    int x = MARGIN + TILESIZE * (cur_x / 2),
+        y = MARGIN + TILESIZE * (cur_y / 2);
 
     /* off_x and off_y are either 0 or 1. The possible cases are
      * therefore:
@@ -1285,10 +1287,12 @@ static void draw_cursor(drawing *dr, game_drawstate *ds,
      * (1, 0): the cursor is on the top border of the tile.
      * (1, 1): the cursor is in the center of the tile.
      */
-    enum { TOP_LEFT_CORNER, LEFT_BORDER, TOP_BORDER, TILE_CENTER } cur_type = (off_x << 1) + off_y;
+    enum {
+        TOP_LEFT_CORNER, LEFT_BORDER, TOP_BORDER, TILE_CENTER
+    } cur_type = (off_x << 1) + off_y;
 
-    int center_x = x + ((off_x == 0) ? WIDTH/2 : CENTER),
-        center_y = y + ((off_y == 0) ? WIDTH/2 : CENTER);
+    *center_x = x + ((off_x == 0) ? WIDTH/2 : CENTER);
+    *center_y = y + ((off_y == 0) ? WIDTH/2 : CENTER);
 
     struct { int w, h; } cursor_dimensions[] = {
         { TILESIZE / 3, TILESIZE / 3 },         /* top left corner */
@@ -1297,16 +1301,25 @@ static void draw_cursor(drawing *dr, game_drawstate *ds,
         { 2 * TILESIZE / 3, 2 * TILESIZE / 3 }  /* center */
     }, *dims = cursor_dimensions + cur_type;
 
-    if(legacy_cursor && cur_type == TILE_CENTER)
+    *w = dims->w;
+    *h = dims->h;
+    *corners = legacy_cursor && cur_type == TILE_CENTER;
+}
+
+static void draw_cursor(drawing *dr, const game_drawstate *ds,
+                        int cur_x, int cur_y, bool legacy_cursor) {
+    int center_x, center_y, w, h;
+    bool corners;
+    get_cursor_location(ds, cur_x, cur_y, legacy_cursor, &center_x, &center_y,
+                        &w, &h, &corners);
+
+    if(corners)
         draw_rect_corners(dr, center_x, center_y, TILESIZE / 3, COL_GRID);
     else
-        draw_rect_outline(dr,
-                          center_x - dims->w / 2, center_y - dims->h / 2,
-                          dims->w, dims->h, COL_GRID);
+        draw_rect_outline(dr, center_x - w / 2, center_y - h / 2,
+                          w, h, COL_GRID);
 
-    draw_update(dr,
-                center_x - dims->w / 2, center_y - dims->h / 2,
-                dims->w, dims->h);
+    draw_update(dr, center_x - w / 2, center_y - h / 2, w, h);
 }
 
 #define FLASH_TIME 0.7F
@@ -1439,9 +1452,12 @@ static void game_get_cursor_location(const game_ui *ui,
                                      int *x, int *y, int *w, int *h)
 {
     if(ui->show) {
-        *x = MARGIN + TILESIZE * ui->x;
-        *y = MARGIN + TILESIZE * ui->y;
-        *w = *h = TILESIZE;
+        int center_x, center_y;
+        bool corners;
+        get_cursor_location(ds, ui->x, ui->y, ui->legacy_cursor,
+                            &center_x, &center_y, w, h, &corners);
+        *x = center_x - *w / 2;
+        *y = center_y - *h / 2;
     }
 }
 
