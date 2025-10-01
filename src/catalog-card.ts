@@ -156,6 +156,7 @@ export class CatalogCard extends LitElement {
 
     .icon {
       display: block;
+      flex: var(--icon-size) 0 0;
       width: var(--icon-size);
       height: var(--icon-size);
       border-radius: var(--wa-border-radius-s);
