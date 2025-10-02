@@ -198,6 +198,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   }
 
   private renderGameMenu(): TemplateResult {
+    const iconName = this.puzzleData?.unfinished ? "unfinished" : "game";
     return html`
       <wa-dropdown @wa-select=${this.handleGameMenuCommand}>
         <wa-button 
@@ -206,7 +207,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
             appearance="filled" variant="brand" 
             with-caret
         >
-          <wa-icon slot="start" name="game"></wa-icon>
+          <wa-icon slot="start" name=${iconName}></wa-icon>
           ${this.puzzleData?.name ?? "Game"}
         </wa-button>
         <wa-dropdown-item value="new">
