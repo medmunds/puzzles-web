@@ -61,7 +61,7 @@ export class CatalogList extends SignalWatcher(LitElement) {
         name=${name}
         description=${description}
         objective=${objective}
-        ?resume=${savedGames.autoSavedPuzzles.has(puzzleId)}
+        ?game-in-progress=${savedGames.autoSavedPuzzles.has(puzzleId)}
         ?favorite=${isFavorite}
         ?unfinished=${unfinished}
       ></catalog-card>                    

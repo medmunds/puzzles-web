@@ -32,3 +32,13 @@ export const commonLinkStyle = css`
     }
   }
 `;
+
+/**
+ * Lucide icons are square.
+ * This overrides default wa-icon width: 1.25em from Font Awesome.
+ */
+export const cssIconPatch = css`
+  wa-icon:not([auto-width]) {
+    width: 1em;
+  }
+`;

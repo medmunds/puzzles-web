@@ -1,11 +1,10 @@
-import { css, html, LitElement } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { css, html, LitElement, nothing } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { cssIconPatch } from "./utils/css.ts";
 
 // Register components
-import "@awesome.me/webawesome/dist/components/badge/badge.js";
 import "@awesome.me/webawesome/dist/components/button/button.js";
-import "@awesome.me/webawesome/dist/components/card/card.js";
-import "@awesome.me/webawesome/dist/components/rating/rating.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
 
 interface FavoriteChangeDetail {
   puzzleId: string;
@@ -33,16 +32,21 @@ export class CatalogCard extends LitElement {
   @property({ type: String })
   href = "";
 
-  @property({ type: Boolean })
-  resume = false;
+  @property({ type: Boolean, attribute: "game-in-progress" })
+  gameInProgress = false;
 
   @property({ type: Boolean })
   favorite = false;
 
-  renderIcon() {
-    if (this.unfinished) {
-      // Unfinished puzzles don't have icons yet
-      return html`<div class="icon unfinished" role="presentation">🚧</div>`;
+  @state()
+  private iconMissing = false;
+
+  private renderIcon() {
+    if (this.iconMissing) {
+      const iconName = this.unfinished ? "unfinished" : "generic-puzzle";
+      return html`
+        <wa-icon part="icon" auto-width name=${iconName}></wa-icon>
+      `;
     }
 
     const icon1x = new URL(`./assets/icons/${this.puzzleId}-64d8.png`, import.meta.url)
@@ -51,158 +55,242 @@ export class CatalogCard extends LitElement {
       .href;
     const srcset = `${icon1x}, ${icon2x} 2x`;
     return html`
-      <img class="icon" srcset=${srcset} src=${icon2x}
+      <img part="icon" srcset=${srcset} src=${icon2x}
            role="presentation" alt=${`Preview image of ${this.name}`}
+           @error=${this.handleIconError}
       >`;
   }
 
-  render() {
-    // TODO: wa-rating isn't semantically correct for favorite;
-    //   really want a toggle button of some sort
+  private renderFavoriteToggle() {
     return html`
-      <wa-card>
-        <div class="card-body">
-          ${this.renderIcon()}
-          <div class="text">
-            ${this.unfinished ? html`<wa-badge pill variant="warning">Unfinished</wa-badge>` : undefined}
-            <h2>${this.name}</h2>
-            <p>${this.objective}</p>
-          </div>
-        </div>
-
-        <footer slot="footer">
-          <wa-rating 
-              aria-label="Favorite" 
-              role="checkbox"
-              aria-checked=${this.favorite}
-              max="1" 
-              value=${this.favorite ? 1 : 0}
-              @click=${(event: Event) => event.stopPropagation()}
-              @change=${this.handleFavoriteChange}
-          ></wa-rating>
-          <wa-button 
-              id="play" 
-              href="${this.href}" 
-              aria-label=${`Play ${this.name}`} 
-              variant="brand"
-          >${this.resume ? "Resume" : "Play"}</wa-button>
-        </footer>
-      </wa-card>
+      <wa-button
+          part="favorite"
+          aria-pressed=${String(this.favorite)}
+          appearance="plain"
+          @click=${this.handleFavoriteToggle}
+      >
+        <wa-icon name="favorite" label="Favorite"></wa-icon>
+      </wa-button>
     `;
   }
 
-  private handleFavoriteChange(event: Event) {
-    const target = event.target as HTMLElementTagNameMap["wa-rating"];
-    const isFavorite = target.value !== 0;
+  private renderGameInProgressBadge() {
+    return this.gameInProgress
+      ? html`<wa-icon name="game-in-progress" label="(Game in progress)"></wa-icon>`
+      : nothing;
+  }
+
+  private renderUnfinishedBadge() {
+    return this.unfinished ? html`<div part="unfinished">Unfinished</div>` : nothing;
+  }
+
+  protected override render() {
+    // (The tabindex should be automatic for an <a>, but Safari seems to need it)
+    return html`
+      <a part="base" href=${this.href} draggable="false" tabindex="0">
+        ${this.renderIcon()}
+        <div part="title">
+          <h3>${this.name}</h3>
+          ${this.renderUnfinishedBadge()}
+          ${this.renderGameInProgressBadge()}
+        </div>
+        ${this.renderFavoriteToggle()}
+        <div part="description">${this.objective}</div>
+      </a>
+    `;
+  }
+
+  private handleFavoriteToggle(event: Event) {
+    // Don't navigate to the game
+    event.stopPropagation();
+    event.preventDefault();
+
+    this.favorite = !this.favorite;
     this.dispatchEvent(
       new CustomEvent<FavoriteChangeDetail>("favorite-change", {
         bubbles: true,
         composed: true,
-        detail: { puzzleId: this.puzzleId, isFavorite },
+        detail: { puzzleId: this.puzzleId, isFavorite: this.favorite },
       }),
     );
   }
 
-  static styles = css`
-    :host {
-      display: block;
-      touch-action: manipulation;
-      --icon-size: 64px;
-    }
+  private handleIconError() {
+    this.iconMissing = true;
+  }
 
-    @media (hover: hover) {
-      @media (prefers-reduced-motion: no-preference) {
-        wa-card {
-          transition: 
-            transform var(--wa-transition-normal) var(--wa-transition-easing),
-            box-shadow var(--wa-transition-normal) var(--wa-transition-easing);
+  static styles = [
+    cssIconPatch,
+    css`
+      * {
+        box-sizing: border-box;
+      }
+      
+      :host {
+        display: block;
+        touch-action: manipulation;
+        --icon-size: 64px;
+        --padding: var(--wa-space-m);
+        --spacing: var(--wa-space-xs);
+      }
+      
+      [part="base"] {
+        height: 100%;
+        width: 100%;
+  
+        position: relative;
+        
+        display: grid;
+        grid-template-areas:
+          "icon title          favorite"
+          "icon description description";
+        grid-template-columns: var(--icon-size) 1fr auto;
+        grid-template-rows: auto 1fr;
+  
+        padding: var(--padding);
+        column-gap: var(--padding);
+        row-gap: var(--spacing);
+  
+        background-color: var(--wa-color-surface-default);
+        color: var(--wa-color-text-normal);
+        border-color: var(--wa-color-surface-border);
+        border-radius: var(--wa-panel-border-radius);
+        border-style: var(--wa-panel-border-style);
+        border-width: var(--wa-panel-border-width);
+        
+        &:focus-visible {
+          outline: var(--wa-focus-ring);
+          outline-offset: var(--wa-focus-ring-offset);
         }
-
-        wa-card:hover {
-          transform: translateY(calc(-1 * var(--wa-space-2xs)));
-          box-shadow: var(--wa-shadow-l);
+        
+        &:is(a) {
+          /* Remove some <a> styles and behaviors */
+          cursor: pointer;
+          text-decoration: none;
         }
       }
-    }
+  
+      @media (hover: hover) {
+        @media (prefers-reduced-motion: no-preference) {
+          [part="base"] {
+            transition:
+                transform var(--wa-transition-normal) var(--wa-transition-easing),
+                box-shadow var(--wa-transition-normal) var(--wa-transition-easing);
+          }
+  
+          [part="base"]:hover {
+            transform: translateY(calc(-1 * var(--wa-space-2xs)));
+            box-shadow: var(--wa-shadow-l);
+          }
+        }
+      }
+  
+      [part="icon"] {
+        grid-area: icon;
 
-    wa-card {
-      height: 100%;
-      width: 100%;
-      position: relative;
-      --spacing: var(--wa-space-m);
+        width: var(--icon-size);
+        height: var(--icon-size);
+        border-radius: var(--wa-border-radius-s);
 
-      cursor: pointer;
-    }
+        display: flex;
+        align-items: center;
+        justify-content: center;
 
-    wa-card::part(base) {
-      height: 100%;
-    }
+        font-size: calc(var(--icon-size) - 2 * var(--wa-space-xs));
+        background-color: var(--wa-color-neutral-fill-quiet);
+        color: var(--wa-color-neutral-on-quiet);
+        :host([unfinished]) & {
+          color: var(--wa-color-warning-fill-loud);
+        }
 
-    wa-card::part(body) {
-      flex-grow: 1;
-    }
-
-    wa-card::part(footer) {
-      /* Remove the separator line */
-      border-block-start: none;
-      padding-block-start: 0;
-    }
-
-    .card-body {
-      display: flex;
-      flex-direction: row;
-      gap: var(--wa-space-m);
-    }
-
-    .icon {
-      display: block;
-      flex: var(--icon-size) 0 0;
-      width: var(--icon-size);
-      height: var(--icon-size);
-      border-radius: var(--wa-border-radius-s);
-    }
-
-    .icon.unfinished {
-      text-align: center;
-      line-height: var(--icon-size);
-      font-size: calc(0.8 * var(--icon-size));
-    }
-
-    wa-badge {
-      /* WEB-56239: */ /*noinspection CssInvalidPropertyValue*/ 
-      float: inline-end;
-      margin-inline-start: var(--wa-space-2xs);
-      margin-block-end: var(--wa-space-2xs);
-    }
-
-    h2 {
-      margin: 0;
-      line-height: 1;
-      color: var(--wa-color-text-normal);
-      font-size: var(--wa-font-size-l);
-      font-weight: var(--wa-font-weight-semibold);
-    }
-
-    p {
-      margin: var(--wa-space-s) 0 0 0;
-      color: var(--wa-color-text-quiet);
-      font-size: var(--wa-font-size-m);
-      font-weight: var(--wa-font-weight-normal);
-      line-height: var(--wa-line-height-normal);
-    }
-
-    footer {
-      display: flex;
-      width: 100%;
-      justify-content: space-between;
-      align-items: center;
-      gap: var(--wa-space-l);
-    }
-    
-    wa-rating {
-      user-select: none; /* avoid selecting nearest text */
-    }
-  `;
+        &:is(wa-icon)::part(svg) {
+          width: unset;
+        }
+      }
+  
+      [part="title"] {
+        grid-area: title;
+        display: flex;
+        align-items: center;
+        gap: var(--wa-space-2xs);
+        min-width: 1em;
+  
+        h3 {
+          flex: 0 1 auto;
+          min-width: 1em;
+          
+          margin: 0;
+          line-height: var(--wa-line-height-condensed);
+          color: var(--wa-color-text-normal);
+          font-size: var(--wa-font-size-l);
+          font-weight: var(--wa-font-weight-semibold);
+  
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+  
+      [part="favorite"] {
+        grid-area: favorite;
+        
+        /* Exclude padding from layout calculations */
+        margin: calc(-1 * var(--wa-space-xs));
+        
+        /* Remove some button padding and allow natural size */
+        &::part(base) {
+          padding: var(--wa-space-xs);
+          height: auto;
+          width: auto;
+        }
+        
+        /* Toggled-on appearance */
+        color: var(--wa-color-text-quiet);
+        &[aria-pressed="true"] wa-icon {
+          /*color: var(--wa-color-brand-fill-loud);*/
+          &::part(svg) {
+            fill: currentColor;
+          }
+        }
+      }
+  
+      [part="description"] {
+        grid-area: description;
+  
+        color: var(--wa-color-text-quiet);
+        font-size: var(--wa-font-size-m);
+        font-weight: var(--wa-font-weight-normal);
+        line-height: var(--wa-line-height-normal);
+      }
+      
+      [part="unfinished"] {
+        position: absolute;
+        inset-block-start: calc(var(--padding) + var(--icon-size));
+        inset-inline-start: calc(var(--padding) + var(--icon-size)/2);
+        transform: translate(-50%, -40%) rotate(-7.5deg);
+        transform-origin: 50% 50%;
+        
+        padding: var(--wa-space-2xs);
+        font-size: var(--wa-font-size-2xs);
+        line-height: 1;
+  
+        background-color: var(--wa-color-warning-fill-loud);
+        color: var(--wa-color-warning-on-loud);
+        border-color: var(--wa-color-surface-default);
+        border-style: solid;
+        border-width: var(--wa-border-width-m);
+        border-radius: var(--wa-border-radius-s);
+      }
+  
+      wa-icon[name="game-in-progress"] {
+        color: var(--wa-color-brand-fill-loud);
+        &::part(svg) {
+          stroke: currentColor;
+          fill: currentColor;
+        }
+      }
+    `,
+  ];
 }
 
 declare global {

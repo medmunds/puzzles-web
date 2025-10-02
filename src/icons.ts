@@ -22,6 +22,7 @@ import downloadIcon from "lucide-static/icons/download.svg";
 import frownIcon from "lucide-static/icons/frown.svg";
 import gemIcon from "lucide-static/icons/gem.svg";
 import hashIcon from "lucide-static/icons/hash.svg";
+import heartIcon from "lucide-static/icons/heart.svg";
 import historyIcon from "lucide-static/icons/history.svg";
 import infoIcon from "lucide-static/icons/info.svg";
 import laughIcon from "lucide-static/icons/laugh.svg";
@@ -39,6 +40,7 @@ import squareArrowOutUpRightIcon from "lucide-static/icons/square-arrow-out-up-r
 import squarePenIcon from "lucide-static/icons/square-pen.svg";
 import swatchBookIcon from "lucide-static/icons/swatch-book.svg";
 import thumbsUpIcon from "lucide-static/icons/thumbs-up.svg";
+import trafficConeIcon from "lucide-static/icons/traffic-cone.svg";
 import trash2Icon from "lucide-static/icons/trash-2.svg";
 import triangleAlertIcon from "lucide-static/icons/triangle-alert.svg";
 import undo2Icon from "lucide-static/icons/undo-2.svg";
@@ -61,8 +63,11 @@ const defaultIcons: IconMap = {
   "back-to-catalog": boxesIcon,
   "checkpoint-add": shieldCheckIcon,
   "checkpoint-remove": trash2Icon,
+  "favorite": heartIcon,
   "game": boxIcon,
+  "game-in-progress": playIcon,
   "gameid": hashIcon,
+  "generic-puzzle": boxIcon,
   "help": circleQuestionMarkIcon,
   "history": historyIcon,
   "history-checkpoint": circleCheckIcon,
@@ -77,6 +82,7 @@ const defaultIcons: IconMap = {
   "share": share2Icon,
   "show-solution": sparklesIcon,
   "undo": undo2Icon,
+  "unfinished": trafficConeIcon,
   // generic notifications
   "info": infoIcon,
   "warning": triangleAlertIcon,

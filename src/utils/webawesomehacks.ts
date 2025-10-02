@@ -1,5 +1,4 @@
 import WaButton from "@awesome.me/webawesome/dist/components/button/button.js";
-import WaCard from "@awesome.me/webawesome/dist/components/card/card.js";
 import WaCheckbox from "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
 import WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import WaDropdown from "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
@@ -20,7 +19,6 @@ import { css } from "lit";
  */
 function disableWaChangedInUpdateWarnings() {
   WaButton.disableWarning?.("change-in-update");
-  WaCard.disableWarning?.("change-in-update");
   WaCheckbox.disableWarning?.("change-in-update");
   WaInput.disableWarning?.("change-in-update");
   WaRadio.disableWarning?.("change-in-update");
