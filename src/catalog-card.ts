@@ -89,11 +89,9 @@ export class CatalogCard extends LitElement {
     return html`
       <a part="base" href=${this.href} draggable="false" tabindex="0">
         ${this.renderIcon()}
-        <div part="title">
-          <h3>${this.name}</h3>
-          ${this.renderUnfinishedBadge()}
-          ${this.renderGameInProgressBadge()}
-        </div>
+        <h3 part="title">${this.name}</h3>
+        ${this.renderUnfinishedBadge()}
+        ${this.renderGameInProgressBadge()}
         ${this.renderFavoriteToggle()}
         <div part="description">${this.objective}</div>
       </a>
@@ -210,27 +208,20 @@ export class CatalogCard extends LitElement {
   
       [part="title"] {
         grid-area: title;
-        display: flex;
-        align-items: center;
-        gap: var(--wa-space-2xs);
         min-width: 1em;
-  
-        h3 {
-          flex: 0 1 auto;
-          min-width: 1em;
-          
-          margin: 0;
-          line-height: var(--wa-line-height-condensed);
-          color: var(--wa-color-text-normal);
-          font-size: var(--wa-font-size-l);
-          font-weight: var(--wa-font-weight-semibold);
-  
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
-  
+
+      h3 {
+        margin: 0;
+        line-height: var(--wa-line-height-condensed);
+        color: var(--wa-color-text-normal);
+        font-size: var(--wa-font-size-l);
+        font-weight: var(--wa-font-weight-semibold);
+      }
+
       [part="favorite"] {
         grid-area: favorite;
         
@@ -283,10 +274,20 @@ export class CatalogCard extends LitElement {
       }
   
       wa-icon[name="game-in-progress"] {
+        position: absolute;
+        inset-block-start: calc(var(--padding) - 0.5em);
+        inset-inline-start: calc(var(--padding) - 0.5em);
+        
         color: var(--wa-color-brand-fill-loud);
         &::part(svg) {
-          stroke: currentColor;
           fill: currentColor;
+          
+          @supports (paint-order: stroke) {
+            /* Add a background outline to stand off from icon */
+            stroke: var(--wa-color-surface-default);
+            stroke-width: calc(2 * var(--wa-border-width-m));
+            paint-order: stroke;
+          }
         }
       }
     `,
