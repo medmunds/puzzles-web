@@ -48,39 +48,26 @@ function fixWaButtonIconWithCaret() {
 }
 
 /**
- * wa-scroller has two focus-related issues:
- * 1. It participates in the tab order even if unnecessary
- *    (because slotted content already is focusable).
- * 2. It doesn't indicate when it has focus.
- *
- * This adds a "without-tabindex" boolean attribute that suppresses tab order
- * participation, and adds a basic focus ring when appropriate.
- *
- * https://github.com/shoelace-style/webawesome/discussions/1459
+ * wa-scroller participates in the tab order (when it is scrollable)
+ * without showing a focus ring.
+ * https://github.com/shoelace-style/webawesome/issues/1484
  */
 function fixWaScrollerFocusIndication() {
-  // Fix problem 1 by patching updated() to remove the internal tabindex
-  // after each render when "without-tabindex" is requested.
-  // @ts-expect-error[TS2445]: monkey patching protected method
-  const origUpdated = WaScroller.prototype.updated;
-  // @ts-expect-error[TS2445]: monkey patching protected method
-  WaScroller.prototype.updated = function (...args) {
-    origUpdated?.apply(this, args);
-    if (this.hasAttribute("without-tabindex")) {
-      const content = this.shadowRoot?.getElementById("content");
-      if (content) {
-        content.removeAttribute("tabindex");
-        content.tabIndex = -1;
-      }
-    }
-  };
-
-  // Fix problem 2 by adding visible focus ring
   WaScroller.elementStyles.push(
     css`
       :host:has(#content:focus-visible) {
         outline: var(--wa-focus-ring);
         outline-offset: var(--wa-focus-ring-offset);
+      }
+      :host {
+        overflow: visible;
+        border-radius: var(--wa-border-radius-m);
+      }
+      :host([orientation="horizontal"]) #content {
+        overflow-y: visible;
+      }
+      :host([orientation="vertical"]) #content {
+        overflow-x: visible;
       }
     `,
   );

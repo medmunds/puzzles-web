@@ -264,24 +264,27 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
     this.resetFormItemValues();
   }
 
-  static styles = css`
-    :host {
-      display: contents;
-      --item-spacing: var(--wa-space-l);
-    }
-
-    [part="form"] {
-      display: flex;
-      flex-direction: column;
-      gap: var(--item-spacing);
-      align-items: flex-start;
-    }
-
-    [part="error"] {
-      color: var(--wa-color-danger-on-normal);
-      margin-bottom: var(--item-spacing);
-    }
-  `;
+  static styles = [
+    cssWATweaks,
+    css`
+      :host {
+        display: contents;
+        --item-spacing: var(--wa-space-l);
+      }
+  
+      [part="form"] {
+        display: flex;
+        flex-direction: column;
+        gap: var(--item-spacing);
+        align-items: flex-start;
+      }
+  
+      [part="error"] {
+        color: var(--wa-color-danger-on-normal);
+        margin-bottom: var(--item-spacing);
+      }
+    `,
+  ];
 }
 
 /**
@@ -435,29 +438,35 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
       }
       
       wa-dialog::part(body) {
-        /* Move overflow scrolling to wa-scroller; constrain size */
         display: flex;
         flex-direction: column;
-        overflow: hidden;
-        /* Move inline padding to form to avoid clipping focus rings */
-        padding-inline: 0;
+        
+        /* Move overflow scrolling to wa-scroller; constrain size */
+        /* Move half of padding to form to avoid clipping focus rings */
+        --padding: var(--wa-space-l);
+        padding: calc(var(--padding) / 2);
       }
       
       wa-scroller {
+        min-height: 1em; /* flex to body size */
+        
         /* Make the shadow visibly larger than puzzle-config-form --item-spacing, 
-           but leave at least enough room for a full form control between shadows. 
-        */
+           but leave at least enough room for a full form control between shadows. */
         --shadow-size: min(
             calc(2.5 * var(--wa-space-l)),
             calc((100% - var(--wa-form-control-height)) / 2) 
         );
+        
+        /* Try to avoid shadowing focused item during keyboard nav. */
+        &::part(content) {
+          scroll-padding-block: var(--shadow-size);
+        }
       }
       
       [part="form"]::part(form) {
         /* Ensure focus rings don't get clipped.
-         * (No padding needed at top because label is there.) */
-        padding-inline: var(--wa-space-l); /* default dialog body padding */
-        padding-block-end: calc(var(--wa-focus-ring-offset) + var(--wa-focus-ring-width));
+         * Related: https://github.com/shoelace-style/webawesome/discussions/1459 */
+        padding: calc(var(--padding) / 2);
       }
   
       [part="footer"] {
