@@ -1,6 +1,6 @@
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { cssIconPatch } from "./utils/css.ts";
+import { cssWATweaks } from "./utils/css.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -118,7 +118,7 @@ export class CatalogCard extends LitElement {
   }
 
   static styles = [
-    cssIconPatch,
+    cssWATweaks,
     css`
       * {
         box-sizing: border-box;

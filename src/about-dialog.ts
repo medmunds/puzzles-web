@@ -11,7 +11,7 @@ import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { version } from "./puzzle/catalog.ts";
-import { commonLinkStyle } from "./utils/css.ts";
+import { cssNative, cssWATweaks } from "./utils/css.ts";
 import { pwaManager, UpdateStatus } from "./utils/pwa.ts";
 
 // Register components
@@ -253,85 +253,84 @@ export class AboutDialog extends SignalWatcher(LitElement) {
   }
 
   static styles = [
-    commonLinkStyle,
+    cssNative,
+    cssWATweaks,
     css`
-    :host {
-      display: contents;
-    }
-
-    wa-dialog {
-      --width: min(calc(100vw - 2 * var(--wa-space-l)), 65ch);
-    }
-
-    wa-dialog::part(body) {
-      display: flex;
-      flex-direction: column;
-      gap: var(--wa-space-l);
-    }
-
-    wa-dialog::part(dialog) {
-      background-color: var(--wa-color-neutral-fill-quiet);
-    }
-
-    wa-details:not([appearance="plain"])[open]::part(header) {
-      border-block-end:
-          var(--wa-panel-border-width)
-          var(--wa-color-surface-border)
-          var(--wa-panel-border-style);
-    }
-    
-    wa-details wa-details {
-      &::part(header) {
-        padding: 0;
-        font-weight: var(--wa-font-weight-heading);
+      :host {
+        display: contents;
       }
-      &::part(content) {
-        padding-block: 0;
-        /* caret (wa-icon) width = 1.25em */
-        padding-inline-start: calc(1.25em + var(--spacing));
-        padding-inline-end: 0;
+  
+      wa-dialog {
+        --width: min(calc(100vw - 2 * var(--wa-space-l)), 65ch);
       }
-    }
-    
-    .panel {
-      /* Effectively a wa-details without the summary */
-      padding: var(--wa-space-m);
-
-      background-color: var(--wa-color-surface-default);
-      color: var(--wa-color-text-normal);
-
-      border: var(--wa-panel-border-width) var(--wa-color-surface-border) var(--wa-panel-border-style);
-      border-radius: var(--wa-panel-border-radius);
-    }
-
-    .panel,
-    wa-details::part(content) {
-      display: flex;
-      flex-direction: column;
-      gap: var(--wa-space-m);
-    }
-    
-    .nowrap {
-      white-space: nowrap;
-    }
-
-    p, ul, h1, h2 {
-      margin: 0;
-    }
-    
-    h1, h2 {
-      font-family: var(--wa-font-family-heading);
-      font-size: var(--wa-font-size-m);
-      font-weight: var(--wa-font-weight-heading);
-    }
-    
-    wa-spinner {
-      vertical-align: -2px; /* visual text-middle alignment*/
-    }
-    
-    .version {
-      user-select: all;
-    }
+  
+      wa-dialog::part(body) {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wa-space-l);
+      }
+  
+      wa-dialog::part(dialog) {
+        background-color: var(--wa-color-neutral-fill-quiet);
+      }
+  
+      wa-details:not([appearance="plain"])[open]::part(header) {
+        border-block-end:
+            var(--wa-panel-border-width)
+            var(--wa-color-surface-border)
+            var(--wa-panel-border-style);
+      }
+      
+      wa-details wa-details {
+        &::part(header) {
+          padding: 0;
+          font-weight: var(--wa-font-weight-semibold);
+        }
+        &::part(content) {
+          padding-block: 0;
+          /* caret (wa-icon) width = 1em in wa-tweaks.css */
+          padding-inline-start: calc(1em + var(--spacing));
+          padding-inline-end: 0;
+        }
+      }
+      
+      .panel {
+        /* Effectively a wa-details without the summary */
+        padding: var(--wa-space-m);
+  
+        background-color: var(--wa-color-surface-default);
+        color: var(--wa-color-text-normal);
+  
+        border: var(--wa-panel-border-width) var(--wa-color-surface-border) var(--wa-panel-border-style);
+        border-radius: var(--wa-panel-border-radius);
+      }
+  
+      .panel,
+      wa-details::part(content) {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wa-space-m);
+      }
+      
+      .nowrap {
+        white-space: nowrap;
+      }
+  
+      h1, h2, h3 {
+        font-size: inherit;
+      }
+      
+      strong {
+        font-weight: var(--wa-font-weight-semibold);
+      }
+      
+      wa-spinner {
+        vertical-align: -2px; /* visual text-middle alignment*/
+      }
+      
+      .version {
+        user-select: all;
+      }
   `,
   ];
 }

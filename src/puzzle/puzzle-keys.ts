@@ -3,7 +3,7 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
-import { cssDefaultButtonStyle } from "../utils/css.ts";
+import { cssWATweaks } from "../utils/css.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { KeyLabel } from "./types.ts";
@@ -96,33 +96,33 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
   };
 
   static styles = [
-    cssDefaultButtonStyle,
+    cssWATweaks,
     css`
-    :host {
-      --gap: var(--wa-space-s); 
-
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--gap);
-    }
-
-    .group {
-      display: flex;
-      gap: var(--gap);
-    }
-
-    .single {
-      /* Make all single-char buttons the same width, for uniform layout.
-       * (This cheats the horizontal padding just a bit.) */
-      width: var(--wa-form-control-height);
-    }
-    
-    wa-button {
-      /* Disable double-tap to zoom on keys that might be tapped quickly.
-       * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.)
-       */
-      touch-action: pinch-zoom;
-    }
+      :host {
+        --gap: var(--wa-space-s); 
+  
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--gap);
+      }
+  
+      .group {
+        display: flex;
+        gap: var(--gap);
+      }
+  
+      .single {
+        /* Make all single-char buttons the same width, for uniform layout.
+         * (This cheats the horizontal padding just a bit.) */
+        width: var(--wa-form-control-height);
+      }
+      
+      wa-button {
+        /* Disable double-tap to zoom on keys that might be tapped quickly.
+         * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.)
+         */
+        touch-action: pinch-zoom;
+      }
     `,
   ];
 }

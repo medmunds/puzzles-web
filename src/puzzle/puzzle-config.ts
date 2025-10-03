@@ -5,7 +5,7 @@ import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
-import { cssDefaultButtonStyle } from "../utils/css.ts";
+import { cssWATweaks } from "../utils/css.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { ConfigDescription, ConfigItem, ConfigValues } from "./types.ts";
@@ -428,46 +428,46 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
   }
 
   static styles = [
-    cssDefaultButtonStyle,
+    cssWATweaks,
     css`
-    :host {
-      display: contents;
-    }
-    
-    wa-dialog::part(body) {
-      /* Move overflow scrolling to wa-scroller; constrain size */
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      /* Move inline padding to form to avoid clipping focus rings */
-      padding-inline: 0;
-    }
-    
-    wa-scroller {
-      /* Make the shadow visibly larger than puzzle-config-form --item-spacing, 
-         but leave at least enough room for a full form control between shadows. 
-      */
-      --shadow-size: min(
-          calc(2.5 * var(--wa-space-l)),
-          calc((100% - var(--wa-form-control-height)) / 2) 
-      );
-    }
-    
-    [part="form"]::part(form) {
-      /* Ensure focus rings don't get clipped.
-       * (No padding needed at top because label is there.) */
-      padding-inline: var(--wa-space-l); /* default dialog body padding */
-      padding-block-end: calc(var(--wa-focus-ring-offset) + var(--wa-focus-ring-width));
-    }
-
-    [part="footer"] {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: 1fr;
-      justify-content: end;
-      align-items: center;
-      gap: var(--wa-space-s);
-    }
+      :host {
+        display: contents;
+      }
+      
+      wa-dialog::part(body) {
+        /* Move overflow scrolling to wa-scroller; constrain size */
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        /* Move inline padding to form to avoid clipping focus rings */
+        padding-inline: 0;
+      }
+      
+      wa-scroller {
+        /* Make the shadow visibly larger than puzzle-config-form --item-spacing, 
+           but leave at least enough room for a full form control between shadows. 
+        */
+        --shadow-size: min(
+            calc(2.5 * var(--wa-space-l)),
+            calc((100% - var(--wa-form-control-height)) / 2) 
+        );
+      }
+      
+      [part="form"]::part(form) {
+        /* Ensure focus rings don't get clipped.
+         * (No padding needed at top because label is there.) */
+        padding-inline: var(--wa-space-l); /* default dialog body padding */
+        padding-block-end: calc(var(--wa-focus-ring-offset) + var(--wa-focus-ring-width));
+      }
+  
+      [part="footer"] {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        justify-content: end;
+        align-items: center;
+        gap: var(--wa-space-s);
+      }
     `,
   ];
 }

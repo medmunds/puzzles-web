@@ -7,6 +7,7 @@ import { puzzleDataMap } from "./puzzle/catalog.ts";
 import { puzzlePageUrl } from "./routing.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
+import { cssWATweaks } from "./utils/css.ts";
 
 // Register components
 import "./catalog-card.ts";
@@ -73,49 +74,52 @@ export class CatalogList extends SignalWatcher(LitElement) {
     await settings.setFavoritePuzzle(puzzleId, isFavorite);
   }
 
-  static styles = css`
-    :host {
-      display: block;
-    }
-    
-    .app {
-      box-sizing: border-box;
-      max-width: 75rem;
-      margin: 0 auto;
-      padding: var(--app-padding);
-
-      display: flex;
-      flex-direction: column;
-      gap: var(--app-spacing);
-
-      @media (prefers-reduced-motion: no-preference) {
-        transition:
-            gap var(--wa-transition-fast)  var(--wa-transition-easing),
-            padding var(--wa-transition-fast)  var(--wa-transition-easing);
+  static styles = [
+    cssWATweaks,
+    css`
+      :host {
+        display: block;
       }
-    }
-
-    h2 {
-      margin: 0;
-      color: var(--wa-color-text-normal);
-      font-weight: var(--wa-font-weight-semibold);
-      font-size: var(--wa-font-size-l);
-    }
-
-    .puzzle-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-      gap: var(--app-spacing);
-      align-items: stretch;
-
-      touch-action: manipulation;
-
-      @media (prefers-reduced-motion: no-preference) {
-        transition:
-            gap var(--wa-transition-fast)  var(--wa-transition-easing);
+      
+      .app {
+        box-sizing: border-box;
+        max-width: 75rem;
+        margin: 0 auto;
+        padding: var(--app-padding);
+  
+        display: flex;
+        flex-direction: column;
+        gap: var(--app-spacing);
+  
+        @media (prefers-reduced-motion: no-preference) {
+          transition:
+              gap var(--wa-transition-fast)  var(--wa-transition-easing),
+              padding var(--wa-transition-fast)  var(--wa-transition-easing);
+        }
       }
-    }
-  `;
+  
+      h2 {
+        margin: 0;
+        color: var(--wa-color-text-normal);
+        font-weight: var(--wa-font-weight-semibold);
+        font-size: var(--wa-font-size-l);
+      }
+  
+      .puzzle-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+        gap: var(--app-spacing);
+        align-items: stretch;
+  
+        touch-action: manipulation;
+  
+        @media (prefers-reduced-motion: no-preference) {
+          transition:
+              gap var(--wa-transition-fast)  var(--wa-transition-easing);
+        }
+      }
+    `,
+  ];
 }
 
 declare global {

@@ -6,7 +6,7 @@ import { customElement, state } from "lit/decorators.js";
 import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import { puzzlePageUrl } from "./routing.ts";
-import { commonLinkStyle } from "./utils/css.ts";
+import { cssNative, cssWATweaks } from "./utils/css.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -205,112 +205,113 @@ export class ShareDialog extends SignalWatcher(LitElement) {
   }
 
   static styles = [
-    commonLinkStyle,
+    cssNative,
+    cssWATweaks,
     css`
-    :host {
-      display: contents;
-    }
-
-    wa-dialog {
-      --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
-    }
-
-    wa-dialog::part(body) {
-      display: flex;
-      flex-direction: column;
-      gap: var(--wa-space-l);
-    }
-
-    wa-dialog::part(dialog) {
-      background-color: var(--wa-color-neutral-fill-quiet);
-    }
-
-    wa-details[open]::part(header) {
-      border-block-end:
-          var(--wa-panel-border-width)
-          var(--wa-color-surface-border)
-          var(--wa-panel-border-style);
-    }
-    
-    wa-details::part(header) {
-      color: var(--wa-form-control-label-color);
-      font-weight: var(--wa-form-control-label-font-weight);
-    }
-
-    wa-details::part(content) {
-      max-width: 100%;
-
-      display: flex;
-      flex-direction: column;
-      gap: var(--wa-space-l);
-      
-      position: relative; /* For .inset copy button */
-    }
-    wa-details.tight::part(content) {
-      gap: var(--wa-space-m);
-    }
-    
-    wa-input::part(label) {
-      color: inherit;
-      font-weight: inherit;
-    }
-    
-    wa-input:has(:focus-within)::part(input):focus-within {
-      /* Prevent double focus rect when focus on copy-button inside input*/
-      outline: none;
-    }
-    
-    wa-input wa-copy-button {
-      /* Reduce horizontal spacing at start, overlap padding at end */
-      margin-inline: 0.5em -0.75em;
-    }
-    
-    wa-textarea {
-      &::part(textarea) {
-        font-family: var(--wa-font-family-code);
-        min-height: 2lh;
-        white-space: pre;
+      :host {
+        display: contents;
       }
-    }
-    
-    wa-copy-button.inset {
-      /* align icon with textarea content area: 
-       * details content padding + textarea padding - copy-button padding */
-      position: absolute;
-      inset-block-start: 
-          calc(var(--wa-space-m) + var(--wa-form-control-padding-block) - 0.5em);
-      inset-inline-end: 
-          calc(var(--wa-space-m) + var(--wa-form-control-padding-inline) - 0.75em);
-      
-      &:not(:hover)::part(button) {
-        /* It's transparent by default; may have text under it */
-        background-color: var(--wa-form-control-background-color);
+  
+      wa-dialog {
+        --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
       }
-    }
-
-    .link {
-      display: flex;
-      gap: var(--wa-space-xs);
-      align-items: baseline;
-      
-      a {
-        display: inline-block;
-        min-width: 1px;
-        flex: 1 1 auto;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
+  
+      wa-dialog::part(body) {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wa-space-l);
       }
-    }
-
-    .hint {
-      /* match hint in various controls */
-      color: var(--wa-form-control-hint-color);
-      font-size: var(--wa-font-size-smaller);
-      font-weight: var(--wa-form-control-hint-font-weight);
-      line-height: var(--wa-form-control-hint-line-height);
-    }
-  `,
+  
+      wa-dialog::part(dialog) {
+        background-color: var(--wa-color-neutral-fill-quiet);
+      }
+  
+      wa-details[open]::part(header) {
+        border-block-end:
+            var(--wa-panel-border-width)
+            var(--wa-color-surface-border)
+            var(--wa-panel-border-style);
+      }
+      
+      wa-details::part(header) {
+        color: var(--wa-form-control-label-color);
+        font-weight: var(--wa-form-control-label-font-weight);
+      }
+  
+      wa-details::part(content) {
+        max-width: 100%;
+  
+        display: flex;
+        flex-direction: column;
+        gap: var(--wa-space-l);
+        
+        position: relative; /* For .inset copy button */
+      }
+      wa-details.tight::part(content) {
+        gap: var(--wa-space-m);
+      }
+      
+      wa-input::part(label) {
+        color: inherit;
+        font-weight: inherit;
+      }
+      
+      wa-input:has(:focus-within)::part(input):focus-within {
+        /* Prevent double focus rect when focus on copy-button inside input*/
+        outline: none;
+      }
+      
+      wa-input wa-copy-button {
+        /* Reduce horizontal spacing at start, overlap padding at end */
+        margin-inline: 0.5em -0.75em;
+      }
+      
+      wa-textarea {
+        &::part(textarea) {
+          font-family: var(--wa-font-family-code);
+          min-height: 2lh;
+          white-space: pre;
+        }
+      }
+      
+      wa-copy-button.inset {
+        /* align icon with textarea content area: 
+         * details content padding + textarea padding - copy-button padding */
+        position: absolute;
+        inset-block-start: 
+            calc(var(--wa-space-m) + var(--wa-form-control-padding-block) - 0.5em);
+        inset-inline-end: 
+            calc(var(--wa-space-m) + var(--wa-form-control-padding-inline) - 0.75em);
+        
+        &:not(:hover)::part(button) {
+          /* It's transparent by default; may have text under it */
+          background-color: var(--wa-form-control-background-color);
+        }
+      }
+  
+      .link {
+        display: flex;
+        gap: var(--wa-space-xs);
+        align-items: baseline;
+        
+        a {
+          display: inline-block;
+          min-width: 1px;
+          flex: 1 1 auto;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
+      }
+  
+      .hint {
+        /* match hint in various controls */
+        color: var(--wa-form-control-hint-color);
+        font-size: var(--wa-font-size-smaller);
+        font-weight: var(--wa-form-control-hint-font-weight);
+        line-height: var(--wa-form-control-hint-line-height);
+      }
+    `,
   ];
 }
 

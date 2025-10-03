@@ -1,4 +1,6 @@
 @import url("/node_modules/@awesome.me/webawesome/dist/styles/themes/default.css");
+@import url("utils/css/native.css");
+@import url("utils/css/wa-tweaks.css");
 
 :root {
   font-family: var(--wa-font-family-body), sans-serif;
@@ -30,52 +32,6 @@ body,
   margin: 0;
   padding: 0;
   min-height: 100vh;
-}
-
-h1,
-h2 {
-  margin: 0;
-  /* Safari gives precedence to its user-agent stylesheet margin-inline
-   * and margin-block values (over margin shorthand) during CSS animations. */
-  margin-inline: 0;
-  margin-block: 0;
-  color: var(--wa-color-text-normal);
-}
-
-h1 {
-  font-weight: var(--wa-font-weight-bold);
-  font-size: var(--wa-font-size-xl);
-}
-h2 {
-  font-weight: var(--wa-font-weight-semibold);
-  font-size: var(--wa-font-size-l);
-}
-
-p {
-  margin: var(--wa-space-m) 0 0 0;
-  font-size: var(--wa-font-size-m);
-  font-weight: var(--wa-font-weight-normal);
-}
-
-a {
-  color: var(--wa-color-text-link);
-  text-decoration: var(--wa-link-decoration-default);
-  -webkit-text-decoration: var(--wa-link-decoration-default); /* Safari */
-  text-decoration-thickness: 0.09375em;
-  text-underline-offset: 0.125em;
-
-  @media (hover: hover) {
-    &:hover {
-      color: color-mix(in oklab, var(--wa-color-text-link), var(--wa-color-mix-hover));
-      text-decoration: var(--wa-link-decoration-hover);
-      -webkit-text-decoration: var(--wa-link-decoration-hover); /* Safari */
-    }
-  }
-}
-
-small {
-  font-size: var(--wa-font-size-s);
-  color: var(--wa-color-text-quiet);
 }
 
 body:not(.js-ready) .js {

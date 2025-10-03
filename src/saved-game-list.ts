@@ -5,6 +5,7 @@ import { repeat } from "lit/directives/repeat.js";
 import { puzzleDataMap } from "./puzzle/catalog.ts";
 import type { SavedGameMetadata } from "./store/db.ts";
 import { savedGames } from "./store/saved-games.ts";
+import { cssWATweaks } from "./utils/css.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -351,138 +352,141 @@ export class SavedGameList extends SignalWatcher(LitElement) {
 
   // TODO: focus, :focus-within styling, keyboard nav and roving tabIndex
 
-  static styles = css`
-    :host {
-      --major-border:
-          var(--wa-form-control-border-width)
-          var(--wa-form-control-border-style)
-          var(--wa-form-control-border-color);
-
-      --minor-border:
-          var(--wa-border-width-s)
-          solid
-          var(--wa-color-surface-border);
-
-      display: block;
-      max-height: 100%;
-      overflow-y: auto;
-      
-      /* Keep scrollIntoView from scrolling under sticky header */
-      scroll-padding-block-start: 
-          calc(var(--wa-form-control-height) + 2 * var(--wa-form-control-border-width));
-      
-      user-select: none;
-      cursor: default;
-
-      background-color: var(--wa-form-control-background-color);
-      color: var(--wa-form-control-value-color);
-      font-weight: var(--wa-form-control-value-font-weight);
-      line-height: var(--wa-form-control-value-line-height);
-
-      border: var(--major-border);
-      border-radius: var(--wa-form-control-border-radius);
-    }
-    
-    /* Relocate table:focus-visible to focus ring on :host */
-    table:focus-visible {
-      outline: none;
-    }
-    :host([table-focus-visible]) {
-      /* :host(:has(table:focus-visible)) isn't valid; JS sets this attr instead.
-       * (:host(:focus-within)) is valid but causes double focus rings 
-       * when a header button is focused.) */
-      outline: var(--wa-focus-ring);
-      outline-offset: var(--wa-focus-ring-offset);
-    }
-    
-    table {
-      box-sizing: border-box;
-      width: 100%;
-      table-layout: fixed;
-      /* Cannot collapse borders with sticky thead: they get lost when scrolled */
-      border-collapse: separate;
-      border-spacing: 0;
-    }
-    
-    thead {
-      position: sticky;
-      inset-block-start: 0;
-    }
-    
-    th {
-      background-color: var(--wa-form-control-background-color);
-      color: var(--wa-form-control-label-color);
-      font-weight: var(--wa-form-control-label-font-weight);
-      line-height: var(--wa-form-control-label-line-height);
-      
-      border-block-end: var(--major-border);
-      z-index: 1;
-    }
-    th:not(:last-child) {
-      border-inline-end: var(--minor-border);
-    }
-    
-    tbody tr:not(.placeholder) td {
-      border-block-end: var(--minor-border);
-    }
-    
-    th[aria-sort="asc"] wa-button::part(caret) {
-      transform: scaleY(-100%);
-    }
-    @media (prefers-reduced-motion: no-preference) {
-      th wa-button::part(caret) {
-        transition: transform var(--wa-transition-fast) var(--wa-transition-easing);
+  static styles = [
+    cssWATweaks,
+    css`
+      :host {
+        --major-border:
+            var(--wa-form-control-border-width)
+            var(--wa-form-control-border-style)
+            var(--wa-form-control-border-color);
+  
+        --minor-border:
+            var(--wa-border-width-s)
+            solid
+            var(--wa-color-surface-border);
+  
+        display: block;
+        max-height: 100%;
+        overflow-y: auto;
+        
+        /* Keep scrollIntoView from scrolling under sticky header */
+        scroll-padding-block-start: 
+            calc(var(--wa-form-control-height) + 2 * var(--wa-form-control-border-width));
+        
+        user-select: none;
+        cursor: default;
+  
+        background-color: var(--wa-form-control-background-color);
+        color: var(--wa-form-control-value-color);
+        font-weight: var(--wa-form-control-value-font-weight);
+        line-height: var(--wa-form-control-value-line-height);
+  
+        border: var(--major-border);
+        border-radius: var(--wa-form-control-border-radius);
       }
-    }
-    
-    th, 
-    tr:not(.placeholder) td {
-      text-align: start;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    tr.placeholder td {
-      text-align: center;
-      vertical-align: middle;
-      color: var(--wa-color-text-quiet);
-    }
-    
-    tbody td {
-      padding: var(--wa-form-control-padding-block) var(--wa-form-control-padding-inline);
-    }
-    
-    wa-button {
-      /* Leave margin for focus ring; take up full width of <th> */
-      --focus-ring-size: calc(var(--wa-focus-ring-width) + var(--wa-focus-ring-offset));
-      margin: var(--focus-ring-size);
-      width: calc(100% - 2 * var(--focus-ring-size));
-      &::part(base) {
-        /* Match tbody td inline padding (less margin) to align text */
-        padding: 
-            var(--wa-space-2xs) 
-            calc(var(--wa-form-control-padding-inline) - var(--focus-ring-size));
-        border-radius: var(--wa-border-radius-s);
-        height: auto;
-        justify-content: flex-start;
+      
+      /* Relocate table:focus-visible to focus ring on :host */
+      table:focus-visible {
+        outline: none;
       }
-      &::part(label) {
-        flex-grow: 1;
+      :host([table-focus-visible]) {
+        /* :host(:has(table:focus-visible)) isn't valid; JS sets this attr instead.
+         * (:host(:focus-within)) is valid but causes double focus rings 
+         * when a header button is focused.) */
+        outline: var(--wa-focus-ring);
+        outline-offset: var(--wa-focus-ring-offset);
+      }
+      
+      table {
+        box-sizing: border-box;
+        width: 100%;
+        table-layout: fixed;
+        /* Cannot collapse borders with sticky thead: they get lost when scrolled */
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      
+      thead {
+        position: sticky;
+        inset-block-start: 0;
+      }
+      
+      th {
+        background-color: var(--wa-form-control-background-color);
+        color: var(--wa-form-control-label-color);
+        font-weight: var(--wa-form-control-label-font-weight);
+        line-height: var(--wa-form-control-label-line-height);
+        
+        border-block-end: var(--major-border);
+        z-index: 1;
+      }
+      th:not(:last-child) {
+        border-inline-end: var(--minor-border);
+      }
+      
+      tbody tr:not(.placeholder) td {
+        border-block-end: var(--minor-border);
+      }
+      
+      th[aria-sort="asc"] wa-button::part(caret) {
+        transform: scaleY(-100%);
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        th wa-button::part(caret) {
+          transition: transform var(--wa-transition-fast) var(--wa-transition-easing);
+        }
+      }
+      
+      th, 
+      tr:not(.placeholder) td {
         text-align: start;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
-    }
-    
-    tr[aria-selected="true"] {
-      background-color: var(--wa-color-brand-fill-loud);
-      color: var(--wa-color-brand-on-loud);
-    }
-    
-    @media(hover: hover) {
-      tbody tr:not(.placeholder):hover td {
-        background-color: color-mix(in oklab, transparent, var(--wa-color-mix-hover));
+      tr.placeholder td {
+        text-align: center;
+        vertical-align: middle;
+        color: var(--wa-color-text-quiet);
       }
-    }
-  `;
+      
+      tbody td {
+        padding: var(--wa-form-control-padding-block) var(--wa-form-control-padding-inline);
+      }
+      
+      wa-button {
+        /* Leave margin for focus ring; take up full width of <th> */
+        --focus-ring-size: calc(var(--wa-focus-ring-width) + var(--wa-focus-ring-offset));
+        margin: var(--focus-ring-size);
+        width: calc(100% - 2 * var(--focus-ring-size));
+        &::part(base) {
+          /* Match tbody td inline padding (less margin) to align text */
+          padding: 
+              var(--wa-space-2xs) 
+              calc(var(--wa-form-control-padding-inline) - var(--focus-ring-size));
+          border-radius: var(--wa-border-radius-s);
+          height: auto;
+          justify-content: flex-start;
+        }
+        &::part(label) {
+          flex-grow: 1;
+          text-align: start;
+        }
+      }
+      
+      tr[aria-selected="true"] {
+        background-color: var(--wa-color-brand-fill-loud);
+        color: var(--wa-color-brand-on-loud);
+      }
+      
+      @media(hover: hover) {
+        tbody tr:not(.placeholder):hover td {
+          background-color: color-mix(in oklab, transparent, var(--wa-color-mix-hover));
+        }
+      }
+    `,
+  ];
 }
 
 declare global {

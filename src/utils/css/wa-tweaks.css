@@ -1,0 +1,16 @@
+/* Change default wa-button appearance for compatibility with form controls.
+ * (Outlined and filled similar to wa-input.) */
+wa-button[appearance="accent"][variant="neutral"] {
+  --wa-color-fill-loud: var(--wa-form-control-background-color);
+  --wa-color-on-loud: var(--wa-form-control-label-color);
+  &::part(base) {
+    border-color: var(--wa-form-control-border-color);
+  }
+}
+
+/* Adapt wa-icon for Lucide icons (square, not 1.25x1.0 like Font Awesome) */
+wa-icon:not([auto-width]),
+wa-button::part(caret),
+wa-details::part(icon) {
+  width: 1em;
+}

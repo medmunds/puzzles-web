@@ -1,0 +1,65 @@
+a {
+  color: var(--wa-color-text-link);
+  -webkit-text-decoration: var(--wa-link-decoration-default); /* Safari */
+  text-decoration: var(--wa-link-decoration-default);
+  text-decoration-thickness: 0.09375em;
+  text-underline-offset: 0.125em;
+
+  @media (hover: hover) {
+    &:hover {
+      color: color-mix(in oklab, var(--wa-color-text-link), var(--wa-color-mix-hover));
+      -webkit-text-decoration: var(--wa-link-decoration-hover); /* Safari */
+      text-decoration: var(--wa-link-decoration-hover);
+    }
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  /* Safari gives precedence to its user-agent stylesheet margin-inline
+   * and margin-block values (over margin shorthand) during CSS animations. */
+  margin-inline: 0;
+  margin-block: 0;
+
+  font-family: var(--wa-font-family-heading) sans-serif;
+  color: var(--wa-color-text-normal);
+  line-height: var(--wa-line-height-condensed);
+}
+
+h1 {
+  font-weight: var(--wa-font-weight-bold);
+  font-size: var(--wa-font-size-xl);
+}
+h2 {
+  font-weight: var(--wa-font-weight-semibold);
+  font-size: var(--wa-font-size-l);
+}
+h3 {
+  font-weight: var(--wa-font-weight-semibold);
+  font-size: var(--wa-font-size-m);
+}
+
+p {
+  margin: var(--wa-space-m) 0 0 0;
+  font-size: var(--wa-font-size-m);
+  font-weight: var(--wa-font-weight-normal);
+}
+
+ul {
+  margin: 0;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--wa-color-neutral-border-normal);
+}
+
+small {
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+}

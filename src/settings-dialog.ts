@@ -11,7 +11,7 @@ import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { audioClick } from "./utils/audio.ts";
 import { autoBind } from "./utils/autobind.ts";
-import { cssDefaultButtonStyle } from "./utils/css.ts";
+import { cssWATweaks } from "./utils/css.ts";
 import { clamp } from "./utils/math.ts";
 import { isRunningAsApp } from "./utils/pwa.ts";
 import { sleep } from "./utils/timing.ts";
@@ -329,61 +329,61 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
   }
 
   static styles = [
-    cssDefaultButtonStyle,
+    cssWATweaks,
     css`
-    :host {
-      display: contents;
-    }
-
-    wa-dialog::part(body) {
-      display: flex;
-      flex-direction: column;
-      gap: var(--wa-space-l);
+      :host {
+        display: contents;
+      }
+  
+      wa-dialog::part(body) {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wa-space-l);
+        
+        /* De-emphasize slider/input labels to match checkbox/radio labels */
+        --wa-form-control-label-font-weight: var(--wa-form-control-value-font-weight);
+      }
       
-      /* De-emphasize slider/input labels to match checkbox/radio labels */
-      --wa-form-control-label-font-weight: var(--wa-form-control-value-font-weight);
-    }
-    
-    wa-dialog::part(dialog) {
-      background-color: var(--wa-color-neutral-fill-quiet);
-    }
-    
-    wa-details[open]::part(header) {
-      border-block-end: 
-          var(--wa-panel-border-width) 
-          var(--wa-color-surface-border) 
-          var(--wa-panel-border-style);
-    }
-    
-    wa-details::part(content) {
-      display: flex;
-      flex-direction: column;
-      gap: var(--wa-space-l);
-    }
-
-    /* Place the maxScale 100% and 200% labels below the appropriate markers */
-    .scale-1x, .scale-2x {
-      position: absolute;
-      transform: translateX(calc(-50% + 0.5ch)); /* visually center */
-    }
-    .scale-1x {
-      inset-inline-start: ${(100 * (1.0 - MAX_SCALE_MIN)) / (MAX_SCALE_MAX - MAX_SCALE_MIN)}%;
-    }
-    .scale-2x {
-      inset-inline-start: ${(100 * (2.0 - MAX_SCALE_MIN)) / (MAX_SCALE_MAX - MAX_SCALE_MIN)}%;
-    }
-    
-    .hint {
-      /* match hint in various controls */
-      color: var(--wa-form-control-hint-color);
-      font-size: var(--wa-font-size-smaller);
-      font-weight: var(--wa-form-control-hint-font-weight);
-      line-height: var(--wa-form-control-hint-line-height);
-    }
+      wa-dialog::part(dialog) {
+        background-color: var(--wa-color-neutral-fill-quiet);
+      }
       
-    wa-dropdown + .hint {
-      margin-block-start: var(--wa-space-xs);
-    }
+      wa-details[open]::part(header) {
+        border-block-end: 
+            var(--wa-panel-border-width) 
+            var(--wa-color-surface-border) 
+            var(--wa-panel-border-style);
+      }
+      
+      wa-details::part(content) {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wa-space-l);
+      }
+  
+      /* Place the maxScale 100% and 200% labels below the appropriate markers */
+      .scale-1x, .scale-2x {
+        position: absolute;
+        transform: translateX(calc(-50% + 0.5ch)); /* visually center */
+      }
+      .scale-1x {
+        inset-inline-start: ${(100 * (1.0 - MAX_SCALE_MIN)) / (MAX_SCALE_MAX - MAX_SCALE_MIN)}%;
+      }
+      .scale-2x {
+        inset-inline-start: ${(100 * (2.0 - MAX_SCALE_MIN)) / (MAX_SCALE_MAX - MAX_SCALE_MIN)}%;
+      }
+      
+      .hint {
+        /* match hint in various controls */
+        color: var(--wa-form-control-hint-color);
+        font-size: var(--wa-font-size-smaller);
+        font-weight: var(--wa-form-control-hint-font-weight);
+        line-height: var(--wa-form-control-hint-line-height);
+      }
+        
+      wa-dropdown + .hint {
+        margin-block-start: var(--wa-space-xs);
+      }
     `,
   ];
 }

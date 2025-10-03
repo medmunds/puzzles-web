@@ -5,7 +5,7 @@ import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import timelineArrowSvg from "../assets/timeline-arrow.svg";
 import timelineDotSvg from "../assets/timeline-dot.svg";
-import { cssDefaultButtonStyle } from "../utils/css.ts";
+import { cssWATweaks } from "../utils/css.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 
@@ -294,177 +294,177 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
   }
 
   static override styles = [
-    cssDefaultButtonStyle,
+    cssWATweaks,
     css`
-    :host {
-      --timeline-color: var(--wa-color-neutral-border-normal);
-      --background-color: var(--wa-color-surface-default);
-      --dot-size: 5px;
-    }
-    
-    wa-button-group {
-      /* Collapse the gap between buttons, overlapping the borders.
-       * Stack the dropdown trigger (which is never disabled) above
-       * the other buttons to avoid partly-disabled border appearance. */
-      &::part(base) {
-        gap: 0;
-        flex-wrap: nowrap;
-      }
-      wa-button[slot="trigger"]::part(base) {
-        margin-inline: calc(-1 * var(--wa-border-width-s));
-        position: relative;
-        z-index: 1;
-      }
-    }
-
-    wa-button {
-      /* Disable double-tap to zoom on keys that might be tapped quickly.
-       * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.)
-       */
-      touch-action: pinch-zoom;
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-
-      /* The plain "Close" button effectively pads top/bottom and part of right */
-      /*padding: 0.5em 1em;*/
-      padding-inline-start: 1em;
-      padding-inline-end: 0.5em;
-      background-color: var(--background-color);
-      /*font-family: var(--wa-font-family-heading);*/
-      font-weight: var(--wa-font-weight-semibold);
-      position: sticky;
-      inset-block-start: -0.25em; /* wa-dropdown::part(menu) padding */
-      z-index: 1;
-      
-      wa-button {
-        margin-inline-start: auto;
-      }
-    }
-    
-    small {
-      color: var(--wa-color-text-quiet);
-      font-size: var(--wa-font-size-smaller);
-      font-style: italic;
-    }
-    
-    #list {
-      position: relative;
-
-      &::before {
-        display: block;
-        content: "";
-        position: absolute;
-        inset: 0.75em calc(1.625em - 7px); /* padding + icon-width/2 = 1em + 1.25em/2 */
-
-        border-image-source: var(--timeline-arrow-image);
-        border-image-slice: 25% 0 25% 100%;
-        border-width: 10px;
-        border-style: solid;
-        
-        z-index: 1;
-        pointer-events: none;
+      :host {
+        --timeline-color: var(--wa-color-neutral-border-normal);
+        --background-color: var(--wa-color-surface-default);
+        --dot-size: 5px;
       }
       
-      wa-icon {
-        position: relative;
-        z-index: 2; /* above the timeline */
-        min-width: 1.25em; /* for empty icons */
-      }
-      
-      wa-dropdown-item {
-        /* dropdown-item's "isolate" prevents our wa-icon z-index from working */
-        isolation: unset; 
-      }
-    }
-
-    wa-icon[name="history-checkpoint"]::part(svg),
-    wa-icon[name="history-current-move"]::part(svg)
-    {
-      /* Use background fill on icons that overlap the timeline */
-      fill: var(--background-color) !important;
-    }
-    
-    wa-dropdown-item wa-button {
-      /* Counteract doubled padding around delete buttons */
-      margin: -0.5em;
-    }
-    
-    .undo-point {
-      /* Mimic a wa-dropdown-item */
-      box-sizing: border-box;
-      padding: 0.5em 1em;
-      line-height: var(--wa-line-height-condensed);
-
-      display: flex;
-      align-items: center;
-
-      wa-icon {
-        font-size: var(--wa-font-size-smaller);
-        margin-inline-end: 0.75em;
-      }
-      span {
-        display: block;
-        color: var(--wa-color-text-quiet);
-      }
-    }
-
-    .spacer {
-      box-sizing: border-box;
-      padding: 0 1em;
-      line-height: 1;
-      
-      display: flex;
-      align-items: center;
-
-      small {
-        padding: 0.25em 0.5em;
-      }
-
-      &::before {
-        display: block;
-        content: "";
-        height: 1.5em;
-        width: 1px;
-        font-size: var(--wa-font-size-smaller); /* match em calcs to slotted icon */
-        margin-inline-start: calc(0.5em - 1px);
-        margin-inline-end: calc(0.75em - 1px);
-        
-        border-image-source: var(--timeline-dot-image);
-        border-image-slice: 0 0 0 100%;
-        border-image-outset: 0 0.5px;
-        border-image-repeat: round;
-        border-inline-start: var(--dot-size) solid transparent;
-        
-        z-index: 2;
-        pointer-events: none;
-      }
-
-      &[data-moves="1"] {
-        /* Try to size it to a single border dot */
-        padding-block: 0;
-        height: var(--dot-size);
-        &::before {
-          max-height: var(--dot-size);
+      wa-button-group {
+        /* Collapse the gap between buttons, overlapping the borders.
+         * Stack the dropdown trigger (which is never disabled) above
+         * the other buttons to avoid partly-disabled border appearance. */
+        &::part(base) {
+          gap: 0;
+          flex-wrap: nowrap;
+        }
+        wa-button[slot="trigger"]::part(base) {
+          margin-inline: calc(-1 * var(--wa-border-width-s));
+          position: relative;
+          z-index: 1;
         }
       }
-      &[data-moves="2"]::before {
-        max-height: calc(2 * var(--dot-size));
+  
+      wa-button {
+        /* Disable double-tap to zoom on keys that might be tapped quickly.
+         * (Ineffective in iOS Safari; see preventDoubleTapZoom click handler.)
+         */
+        touch-action: pinch-zoom;
       }
-      &[data-moves="3"]::before {
-        max-height: calc(3 * var(--dot-size));
+  
+      header {
+        display: flex;
+        align-items: center;
+  
+        /* The plain "Close" button effectively pads top/bottom and part of right */
+        /*padding: 0.5em 1em;*/
+        padding-inline-start: 1em;
+        padding-inline-end: 0.5em;
+        background-color: var(--background-color);
+        /*font-family: var(--wa-font-family-heading);*/
+        font-weight: var(--wa-font-weight-semibold);
+        position: sticky;
+        inset-block-start: -0.25em; /* wa-dropdown::part(menu) padding */
+        z-index: 1;
+        
+        wa-button {
+          margin-inline-start: auto;
+        }
       }
-      &[data-moves="4"]::before {
-        max-height: calc(4 * var(--dot-size));
+      
+      small {
+        color: var(--wa-color-text-quiet);
+        font-size: var(--wa-font-size-smaller);
+        font-style: italic;
       }
-      /* This doesn't work yet:
-      &[data-moves] {
-        max-height: calc(attr(data-moves type(<number>)) * var(--dot-size));
+      
+      #list {
+        position: relative;
+  
+        &::before {
+          display: block;
+          content: "";
+          position: absolute;
+          inset: 0.75em calc(1.5em - 7px); /* padding + icon-width/2 = 1em + 1.25em/2 */
+  
+          border-image-source: var(--timeline-arrow-image);
+          border-image-slice: 25% 0 25% 100%;
+          border-width: 10px;
+          border-style: solid;
+          
+          z-index: 1;
+          pointer-events: none;
+        }
+        
+        wa-icon {
+          position: relative;
+          z-index: 2; /* above the timeline */
+          min-width: 1em; /* for empty icons */
+        }
+        
+        wa-dropdown-item {
+          /* dropdown-item's "isolate" prevents our wa-icon z-index from working */
+          isolation: unset; 
+        }
       }
-      */
-    }
+  
+      wa-icon[name="history-checkpoint"]::part(svg),
+      wa-icon[name="history-current-move"]::part(svg)
+      {
+        /* Use background fill on icons that overlap the timeline */
+        fill: var(--background-color) !important;
+      }
+      
+      wa-dropdown-item wa-button {
+        /* Counteract doubled padding around delete buttons */
+        margin: -0.5em;
+      }
+      
+      .undo-point {
+        /* Mimic a wa-dropdown-item */
+        box-sizing: border-box;
+        padding: 0.5em 1em;
+        line-height: var(--wa-line-height-condensed);
+  
+        display: flex;
+        align-items: center;
+  
+        wa-icon {
+          font-size: var(--wa-font-size-smaller);
+          margin-inline-end: 0.75em;
+        }
+        span {
+          display: block;
+          color: var(--wa-color-text-quiet);
+        }
+      }
+  
+      .spacer {
+        box-sizing: border-box;
+        padding: 0 1em;
+        line-height: 1;
+        
+        display: flex;
+        align-items: center;
+  
+        small {
+          padding: 0.25em 0.5em;
+        }
+  
+        &::before {
+          display: block;
+          content: "";
+          height: 1.5em;
+          width: 1px;
+          font-size: var(--wa-font-size-smaller); /* match em calcs to slotted icon */
+          margin-inline-start: calc(0.5em - 1px);
+          margin-inline-end: calc(0.75em - 1px);
+          
+          border-image-source: var(--timeline-dot-image);
+          border-image-slice: 0 0 0 100%;
+          border-image-outset: 0 2.5px;
+          border-image-repeat: round;
+          border-inline-start: var(--dot-size) solid transparent;
+          
+          z-index: 2;
+          pointer-events: none;
+        }
+  
+        &[data-moves="1"] {
+          /* Try to size it to a single border dot */
+          padding-block: 0;
+          height: var(--dot-size);
+          &::before {
+            max-height: var(--dot-size);
+          }
+        }
+        &[data-moves="2"]::before {
+          max-height: calc(2 * var(--dot-size));
+        }
+        &[data-moves="3"]::before {
+          max-height: calc(3 * var(--dot-size));
+        }
+        &[data-moves="4"]::before {
+          max-height: calc(4 * var(--dot-size));
+        }
+        /* This doesn't work yet:
+        &[data-moves] {
+          max-height: calc(attr(data-moves type(<number>)) * var(--dot-size));
+        }
+        */
+      }
     `,
   ];
 }

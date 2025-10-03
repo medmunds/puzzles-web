@@ -1,7 +1,7 @@
 import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property } from "lit/decorators.js";
-import { cssDefaultButtonStyle } from "./utils/css.ts";
+import { cssWATweaks } from "./utils/css.ts";
 import { isRunningAsApp } from "./utils/pwa.ts";
 
 // Register components
@@ -54,39 +54,39 @@ abstract class GameFileDialog extends LitElement {
   }
 
   static styles = [
-    cssDefaultButtonStyle,
+    cssWATweaks,
     css`
-    wa-dialog {
-      --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
-    }
-    
-    wa-dialog::part(body) {
-      padding-block-start: calc(var(--spacing) - var(--wa-form-control-padding-block));
-      
-      display: flex;
-      flex-direction: column;
-      gap: var(--wa-space-l);
-    }
-    
-    saved-game-list {
-      flex: 1 1 14em;
-      min-height: 5em;
-    }
-    
-    wa-dialog::part(footer) {
-      gap: var(--wa-space-m);
-    }
-
-    [slot="footer"].start {
-      margin-inline-end: auto;
-    }
-    
-    wa-popover p {
-      margin: 0;
-      &:not(:first-child) {
-        margin-block-start: var(--wa-space-l);
+      wa-dialog {
+        --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
       }
-    }
+      
+      wa-dialog::part(body) {
+        padding-block-start: calc(var(--spacing) - var(--wa-form-control-padding-block));
+        
+        display: flex;
+        flex-direction: column;
+        gap: var(--wa-space-l);
+      }
+      
+      saved-game-list {
+        flex: 1 1 14em;
+        min-height: 5em;
+      }
+      
+      wa-dialog::part(footer) {
+        gap: var(--wa-space-m);
+      }
+  
+      [slot="footer"].start {
+        margin-inline-end: auto;
+      }
+      
+      wa-popover p {
+        margin: 0;
+        &:not(:first-child) {
+          margin-block-start: var(--wa-space-l);
+        }
+      }
     `,
   ];
 }

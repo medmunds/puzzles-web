@@ -1,44 +1,17 @@
 // CSS that needs to be shared between various shadow DOMs
-import { css } from "lit";
+import { css, unsafeCSS } from "lit";
+
+import cssNativeRaw from "./css/native.css?inline";
+import cssWATweaksRaw from "./css/wa-tweaks.css?inline";
 
 /**
- * Change default wa-button appearance for compatibility with form controls.
- * (Outlined and filled similar to wa-input.)
+ * Our styling for native tags (a, h1, p, etc.).
+ * (Include in any component that wants to style native tags.)
  */
-export const cssDefaultButtonStyle = css`
-  wa-button[appearance="accent"][variant="neutral"] {
-    --wa-color-fill-loud:  var(--wa-form-control-background-color);
-    --wa-color-on-loud: var(--wa-form-control-label-color);
-    &::part(base) {
-      border-color: var(--wa-form-control-border-color);
-    }
-  }
-`;
-
-export const commonLinkStyle = css`
-  a {
-    color: var(--wa-color-text-link);
-    text-decoration: var(--wa-link-decoration-default);
-    -webkit-text-decoration: var(--wa-link-decoration-default); /* Safari */
-    text-decoration-thickness: 0.09375em;
-    text-underline-offset: 0.125em;
-
-    @media (hover: hover) {
-      &:hover {
-        color: color-mix(in oklab, var(--wa-color-text-link), var(--wa-color-mix-hover));
-        text-decoration: var(--wa-link-decoration-hover);
-        -webkit-text-decoration: var(--wa-link-decoration-hover); /* Safari */
-      }
-    }
-  }
-`;
+export const cssNative = css`${unsafeCSS(cssNativeRaw)}`;
 
 /**
- * Lucide icons are square.
- * This overrides default wa-icon width: 1.25em from Font Awesome.
+ * Our overrides for Web Awesome defaults.
+ * (Include in any component that directly renders wa-* elements in shadow dom.)
  */
-export const cssIconPatch = css`
-  wa-icon:not([auto-width]) {
-    width: 1em;
-  }
-`;
+export const cssWATweaks = css`${unsafeCSS(cssWATweaksRaw)}`;

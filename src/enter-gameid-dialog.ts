@@ -5,7 +5,7 @@ import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
-import { cssDefaultButtonStyle } from "./utils/css.ts";
+import { cssWATweaks } from "./utils/css.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -165,34 +165,34 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
   }
 
   static styles = [
-    cssDefaultButtonStyle,
+    cssWATweaks,
     css`
-    :host {
-      display: contents;
-    }
-
-    wa-dialog {
-      --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
-    }
-
-    wa-dialog::part(body) {
-      display: flex;
-      flex-direction: column;
-      gap: var(--wa-space-l);
-    }
-
-    footer {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: 1fr;
-      justify-content: end;
-      align-items: center;
-      gap: var(--wa-space-s);
-    }
-    
-    wa-input::part(label) {
-      margin-bottom: var(--wa-space-s);
-    }
+      :host {
+        display: contents;
+      }
+  
+      wa-dialog {
+        --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
+      }
+  
+      wa-dialog::part(body) {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wa-space-l);
+      }
+  
+      footer {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        justify-content: end;
+        align-items: center;
+        gap: var(--wa-space-s);
+      }
+      
+      wa-input::part(label) {
+        margin-bottom: var(--wa-space-s);
+      }
     `,
   ];
 }

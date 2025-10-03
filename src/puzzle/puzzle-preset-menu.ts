@@ -5,6 +5,7 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
+import { cssWATweaks } from "../utils/css.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { PuzzleCustomParamsDialog } from "./puzzle-config.ts";
@@ -240,54 +241,57 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   // Styles
   //
   // TODO: investigate styling active wa-dropdown-item like an sl-select option
-  static styles = css`
-    :host {
-      display: block;
-    }
-    
-    /* Allow flexing */
-    wa-dropdown, wa-button {
-      width: 100%;
-    }
-    wa-button::part(label) {
-      flex: 0 1 auto;
-      min-width: 1rem;
-    }
-    wa-button::part(start), wa-button::part(end), wa-button::part(caret) {
-      flex: none;
-    }
-    
-    /* Style checked item like a wa-select, except when using keyboard nav. */
-    wa-dropdown:not(:has(:focus-visible)) wa-dropdown-item[checked] {
-      background-color: var(--wa-color-brand-fill-loud);
-      color: var(--wa-color-brand-on-loud);
-      opacity: 1;
-    }
-
-    /* Crop the trigger button's two-line label to display either only one
-     * of the menu label or the or its current value at any given time.
-     * (Both are always rendered for accessibility.)
-      */
-    .dropdown-label {
-      height: 1lh;
-      overflow: hidden;
-    }
-    .dropdown-label-content {
-      width: 100%;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-
-      text-align: start;
-      transform: translateY(0); /* first line: menu label */
-      &.show-value {
-        transform: translateY(-50%); /* second line: current value */
+  static styles = [
+    cssWATweaks,
+    css`
+      :host {
+        display: block;
       }
-      @media (prefers-reduced-motion: no-preference) {
-        transition: transform 50ms ease; /* match wa-dropdown animation timing */
+      
+      /* Allow flexing */
+      wa-dropdown, wa-button {
+        width: 100%;
       }
-    }
-  `;
+      wa-button::part(label) {
+        flex: 0 1 auto;
+        min-width: 1rem;
+      }
+      wa-button::part(start), wa-button::part(end), wa-button::part(caret) {
+        flex: none;
+      }
+      
+      /* Style checked item like a wa-select, except when using keyboard nav. */
+      wa-dropdown:not(:has(:focus-visible)) wa-dropdown-item[checked] {
+        background-color: var(--wa-color-brand-fill-loud);
+        color: var(--wa-color-brand-on-loud);
+        opacity: 1;
+      }
+  
+      /* Crop the trigger button's two-line label to display either only one
+       * of the menu label or the or its current value at any given time.
+       * (Both are always rendered for accessibility.)
+        */
+      .dropdown-label {
+        height: 1lh;
+        overflow: hidden;
+      }
+      .dropdown-label-content {
+        width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+  
+        text-align: start;
+        transform: translateY(0); /* first line: menu label */
+        &.show-value {
+          transform: translateY(-50%); /* second line: current value */
+        }
+        @media (prefers-reduced-motion: no-preference) {
+          transition: transform 50ms ease; /* match wa-dropdown animation timing */
+        }
+      }
+    `,
+  ];
 }
 
 declare global {

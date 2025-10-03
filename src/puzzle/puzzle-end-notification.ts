@@ -5,7 +5,7 @@ import { css, html, LitElement } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
-import { cssDefaultButtonStyle } from "../utils/css.ts";
+import { cssWATweaks } from "../utils/css.ts";
 import { sleep } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
@@ -208,41 +208,41 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   // TODO: investigate whether we need the equivalent of `pointer-events: none`
   //   on wa-dialog's backdrop while the dialog is animating in. (iOS touch issue.)
   static styles = [
-    cssDefaultButtonStyle,
+    cssWATweaks,
     css`
-    wa-dialog {
-      --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
-    }
-    
-    @media(prefers-reduced-motion: no-preference) {
       wa-dialog {
-        --show-duration: 500ms;
-        --hide-duration: 250ms;
-        /* See enableCustomWaDialogAnimations in webawesomehacks.ts */
-        --show-dialog-animation: zoom-in-up 500ms ease;
-        --hide-dialog-animation: zoom-out-down 250ms ease;
+        --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
       }
-    }
-    
-    wa-dialog::part(title) {
-      display: flex;
-      align-items: center;
-      gap: var(--wa-space-m);
-    }
-    wa-dialog::part(body) {
-      display: none;
-    }
-    wa-dialog::part(footer) {
-      margin-block-start: var(--wa-space-l);
-      gap: var(--wa-space-m);
-    }
-    div[slot="footer"] {
-      display: contents;
-    }
-    
-    wa-dialog.solved wa-icon[slot="label"] {
-      color: var(--wa-color-brand-fill-loud);
-    }
+      
+      @media(prefers-reduced-motion: no-preference) {
+        wa-dialog {
+          --show-duration: 500ms;
+          --hide-duration: 250ms;
+          /* See enableCustomWaDialogAnimations in webawesomehacks.ts */
+          --show-dialog-animation: zoom-in-up 500ms ease;
+          --hide-dialog-animation: zoom-out-down 250ms ease;
+        }
+      }
+      
+      wa-dialog::part(title) {
+        display: flex;
+        align-items: center;
+        gap: var(--wa-space-m);
+      }
+      wa-dialog::part(body) {
+        display: none;
+      }
+      wa-dialog::part(footer) {
+        margin-block-start: var(--wa-space-l);
+        gap: var(--wa-space-m);
+      }
+      div[slot="footer"] {
+        display: contents;
+      }
+      
+      wa-dialog.solved wa-icon[slot="label"] {
+        color: var(--wa-color-brand-fill-loud);
+      }
     `,
   ];
 }

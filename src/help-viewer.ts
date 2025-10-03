@@ -3,7 +3,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
-import { commonLinkStyle } from "./utils/css.ts";
+import { cssNative, cssWATweaks } from "./utils/css.ts";
 
 // Components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -254,70 +254,62 @@ export class HelpViewer extends LitElement {
   //
 
   static styles = [
-    commonLinkStyle,
+    cssNative,
+    cssWATweaks,
     css`
-    :host {
-      display: contents;
-    }
-    
-    wa-drawer {
-      --size: max(50cqi, 25rem);
-    }
-    wa-drawer::part(title) {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      text-wrap: nowrap;
-    }
-    wa-drawer::part(header-actions) {
-      padding-inline-start: 0;
-    }
-    wa-drawer::part(header) {
-      border-bottom: 1px solid var(--wa-color-neutral-border-normal);
-    }
-    
-    /* TODO: share the base page styles somehow */
-    wa-include {
-      /* try to avoid horizontal scrolling on small screens */
-      overflow-wrap: break-word;
-
-      h1, h2, h3 {
-        color: var(--wa-color-text-normal);
-        line-height: var(--wa-line-height-condensed);
-      }
-      h1 {
-        font-weight: var(--wa-font-weight-bold);
-        font-size: var(--wa-font-size-xl);
-      }
-      h2 {
-        font-weight: var(--wa-font-weight-semibold);
-        font-size: var(--wa-font-size-l);
-      }
-      h3 {
-        font-weight: var(--wa-font-weight-semibold);
-        font-size: var(--wa-font-size-m);
+      :host {
+        display: contents;
       }
       
-      hr {
-        border: none;
-        border-top: 1px solid var(--wa-color-neutral-border-normal);
+      wa-drawer {
+        --size: max(50cqi, 25rem);
+      }
+      wa-drawer::part(title) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-wrap: nowrap;
+      }
+      wa-drawer::part(header-actions) {
+        padding-inline-start: 0;
+      }
+      wa-drawer::part(header) {
+        /* Match bottom padding to top */
+        padding-block-end: calc(var(--spacing) - var(--wa-form-control-padding-block));
+        border-bottom: 1px solid var(--wa-color-neutral-border-normal);
       }
       
-      a > code {
-        /* urls are all formatted as code; we'd prefer to skip the monoface font */
-        font-family: inherit;
-      }
-      
-      pre {
+      /* TODO: share the base page styles somehow */
+      wa-include {
         /* try to avoid horizontal scrolling on small screens */
-        white-space: pre-wrap;
+        overflow-wrap: break-word;
+  
+        a > code {
+          /* urls are all formatted as code; we'd prefer to skip the monoface font */
+          font-family: inherit;
+        }
+        
+        /* Restore some margin removed by cssNative */
+        h1 {
+          margin-block-start: var(--wa-space-xl);
+        }
+        h2 {
+          margin-block-start: var(--wa-space-l);
+        }
+        h3, h4, h5, h6 {
+          margin-block-start: var(--wa-space-m);
+        }
+        
+        pre {
+          /* try to avoid horizontal scrolling on small screens */
+          white-space: pre-wrap;
+        }
+        
+        wa-icon.offsite {
+          margin-inline-start: 0.1em;
+          vertical-align: -2px; /* visual baseline alignment*/
+        }
       }
-      
-      wa-icon.offsite {
-        margin-inline-start: 0.1em;
-        vertical-align: -2px; /* visual baseline alignment*/
-      }
-    }
-  `,
+    `,
   ];
 }
 

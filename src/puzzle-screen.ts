@@ -9,7 +9,7 @@ import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import { helpUrl, indexPageUrl, navigateToIndexPage } from "./routing.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
-import { cssDefaultButtonStyle } from "./utils/css.ts";
+import { cssWATweaks } from "./utils/css.ts";
 import { notifyError } from "./utils/errors.ts";
 import { preventDoubleTapZoomOnButtons } from "./utils/events.ts";
 import { debounced, sleep } from "./utils/timing.ts";
@@ -603,110 +603,110 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   //
 
   static styles = [
-    cssDefaultButtonStyle,
+    cssWATweaks,
     css`
-    :host {
-      display: block;
-      width: 100%;
-      height: 100%;
-      container-type: size;
-      
-      --puzzle-theme-color: var(--wa-color-brand-fill-normal);
-    }
-    
-    main {
-      height: 100%;
-      box-sizing: border-box;
-      position: relative;
-
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-
-      background-color: var(--wa-color-brand-fill-quiet);
-      color: var(--wa-color-text-normal);
-    }
-
-    header, footer {
-      box-sizing: border-box;
-      width: 100%;
-
-      display: flex;
-      justify-content: flex-start;
-      gap: var(--wa-space-s);
-
-      > *:last-child {
-        margin-inline-start: auto;
+      :host {
+        display: block;
+        width: 100%;
+        height: 100%;
+        container-type: size;
+        
+        --puzzle-theme-color: var(--wa-color-brand-fill-normal);
       }
-    }
-
-    header {
-      align-items: baseline;
-      padding: var(--wa-space-xs);
-      background-color: var(--puzzle-theme-color);
       
-      wa-button[appearance="filled"]::part(base),
-      puzzle-preset-menu::part(trigger-base) {
+      main {
+        height: 100%;
+        box-sizing: border-box;
+        position: relative;
+  
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+  
+        background-color: var(--wa-color-brand-fill-quiet);
         color: var(--wa-color-text-normal);
       }
-    }
-
-    puzzle-view-interactive {
-      flex: 1 1 auto;
-      min-height: 5rem; /* allows flexing */
-      margin-block: var(--wa-space-m);
-      margin-inline: var(--wa-space-l);
-
-      --spacing: var(--wa-space-m);
-      --background-color: var(--wa-color-surface-default);
-      --border-radius: var(--wa-form-control-border-radius);
-    }
-
-    footer {
-      align-items: end;
-      padding-inline: var(--wa-space-l);
-      padding-block-end: var(--wa-space-l);
-    }
-      
-    @container (min-width: 40rem) {
-      .game-menu-trigger {
-        font-size: var(--wa-font-size-l);
+  
+      header, footer {
+        box-sizing: border-box;
+        width: 100%;
+  
+        display: flex;
+        justify-content: flex-start;
+        gap: var(--wa-space-s);
+  
+        > *:last-child {
+          margin-inline-start: auto;
+        }
       }
+  
+      header {
+        align-items: baseline;
+        padding: var(--wa-space-xs);
+        background-color: var(--puzzle-theme-color);
+        
+        wa-button[appearance="filled"]::part(base),
+        puzzle-preset-menu::part(trigger-base) {
+          color: var(--wa-color-text-normal);
+        }
+      }
+  
       puzzle-view-interactive {
-        margin-block: var(--wa-space-l);
-        margin-inline: var(--wa-space-xl);
-        --spacing: var(--wa-space-l);
+        flex: 1 1 auto;
+        min-height: 5rem; /* allows flexing */
+        margin-block: var(--wa-space-m);
+        margin-inline: var(--wa-space-l);
+  
+        --spacing: var(--wa-space-m);
+        --background-color: var(--wa-color-surface-default);
+        --border-radius: var(--wa-form-control-border-radius);
       }
+  
       footer {
-        padding-inline: var(--wa-space-xl);
-        padding-block-end: var(--wa-space-xl);
+        align-items: end;
+        padding-inline: var(--wa-space-l);
+        padding-block-end: var(--wa-space-l);
       }
-    }
-    @container (max-width: 25rem) {
-      puzzle-view-interactive {
-        margin-inline: 0;
-        min-width: 100%;
+        
+      @container (min-width: 40rem) {
+        .game-menu-trigger {
+          font-size: var(--wa-font-size-l);
+        }
+        puzzle-view-interactive {
+          margin-block: var(--wa-space-l);
+          margin-inline: var(--wa-space-xl);
+          --spacing: var(--wa-space-l);
+        }
+        footer {
+          padding-inline: var(--wa-space-xl);
+          padding-block-end: var(--wa-space-xl);
+        }
       }
-    }
-
-    puzzle-preset-menu {
-      flex: 0 1 auto;
-      min-width: 5rem;
-    }
-
-    wa-skeleton {
-      --color: var(--wa-color-neutral-fill-quiet);
-      --sheen-color: var(--wa-color-brand-fill-quiet);
-      &::part(indicator) {
-        border-radius: 0;
+      @container (max-width: 25rem) {
+        puzzle-view-interactive {
+          margin-inline: 0;
+          min-width: 100%;
+        }
       }
-    }
-
-    @media (prefers-reduced-motion: no-preference) {
-      .game-menu-trigger {
-        transition: font-size var(--wa-transition-fast) var(--wa-transition-easing);
+  
+      puzzle-preset-menu {
+        flex: 0 1 auto;
+        min-width: 5rem;
       }
-    }
+  
+      wa-skeleton {
+        --color: var(--wa-color-neutral-fill-quiet);
+        --sheen-color: var(--wa-color-brand-fill-quiet);
+        &::part(indicator) {
+          border-radius: 0;
+        }
+      }
+  
+      @media (prefers-reduced-motion: no-preference) {
+        .game-menu-trigger {
+          transition: font-size var(--wa-transition-fast) var(--wa-transition-easing);
+        }
+      }
     `,
   ];
 }
