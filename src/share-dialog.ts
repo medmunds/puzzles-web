@@ -2,7 +2,7 @@ import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import { puzzlePageUrl } from "./routing.ts";
@@ -24,9 +24,10 @@ export class ShareDialog extends SignalWatcher(LitElement) {
   @state()
   private puzzle?: Puzzle;
 
-  @query("wa-dialog", true)
+  @query("wa-dialog")
   protected dialog?: HTMLElementTagNameMap["wa-dialog"];
 
+  @property({ type: Boolean, reflect: true })
   get open(): boolean {
     return this.dialog?.open ?? false;
   }
@@ -79,7 +80,11 @@ export class ShareDialog extends SignalWatcher(LitElement) {
       : undefined;
 
     return html`
-      <wa-dialog light-dismiss>
+      <wa-dialog 
+          light-dismiss
+          @wa-after-show=${this.handleDialogOpenChange} 
+          @wa-after-hide=${this.handleDialogOpenChange}
+      >
         <div slot="label">Share</div>
         
         <wa-details open name="share">
@@ -197,6 +202,13 @@ export class ShareDialog extends SignalWatcher(LitElement) {
         ${hint ? html`<div class="hint">${hint}</div>` : nothing}
       </div>
     `;
+  }
+
+  private handleDialogOpenChange(event: Event) {
+    if (event.target === this.dialog) {
+      // Trigger the reflected attribute to update
+      this.requestUpdate("open");
+    }
   }
 
   private selectAllOnFocus(event: FocusEvent) {
