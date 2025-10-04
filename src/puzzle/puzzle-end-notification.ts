@@ -15,8 +15,17 @@ import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 
-function randomItem<T>(array: ReadonlyArray<T>): T {
-  return array[Math.floor(Math.random() * array.length)];
+function hash(s: string): number {
+  // Simple but effective hash based on Java's String.hashCode()
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = ((hash << 5) - hash + s.charCodeAt(i)) & 0xffffffff;
+  }
+  return hash;
+}
+
+function pick<T>(array: ReadonlyArray<T>, index: number): T {
+  return array[Math.abs(index) % array.length];
 }
 
 @customElement("puzzle-end-notification")
@@ -36,6 +45,11 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
       return;
     }
 
+    // Use game id to select a "random" but fixed message/icon
+    // (so the same game generates the same message on repeated solves).
+    const hashCode = hash(
+      this.puzzle.randomSeed ?? this.puzzle.currentGameId ?? "unknown",
+    );
     let message: string;
     let icon: string | undefined;
     const actions = [
@@ -49,8 +63,8 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
 
     switch (this.puzzle.status) {
       case "solved":
-        message = randomItem(PuzzleEndNotification.solvedMessages);
-        icon = randomItem(PuzzleEndNotification.solvedIcons);
+        message = pick(PuzzleEndNotification.solvedMessages, hashCode);
+        icon = pick(PuzzleEndNotification.solvedIcons, hashCode);
         actions.push(html`<slot name="extra-actions-solved"></slot>`);
         break;
 
@@ -60,8 +74,8 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
         break;
 
       case "lost":
-        message = randomItem(PuzzleEndNotification.lostMessages);
-        icon = randomItem(PuzzleEndNotification.lostIcons);
+        message = pick(PuzzleEndNotification.lostMessages, hashCode);
+        icon = pick(PuzzleEndNotification.lostIcons, hashCode);
         actions.push(...this.renderLostActions());
         actions.push(html`<slot name="extra-actions-lost"></slot>`);
         break;
