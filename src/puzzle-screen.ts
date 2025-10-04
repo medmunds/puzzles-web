@@ -178,6 +178,13 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         <puzzle-end-notification>
           <wa-button
               slot="extra-actions-solved"
+              @click=${this.showShareDialog}
+          >
+            <wa-icon slot="start" name="share"></wa-icon>
+            Share
+          </wa-button>
+          <wa-button
+              slot="extra-actions-solved"
               @click=${this.handleChangeType}
           >
             <wa-icon slot="start" name="puzzle-type"></wa-icon>
