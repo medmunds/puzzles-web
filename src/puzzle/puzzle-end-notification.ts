@@ -70,7 +70,9 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     actions.push(html`<slot name="extra-actions"></slot>`);
 
     return html`
-      <wa-dialog light-dismiss
+      <wa-dialog
+          exportparts="dialog, header, title, header-actions, close-button, body, footer"
+          light-dismiss
           class=${this.puzzle.status}
           @wa-after-hide=${this.handleAfterHide}
       >
@@ -211,7 +213,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     cssWATweaks,
     css`
       wa-dialog {
-        --width: min(calc(100vw - 2 * var(--wa-space-l)), 35rem);
+        --width: min(calc(100vw - 2 * var(--wa-space-l)), 25rem);
       }
       
       @media(prefers-reduced-motion: no-preference) {
@@ -228,16 +230,38 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
         display: flex;
         align-items: center;
         gap: var(--wa-space-m);
+        font-weight: var(--wa-font-weight-semibold);
       }
       wa-dialog::part(body) {
         display: none;
       }
       wa-dialog::part(footer) {
-        margin-block-start: var(--wa-space-l);
-        gap: var(--wa-space-m);
+        padding-block-start: var(--wa-space-s);
+        justify-content: center;
       }
-      div[slot="footer"] {
-        display: contents;
+
+      [slot="footer"] {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        justify-content: center;
+        align-items: center;
+        gap: var(--wa-space-s);
+        
+        inline-size: fit-content;
+
+        /* Single, non-stretched column when narrow */
+        container-type: inline-size;
+        @container (max-inline-size: 26em) {
+          grid-template-columns: auto;
+        }
+      }
+      
+      wa-button::part(label) {
+        /* Align action button icons at left.
+         * No way to target ::slotted(wa-button)::part(label),
+         * so this must be repeated in the parent for slotted buttons. */
+        flex: 1 1 auto;
+        text-align: center;
       }
       
       wa-dialog.solved wa-icon[slot="label"] {

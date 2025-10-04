@@ -668,6 +668,23 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         --background-color: var(--wa-color-surface-default);
         --border-radius: var(--wa-form-control-border-radius);
       }
+      
+      puzzle-end-notification {
+        &::part(dialog) {
+          /* Position at bottom, aligned with puzzle controls */
+          margin-block-end: var(--wa-space-l);
+        }
+        :has(share-dialog[open]) &::part(dialog) {
+          /* Hide the end notification while share-dialog is open above it */
+          opacity: 0;
+        }
+        
+        & wa-button::part(label) {
+          /* */
+          flex: 1 1 auto;
+          text-align: center;
+        }
+      }
   
       footer {
         align-items: end;
@@ -683,6 +700,9 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           margin-block: var(--wa-space-l);
           margin-inline: var(--wa-space-xl);
           --spacing: var(--wa-space-l);
+        }
+        puzzle-end-notification::part(dialog) {
+          margin-block-end: var(--wa-space-xl);
         }
         footer {
           padding-inline: var(--wa-space-xl);
