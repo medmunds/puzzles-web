@@ -1,10 +1,9 @@
-import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
-import { customElement, state } from "lit/decorators.js";
-import { when } from "lit/directives/when.js";
+import { customElement, property, state } from "lit/decorators.js";
+import { animateWithClass } from "../utils/animation.ts";
 import { cssWATweaks } from "../utils/css.ts";
 import { sleep } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
@@ -12,7 +11,6 @@ import type { Puzzle } from "./puzzle.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
-import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 
 function hash(s: string): number {
@@ -30,15 +28,28 @@ function pick<T>(array: ReadonlyArray<T>, index: number): T {
 
 @customElement("puzzle-end-notification")
 export class PuzzleEndNotification extends SignalWatcher(LitElement) {
-  // TODO: consider reworking this component as completely custom rendered,
-  //   rather than hacking up a wa-dialog. (Would simplify animations and css.)
-
   @consume({ context: puzzleContext, subscribe: true })
   @state()
   private puzzle?: Puzzle;
 
-  @query("wa-dialog")
-  private dialog?: WaDialog;
+  @property({ type: Boolean, reflect: true })
+  get open(): boolean {
+    return this.dialog?.open ?? false;
+  }
+  set open(value: boolean) {
+    if (value) {
+      void this.show();
+    } else {
+      void this.hide();
+    }
+  }
+
+  // Whether the dialog should be open, ignoring running animations.
+  // (So false while the hide animation is running, unlike this.open.)
+  private wantsOpen = false;
+
+  @query("dialog")
+  private dialog?: HTMLDialogElement;
 
   protected override render() {
     if (!this.puzzle || this.puzzle.status === "ongoing") {
@@ -54,7 +65,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     let icon: string | undefined;
     const actions = [
       html`
-        <wa-button variant="brand" @click=${this.newGame}>
+        <wa-button autofocus variant="brand" @click=${this.newGame}>
           <wa-icon slot="start" name="new-game"></wa-icon>
           New game
         </wa-button>
@@ -83,17 +94,26 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
 
     actions.push(html`<slot name="extra-actions"></slot>`);
 
+    // TODO: Move puzzle.status from class to custom element state? (CustomStateSet)
     return html`
-      <wa-dialog
-          exportparts="dialog, header, title, header-actions, close-button, body, footer"
-          light-dismiss
+      <dialog
+          part="dialog"
           class=${this.puzzle.status}
-          @wa-after-hide=${this.handleAfterHide}
+          aria-labelledby="message"
+          @cancel=${this.handleDialogCancel}
+          @click=${this.handleDialogClick}
       >
-        ${when(icon, () => html`<wa-icon slot="label" name=${icon}></wa-icon>`)}
-        <div slot="label">${message}</div>
-        <div slot="footer">${actions}</div>
-      </wa-dialog>
+        <div part="header">
+          ${icon ? html`<wa-icon part="icon" name=${icon}></wa-icon>` : nothing}
+          <div part="message" id="message">${message}</div>
+          <wa-button part="dismiss" appearance="plain" @click=${this.handleDismissClick}>
+            <wa-icon library="system" name="xmark" variant="solid" label="Close"></wa-icon>
+          </wa-button>
+        </div>
+        <div part="footer">
+          <div part="actions">${actions}</div>
+        </div>
+      </dialog>
     `;
   }
 
@@ -132,32 +152,55 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     // Wait for any game animations/flashes to finish before showing dialog
     await sleep(10); // ensure timer start notification arrives from worker
     await Promise.all([this.updateComplete, this.puzzle?.timerComplete]);
-    if (this.isConnected && this.dialog) {
-      this.dialog.open = true;
+    if (this.isConnected && this.dialog && !this.wantsOpen) {
+      await this.show();
     }
   }
 
-  private hidingPromise = Promise.resolve();
-  private hidingPromiseResolve?: () => void;
+  private async handleDialogCancel(event: Event) {
+    // User pressed Esc key. We want to run our animation before closing.
+    event.preventDefault();
+    await this.hide();
+  }
 
-  private handleAfterHide() {
-    if (this.hidingPromiseResolve) {
-      this.hidingPromiseResolve();
-      this.hidingPromiseResolve = undefined;
+  private async handleDialogClick(event: MouseEvent) {
+    // Could be click on backdrop pseudo-element, dialog proper,
+    // or child of dialog. Dismiss only on backdrop clicks.
+    if (event.target === this.dialog) {
+      const { clientX, clientY } = event;
+      const { top, bottom, left, right } = this.dialog.getBoundingClientRect();
+      const inClientRect =
+        clientX >= left && clientX <= right && clientY >= top && clientY <= bottom;
+      if (!inClientRect) {
+        await this.hide();
+      }
     }
   }
 
-  hide() {
-    if (this.dialog?.open) {
-      // Resolve old promise in case anyone awaiting it.
-      this.handleAfterHide();
+  private async handleDismissClick() {
+    await this.hide();
+  }
 
-      this.dialog.open = false;
-      this.hidingPromise = new Promise((resolve) => {
-        this.hidingPromiseResolve = resolve;
-      });
+  async show() {
+    if (this.dialog && !this.wantsOpen) {
+      this.wantsOpen = true;
+      this.dialog.showModal();
+      const autofocus = this.dialog.querySelector("[autofocus]");
+      if (autofocus instanceof HTMLElement && typeof autofocus.focus === "function") {
+        autofocus.focus();
+      }
+      return animateWithClass(this.dialog, "show");
     }
-    return this.hidingPromise;
+  }
+
+  async hide() {
+    if (this.dialog?.open && this.wantsOpen) {
+      this.wantsOpen = false;
+      await animateWithClass(this.dialog, "hide");
+      if (!this.wantsOpen) {
+        this.dialog?.close();
+      }
+    }
   }
 
   private async newGame() {
@@ -221,40 +264,99 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     // "Out of options",
   ] as const;
 
-  // TODO: investigate whether we need the equivalent of `pointer-events: none`
-  //   on wa-dialog's backdrop while the dialog is animating in. (iOS touch issue.)
   static styles = [
     cssWATweaks,
     css`
-      wa-dialog {
+      :host {
+        display: contents;
+
         --width: min(calc(100vw - 2 * var(--wa-space-l)), 25rem);
+        --padding: var(--wa-space-l);
+        --show-duration: 200ms;
+        --hide-duration: 200ms;
+        --opacity: 1; /* Overrides dialog and backdrop, e.g., for stacking dialogs */
       }
       
-      @media(prefers-reduced-motion: no-preference) {
-        wa-dialog {
-          --show-duration: 500ms;
-          --hide-duration: 250ms;
-          /* See enableCustomWaDialogAnimations in webawesomehacks.ts */
-          --show-dialog-animation: zoom-in-up 500ms ease;
-          --hide-dialog-animation: zoom-out-down 250ms ease;
+      * {
+        box-sizing: border-box;
+      }
+      
+      dialog:focus:not(:focus-visible) {
+        outline: none;
+      }
+      dialog:focus-visible {
+        /* Inset the focus ring so it doesn't compete with the backdrop shadow */
+        outline: var(--wa-focus-ring);
+        outline-offset: calc(-1 * (var(--wa-focus-ring-offset) + var(--wa-focus-ring-width)));
+      }
+      
+      dialog[open] {
+        display: flex;
+        flex-direction: column;
+        inline-size: var(--width);
+        max-inline-size: calc(100% - var(--wa-space-2xl));
+        max-block-size: calc(100% - var(--wa-space-2xl));
+
+        /* Ensure there's enough vertical padding for phones 
+         * with non-updating vh (e.g. iOS Safari) */
+        @media screen and (max-width: 420px) {
+          max-block-size: min(80vh, calc(100% - var(--wa-space-2xl)));
+          max-block-size: min(80dvh, calc(100% - var(--wa-space-2xl)));
         }
+        
+        background-color: var(--wa-color-surface-raised);
+        border-radius: var(--wa-panel-border-radius);
+        border: none;
+        box-shadow: var(--wa-shadow-l);
+        margin: auto;
+
+        padding: var(--padding);
+        gap: var(--padding);
       }
       
-      wa-dialog::part(title) {
+      dialog[open]::backdrop {
+        /* (Fallback rgb() is technically unnecessary here as of Safari 17.4.) */
+        background-color: var(--wa-color-overlay-modal, rgb(0 0 0 / 0.25));
+      }
+      
+      dialog[open], dialog[open]::backdrop {
+        opacity: var(--opacity);
+        transition: opacity var(--wa-transition-normal) var(--wa-transition-easing);
+      }
+      
+      [part~="header"] {
         display: flex;
         align-items: center;
         gap: var(--wa-space-m);
+      }
+      [part~="icon"] {
+        font-size: var(--wa-font-size-l);
+        
+        dialog.solved & {
+          color: var(--wa-color-brand-fill-loud);
+        }
+      }
+      [part~="message"] {
+        flex: 1 1 auto;
+        font-size: var(--wa-font-size-l);
         font-weight: var(--wa-font-weight-semibold);
+        line-height: var(--wa-line-height-condensed);
       }
-      wa-dialog::part(body) {
-        display: none;
+      [part~="dismiss"] {
+        margin: calc(-1 * var(--wa-space-xs));
+        &::part(base) {
+          padding: var(--wa-space-xs);
+          height: auto;
+          width: auto;
+        }
       }
-      wa-dialog::part(footer) {
-        padding-block-start: var(--wa-space-s);
+      [part~="footer"] {
+        /* Stretch to full available width */
+        display: flex;
+        align-items: center;
         justify-content: center;
       }
-
-      [slot="footer"] {
+      [part~="actions"] {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         justify-content: center;
@@ -277,10 +379,68 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
         flex: 1 1 auto;
         text-align: center;
       }
-      
-      wa-dialog.solved wa-icon[slot="label"] {
-        color: var(--wa-color-brand-fill-loud);
+
+      dialog.show {
+        animation: fade-in var(--show-duration) ease forwards;
+        &::backdrop {
+          animation: fade-in var(--show-duration) ease forwards;
+        }
       }
+      dialog.hide {
+        animation: fade-in var(--hide-duration) ease reverse forwards;
+        &::backdrop {
+          animation: fade-in var(--hide-duration) ease reverse forwards;
+        }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        /* Longer, flashier animation on the dialog itself */
+        dialog.show {
+          animation: zoom-in-down 500ms forwards;
+        }
+        dialog.hide {
+          animation: zoom-out-up 250ms forwards;
+        }
+      }
+      
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes zoom-in-down {
+        /* animate.css zoomInDown, adjusted to use vh */
+        from {
+          opacity: 0;
+          transform: scale3d(0.1, 0.1, 0.1) translate3d(0, -300vh, 0);
+          animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+        }
+
+        60% {
+          opacity: 1;
+          transform: scale3d(0.475, 0.475, 0.475) translate3d(0, 60px, 0);
+          animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1);
+        }
+      }
+      @keyframes zoom-out-up {
+        /* animate.css zoomOutUp, adjusted to use vh */
+        40% {
+          opacity: 1;
+          transform: scale3d(0.475, 0.475, 0.475) translate3d(0, 60px, 0);
+          animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+        }
+
+        to {
+          opacity: 0;
+          transform: scale3d(0.1, 0.1, 0.1) translate3d(0, -200vh, 0);
+          animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1);
+        }
+      }
+
     `,
   ];
 }

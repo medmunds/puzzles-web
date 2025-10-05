@@ -193,6 +193,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           <wa-button
               slot="extra-actions-solved"
               href=${otherPuzzlesUrl}
+              @click=${this.handleOtherPuzzles}
           >
             <wa-icon slot="start" name="back-to-catalog"></wa-icon>
             Other puzzles
@@ -504,6 +505,12 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     this.shadowRoot?.querySelector("puzzle-preset-menu")?.show();
   }
 
+  private handleOtherPuzzles(event: Event) {
+    // TODO: remove this; interceptHrefClick throughout puzzle-screen instead
+    event.preventDefault();
+    navigateToIndexPage();
+  }
+
   private async handlePuzzleLoaded(event: PuzzleEvent) {
     const { puzzle } = event.detail;
     event.preventDefault(); // We'll set up our own new game (or restore one from autoSave)
@@ -674,13 +681,15 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           /* Position at bottom, aligned with puzzle controls */
           margin-block-end: var(--wa-space-l);
         }
-        :has(share-dialog[open]) &::part(dialog) {
-          /* Hide the end notification while share-dialog is open above it */
-          opacity: 0;
+        
+        :has(share-dialog[open]) & {
+          /* Hide the end notification and its extra backdrop 
+           * while share-dialog is open above it */
+          --opacity: 0;
         }
         
         & wa-button::part(label) {
-          /* */
+          /* Align icons at left of buttons, center labels */
           flex: 1 1 auto;
           text-align: center;
         }
