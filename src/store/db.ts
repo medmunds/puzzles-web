@@ -21,8 +21,10 @@ export interface CommonSettings {
   rightButtonDragThreshold?: number; // css pixel radius
 
   // Appearance
-  maxScale?: number | null; // null in DB/json === Infinity in exposed value
+  showEndNotification?: boolean;
+  showPuzzleKeyboard?: boolean;
   showStatusbar?: boolean;
+  maxScale?: number | null; // null in DB/json === Infinity in exposed value
 }
 
 // PuzzleId-specific settings

@@ -1,5 +1,5 @@
 import { SignalWatcher } from "@lit-labs/signals";
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
@@ -116,7 +116,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
     const iconUrl = new URL(`./assets/icons/${this.puzzleId}-64d8.png`, import.meta.url)
       .href;
-    const otherPuzzlesUrl = indexPageUrl().href;
 
     return html`
       <puzzle-context 
@@ -170,38 +169,44 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           </puzzle-view-interactive>
 
           <footer>
-            <puzzle-keys></puzzle-keys>
+            ${settings.showPuzzleKeyboard ? html`<puzzle-keys></puzzle-keys>` : nothing}
             <puzzle-history></puzzle-history>
           </footer>
         </main>
 
-        <puzzle-end-notification>
-          <wa-button
-              slot="extra-actions-solved"
-              @click=${this.showShareDialog}
-          >
-            <wa-icon slot="start" name="share"></wa-icon>
-            Share
-          </wa-button>
-          <wa-button
-              slot="extra-actions-solved"
-              @click=${this.handleChangeType}
-          >
-            <wa-icon slot="start" name="puzzle-type"></wa-icon>
-            Change type
-          </wa-button>
-          <wa-button
-              slot="extra-actions-solved"
-              href=${otherPuzzlesUrl}
-              @click=${this.handleOtherPuzzles}
-          >
-            <wa-icon slot="start" name="back-to-catalog"></wa-icon>
-            Other puzzles
-          </wa-button>
-        </puzzle-end-notification>
-
+        ${settings.showEndNotification ? this.renderEndNotification() : nothing}
         <dynamic-content></dynamic-content>
       </puzzle-context>
+    `;
+  }
+
+  private renderEndNotification() {
+    const otherPuzzlesUrl = indexPageUrl().href;
+    return html`
+      <puzzle-end-notification>
+        <wa-button
+            slot="extra-actions-solved"
+            @click=${this.showShareDialog}
+        >
+          <wa-icon slot="start" name="share"></wa-icon>
+          Share
+        </wa-button>
+        <wa-button
+            slot="extra-actions-solved"
+            @click=${this.handleChangeType}
+        >
+          <wa-icon slot="start" name="puzzle-type"></wa-icon>
+          Change type
+        </wa-button>
+        <wa-button
+            slot="extra-actions-solved"
+            href=${otherPuzzlesUrl}
+            @click=${this.handleOtherPuzzles}
+        >
+          <wa-icon slot="start" name="back-to-catalog"></wa-icon>
+          Other puzzles
+        </wa-button>
+      </puzzle-end-notification>
     `;
   }
 

@@ -32,8 +32,10 @@ const defaultSettings = {
   rightButtonAudioVolume: 40,
   rightButtonHoldTime: 350,
   rightButtonDragThreshold: 8,
-  maxScale: Number.POSITIVE_INFINITY,
+  showEndNotification: true,
+  showPuzzleKeyboard: true,
   showStatusbar: true,
+  maxScale: Number.POSITIVE_INFINITY,
 } as const;
 
 const COMMON_SETTINGS_ID = "puzzle-common";
@@ -58,8 +60,10 @@ class Settings {
   private _rightButtonDragThreshold = signal<number>(
     defaultSettings.rightButtonDragThreshold,
   );
-  private _maxScale = signal<number>(defaultSettings.maxScale);
+  private _showEndNotification = signal<boolean>(defaultSettings.showEndNotification);
+  private _showPuzzleKeyboard = signal<boolean>(defaultSettings.showPuzzleKeyboard);
   private _showStatusbar = signal<boolean>(defaultSettings.showStatusbar);
+  private _maxScale = signal<number>(defaultSettings.maxScale);
 
   private constructor() {
     window.addEventListener("pageshow", this.handlePageShow);
@@ -96,8 +100,10 @@ class Settings {
       update(this._rightButtonAudioVolume, commonSettings.rightButtonAudioVolume);
       update(this._rightButtonHoldTime, commonSettings.rightButtonHoldTime);
       update(this._rightButtonDragThreshold, commonSettings.rightButtonDragThreshold);
-      update(this._maxScale, commonSettings.maxScale ?? Number.POSITIVE_INFINITY);
+      update(this._showEndNotification, commonSettings.showEndNotification);
+      update(this._showPuzzleKeyboard, commonSettings.showPuzzleKeyboard);
       update(this._showStatusbar, commonSettings.showStatusbar);
+      update(this._maxScale, commonSettings.maxScale ?? Number.POSITIVE_INFINITY);
     }
   }
 
@@ -174,6 +180,30 @@ class Settings {
     this.saveCommonSettingOrLogError("rightButtonDragThreshold", value);
   }
 
+  get showEndNotification(): boolean {
+    return this._showEndNotification.get();
+  }
+  set showEndNotification(value: boolean) {
+    this._showEndNotification.set(value);
+    this.saveCommonSettingOrLogError("showEndNotification", value);
+  }
+
+  get showPuzzleKeyboard(): boolean {
+    return this._showPuzzleKeyboard.get();
+  }
+  set showPuzzleKeyboard(value: boolean) {
+    this._showPuzzleKeyboard.set(value);
+    this.saveCommonSettingOrLogError("showPuzzleKeyboard", value);
+  }
+
+  get showStatusbar(): boolean {
+    return this._showStatusbar.get();
+  }
+  set showStatusbar(value: boolean) {
+    this._showStatusbar.set(value);
+    this.saveCommonSettingOrLogError("showStatusbar", value);
+  }
+
   get maxScale(): number {
     const value = this._maxScale.get();
     return value === null ? Number.POSITIVE_INFINITY : value;
@@ -185,14 +215,6 @@ class Settings {
       "maxScale",
       value === Number.POSITIVE_INFINITY ? null : value,
     );
-  }
-
-  get showStatusbar(): boolean {
-    return this._showStatusbar.get();
-  }
-  set showStatusbar(value: boolean) {
-    this._showStatusbar.set(value);
-    this.saveCommonSettingOrLogError("showStatusbar", value);
   }
 
   // Settings methods

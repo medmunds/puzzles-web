@@ -76,11 +76,11 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     return html`
       <wa-details summary="Appearance">
         <wa-checkbox
-            checked
+            ?checked=${autoBind(settings, "showEndNotification")}
             hint="Victory message with “New game” button"
           >Show popup when solved</wa-checkbox>
-        <wa-checkbox 
-            checked
+        <wa-checkbox
+            ?checked=${autoBind(settings, "showPuzzleKeyboard")}
             hint="On-screen buttons for puzzles that need keyboard input"
           >Show virtual keyboard</wa-checkbox>
         <wa-checkbox
