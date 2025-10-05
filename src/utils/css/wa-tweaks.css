@@ -1,3 +1,5 @@
+/* Various adjustments to Web Awesome defaults */
+
 /* Change default wa-button appearance for compatibility with form controls.
  * (Outlined and filled similar to wa-input.) */
 wa-button[appearance="accent"][variant="neutral"] {
@@ -6,6 +8,30 @@ wa-button[appearance="accent"][variant="neutral"] {
   &::part(base) {
     border-color: var(--wa-form-control-border-color);
   }
+}
+
+/* Add caret rotation to wa-dropdown trigger */
+wa-button {
+  --caret-rotation: 0deg;
+
+  &::part(caret) {
+    transform: rotate(var(--caret-rotation));
+    @media (prefers-reduced-motion: no-preference) {
+      transition: transform var(--wa-transition-fast) var(--wa-transition-easing);
+    }
+  }
+}
+wa-dropdown[open] wa-button[slot="trigger"]::part(caret) {
+  transform: rotate(calc(var(--caret-rotation) - 180deg));
+}
+wa-dropdown[placement^="left"] wa-button[slot="trigger"] {
+  --caret-rotation: 90deg;
+}
+wa-dropdown[placement^="top"] wa-button[slot="trigger"] {
+  --caret-rotation: 180deg;
+}
+wa-dropdown[placement^="right"] wa-button[slot="trigger"] {
+  --caret-rotation: 270deg;
 }
 
 /* Adapt wa-icon for Lucide icons (square, not 1.25x1.0 like Font Awesome) */

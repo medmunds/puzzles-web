@@ -1,6 +1,5 @@
 import WaButton from "@awesome.me/webawesome/dist/components/button/button.js";
 import WaCheckbox from "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
-import WaDropdown from "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
 import WaRadio from "@awesome.me/webawesome/dist/components/radio/radio.js";
 import WaRadioGroup from "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
@@ -72,51 +71,8 @@ function fixWaScrollerFocusIndication() {
   );
 }
 
-/**
- * Give wa-button a `--caret-rotation` property for default caret rotation
- * (useful for flipping it in drop-up menus). Add rotation effect to the
- * caret when used for an wa-dropdown trigger (like in wa-select's caret).
- */
-function rotateWaButtonCaretWhenExpanded() {
-  WaButton.elementStyles.push(
-    css`
-      :host {
-        --caret-rotation: 0deg;
-      }
-
-      wa-icon[part~="caret"] {
-        transform: rotate(var(--caret-rotation));
-      }
-      
-      @media(prefers-reduced-motion: no-preference) {
-        wa-icon[part~="caret"] {
-          transition: transform var(--wa-transition-fast) var(--wa-transition-easing);
-        }
-        button[aria-expanded="true"] wa-icon[part~="caret"] {
-          transform: rotate(calc(var(--caret-rotation) - 180deg));
-        }
-      }
-    `,
-  );
-}
-
-/**
- * Make wa-dropdown flip its trigger caret when placement suggests "drop-up".
- */
-function flipWaDropdownCaretForTopPlacement() {
-  WaDropdown.elementStyles.push(
-    css`
-      :host([placement*="top"]) slot[name="trigger"]::slotted(wa-button) {
-        --caret-rotation: 180deg;
-      }
-    `,
-  );
-}
-
 export function installWebAwesomeHacks() {
   disableWaChangedInUpdateWarnings();
   fixWaButtonIconWithCaret();
   fixWaScrollerFocusIndication();
-  rotateWaButtonCaretWhenExpanded();
-  flipWaDropdownCaretForTopPlacement();
 }
