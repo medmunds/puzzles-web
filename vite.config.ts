@@ -2,84 +2,12 @@ import * as path from "node:path";
 import license from "rollup-plugin-license";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-import type { RouteHandlerCallback, RouteMatchCallback } from "workbox-core/src/types";
 import { getKnownPuzzleIds, puzzlesMpaRouting } from "./vite-puzzles-routing";
-
-const base = process.env.BASE_URL || "/";
-if (!base.startsWith("/") || !base.endsWith("/")) {
-  throw new Error(`BASE_URL='${base}' must start and end with '/'`);
-}
 
 const puzzleIds = getKnownPuzzleIds();
 
-// Create the runtime caching handler functions as strings with inlined values.
-// This is necessary for inline generateSW workbox configuration in VitePWA below.
-// TODO: Switch to injectManifest and define these in our hand-coded sw.js.
-const createRuntimeCaching = () => {
-  const basePathStr = JSON.stringify(base);
-  const puzzleIdsStr = JSON.stringify(puzzleIds);
-  const urlPattern = new Function(
-    "{ request, url }",
-    `
-      if (request.mode !== "navigate") {
-        return false;
-      }
-      
-      console.log('runtimeCaching.urlPattern:', url.pathname);
-      
-      const basePath = ${basePathStr};
-      const puzzleIds = ${puzzleIdsStr};
-      
-      // Check if it's an index route: /base/ or /base
-      if (url.pathname === basePath || url.pathname === basePath.slice(0, -1)) {
-        return true;
-      }
-      
-      // Check if it's a puzzle route: /base/puzzleId or /base/puzzleId/
-      if (url.pathname.startsWith(basePath)) {
-        const relativePath = url.pathname.slice(basePath.length).replace(/\\/$/, '');
-        return puzzleIds.includes(relativePath);
-      }
-      
-      return false;
-    `,
-  ) as RouteMatchCallback;
-
-  const handler = new Function(
-    "{ url }",
-    `
-      console.log('runtimeCaching.handler:', url.pathname);
-      
-      const basePath = ${basePathStr};
-      const puzzleIds = ${puzzleIdsStr};
-      
-      // Determine which file to serve
-      let file = "index.html";
-      if (url.pathname.startsWith(basePath)) {
-        const relativePath = url.pathname.slice(basePath.length).replace(/\\/$/, '');
-        if (puzzleIds.includes(relativePath)) {
-          file = "puzzle.html";
-        }
-      }
-      
-      return caches.match(file).then(response => response || fetch(file));
-    `,
-  ) as RouteHandlerCallback;
-
-  return [
-    {
-      urlPattern,
-      handler,
-      options: {
-        cacheName: "page-cache",
-      },
-    },
-  ];
-};
-
 export default defineConfig({
   appType: "mpa",
-  base: base,
   build: {
     assetsInlineLimit: 5120, // default 4096; this covers a few icons above that
     rollupOptions: {
@@ -90,6 +18,9 @@ export default defineConfig({
     },
     sourcemap: true,
     target: "es2022",
+  },
+  define: {
+    __PUZZLE_IDS__: puzzleIds,
   },
   plugins: [
     license({
@@ -111,6 +42,13 @@ export default defineConfig({
                   if (match) {
                     noticeText = match[1];
                   }
+                }
+                if (name === "workbox-window") {
+                  // The service worker uses several other workbox-* packages.
+                  // All share the same copyright and license (from their monorepo).
+                  // To avoid repeating this plugin in the VitePWA config,
+                  // use "workbox" to refer to all workbox packages used.
+                  name = "workbox";
                 }
                 const notice = noticeText || licenseText;
                 return {
@@ -140,17 +78,17 @@ export default defineConfig({
       pwaAssets: {
         image: "public/favicon.svg",
       },
-      workbox: {
-        // mode: "development", // see workbox logging in production
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      injectManifest: {
+        // enableWorkboxModulesLogs: true, // see workbox logging in production
         globPatterns: [
           // Include all help files, icons, etc.
           // But include wasm's only for the intended puzzles (skip nullgame, etc.)
           "**/*.{css,html,js,json,png,svg}",
           `assets/@(${puzzleIds.join("|")})*.wasm`,
         ],
-        // Use our MPA routing in the service worker:
-        navigateFallback: null,
-        runtimeCaching: createRuntimeCaching(),
       },
     }),
   ],

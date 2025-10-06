@@ -14,3 +14,5 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+declare const __PUZZLE_IDS__: string[];
