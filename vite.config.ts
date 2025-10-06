@@ -67,7 +67,6 @@ export default defineConfig({
     puzzlesMpaRouting(),
     VitePWA({
       injectRegister: null, // registered in main.ts
-      includeAssets: ["dependencies.json", "favicon.svg", "help/**"],
       manifest: {
         name: process.env.VITE_APP_NAME ?? "Puzzles web app",
         short_name: "Puzzles",
