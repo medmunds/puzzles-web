@@ -113,6 +113,7 @@ async function interceptHrefClick(event: MouseEvent) {
       const puzzleUrl = parsePuzzleUrl(href);
       if (puzzleUrl?.puzzleId) {
         // Navigate to a puzzle (e.g., from catalog-card click)
+        event.preventDefault();
         window.location.href = href;
       } else if (isHelpUrl(href)) {
         event.preventDefault();
