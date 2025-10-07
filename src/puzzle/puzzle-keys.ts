@@ -40,7 +40,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
 
   private renderedParams?: string;
 
-  override async willUpdate() {
+  protected override async willUpdate() {
     // The available keys can vary with changes to puzzle params.
     // (This should really be an effect on this.puzzle?.currentParams,
     // but @lit-labs/signals doesn't have effects yet.)
@@ -55,7 +55,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     this.keyLabels = (await this.puzzle?.requestKeys()) ?? [];
   }
 
-  override render() {
+  protected override render() {
     return html`
       <slot name="before"></slot>
       ${this.renderVirtualKeys()}
@@ -90,7 +90,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     return html`            
       <wa-button
           class=${classMap(classes)}
-          @click=${() => this.puzzle?.processKey(key.button)}
+          @pointerdown=${() => this.puzzle?.processKey(key.button)}
         >${content}</wa-button>
     `;
   };
