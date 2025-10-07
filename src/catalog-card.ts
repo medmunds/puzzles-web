@@ -39,25 +39,43 @@ export class CatalogCard extends LitElement {
   favorite = false;
 
   @state()
+  private icon1x?: string;
+
+  @state()
+  private icon2x?: string;
+
+  @state()
   private iconMissing = false;
 
+  protected override willUpdate(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has("puzzleId")) {
+      const icon1x = new URL(
+        `./assets/icons/${this.puzzleId}-64d8.png`,
+        import.meta.url,
+      ).href;
+      const icon2x = new URL(
+        `./assets/icons/${this.puzzleId}-128d8.png`,
+        import.meta.url,
+      ).href;
+      // Vite's dynamic import generates ".../undefined" if no matching file
+      this.icon1x = icon1x.endsWith("/undefined") ? undefined : icon1x;
+      this.icon2x = icon2x.endsWith("/undefined") ? undefined : icon2x;
+    }
+  }
+
   private renderIcon() {
-    if (this.iconMissing) {
+    if (this.iconMissing || !this.icon1x || !this.icon2x) {
       const iconName = this.unfinished ? "unfinished" : "generic-puzzle";
-      return html`
-        <wa-icon part="icon" auto-width name=${iconName}></wa-icon>
-      `;
+      return html`<wa-icon part="icon" auto-width name=${iconName}></wa-icon>`;
     }
 
-    const icon1x = new URL(`./assets/icons/${this.puzzleId}-64d8.png`, import.meta.url)
-      .href;
-    const icon2x = new URL(`./assets/icons/${this.puzzleId}-128d8.png`, import.meta.url)
-      .href;
-    const srcset = `${icon1x}, ${icon2x} 2x`;
     return html`
-      <img part="icon" srcset=${srcset} src=${icon2x}
-           role="presentation" alt=${`Preview image of ${this.name}`}
-           @error=${this.handleIconError}
+      <img 
+          part="icon" 
+          srcset="${this.icon1x}, ${this.icon2x} 2x" 
+          src=${this.icon2x}
+          alt=""
+          @error=${this.handleIconError}
       >`;
   }
 
