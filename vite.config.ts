@@ -21,6 +21,9 @@ export default defineConfig({
   },
   define: {
     __PUZZLE_IDS__: puzzleIds,
+    "import.meta.env.VITE_ANALYTICS_BLOCK": JSON.stringify(
+      process.env.VITE_ANALYTICS_BLOCK ?? "",
+    ),
   },
   plugins: [
     license({
