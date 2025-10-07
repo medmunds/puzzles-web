@@ -381,13 +381,13 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
       }
 
       dialog.show {
-        animation: fade-in var(--show-duration) ease forwards;
+        animation: scale-in var(--show-duration) ease forwards;
         &::backdrop {
           animation: fade-in var(--show-duration) ease forwards;
         }
       }
       dialog.hide {
-        animation: fade-in var(--hide-duration) ease reverse forwards;
+        animation: scale-in var(--hide-duration) ease reverse forwards;
         &::backdrop {
           animation: fade-in var(--hide-duration) ease reverse forwards;
         }
@@ -396,10 +396,10 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
       @media (prefers-reduced-motion: no-preference) {
         /* Longer, flashier animation on the dialog itself */
         dialog.show {
-          animation: zoom-in-down 500ms forwards;
+          animation: swoop-in 400ms ease-in-out forwards;
         }
         dialog.hide {
-          animation: zoom-out-up 250ms forwards;
+          animation: drop-out var(--hide-duration) ease forwards;
         }
       }
       
@@ -411,36 +411,56 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
           opacity: 1;
         }
       }
-
-      @keyframes zoom-in-down {
-        /* animate.css zoomInDown, adjusted to use vh */
+      
+      @keyframes scale-in {
         from {
           opacity: 0;
-          transform: scale3d(0.1, 0.1, 0.1) translate3d(0, -300vh, 0);
-          animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+          scale: 0.8;
         }
-
-        60% {
-          opacity: 1;
-          transform: scale3d(0.475, 0.475, 0.475) translate3d(0, 60px, 0);
-          animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1);
-        }
-      }
-      @keyframes zoom-out-up {
-        /* animate.css zoomOutUp, adjusted to use vh */
-        40% {
-          opacity: 1;
-          transform: scale3d(0.475, 0.475, 0.475) translate3d(0, 60px, 0);
-          animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
-        }
-
         to {
-          opacity: 0;
-          transform: scale3d(0.1, 0.1, 0.1) translate3d(0, -200vh, 0);
-          animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1);
+          opacity: 1;
+          scale: 1;
         }
       }
 
+      @keyframes swoop-in {
+        from {
+          opacity: 0;
+          scale: 0.1;
+          translate: 0 calc(-50vh + 50%);
+        }
+        40% {
+          translate: 0 calc(-50vh + 50% - var(--wa-space-xl));
+        }
+        70% {
+          translate: 0 var(--wa-space-l);
+          scale: 1;
+        }
+        85% {
+          opacity: 1;
+          scale: 1.1;
+          translate: 0 0;
+        }
+        to {
+          scale: 1;
+        }
+      }
+      
+      @keyframes drop-out {
+        from {
+          scale: 1;
+          translate: 0 0;
+        }
+        20% {
+          opacity: 1;
+          translate: 0 calc(-1 * var(--wa-space-xl));
+        }
+        to {
+          scale: 0.2;
+          opacity: 0;
+          translate: 0 50%;
+        }
+      }
     `,
   ];
 }
