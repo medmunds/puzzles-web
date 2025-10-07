@@ -20,7 +20,8 @@
   -webkit-font-smoothing: antialiased;
 }
 
-@media (any-pointer: coarse) {
+@media (any-pointer: coarse) and (min-width: 400px) and (min-height: 400px) {
+  /* Larger targets on touch devices (when there's room) */
   :root {
     font-size: 120%;
   }
