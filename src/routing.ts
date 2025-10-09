@@ -1,6 +1,6 @@
-import { puzzleDataMap } from "./puzzle/catalog.ts";
+import { puzzleIds } from "./puzzle/catalog.ts";
 
-export const validPuzzleIds = new Set(Object.keys(puzzleDataMap));
+export const validPuzzleIds = new Set(puzzleIds);
 
 export const baseUrl = new URL(import.meta.env.BASE_URL, window.location.href);
 

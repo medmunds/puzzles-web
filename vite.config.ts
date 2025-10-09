@@ -2,9 +2,7 @@ import * as path from "node:path";
 import license from "rollup-plugin-license";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-import { getKnownPuzzleIds, puzzlesMpaRouting } from "./vite-puzzles-routing";
-
-const puzzleIds = getKnownPuzzleIds();
+import { puzzleIds, puzzlesMpaRouting } from "./vite-puzzles-routing";
 
 export default defineConfig({
   appType: "mpa",
@@ -20,7 +18,6 @@ export default defineConfig({
     target: "es2022",
   },
   define: {
-    __PUZZLE_IDS__: puzzleIds,
     "import.meta.env.VITE_ANALYTICS_BLOCK": JSON.stringify(
       process.env.VITE_ANALYTICS_BLOCK ?? "",
     ),

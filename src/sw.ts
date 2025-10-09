@@ -2,6 +2,7 @@
 import type { RouteHandlerCallback, RouteMatchCallback } from "workbox-core/src/types";
 import { cleanupOutdatedCaches, precacheAndRoute } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
+import { puzzleIds } from "./assets/puzzles/catalog.json";
 
 declare let self: ServiceWorkerGlobalScope;
 
@@ -30,7 +31,6 @@ precacheAndRoute(self.__WB_MANIFEST);
 //
 
 const basePath = import.meta.env.BASE_URL;
-const puzzleIds = __PUZZLE_IDS__;
 
 const mpaFallbackRouteMatcher: RouteMatchCallback = ({ request, url }) => {
   if (request.mode !== "navigate") {

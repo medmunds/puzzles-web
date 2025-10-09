@@ -3,9 +3,8 @@
  */
 
 import assert from "node:assert";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import type { Connect, Plugin } from "vite";
+import { puzzleIds } from "./src/assets/puzzles/catalog.json";
 
 declare global {
   // RegExp.escape available in node v24
@@ -21,24 +20,7 @@ function validateBase(base: string) {
   }
 }
 
-/**
- * Returns a list of known puzzleIds from the generated catalog.json data.
- * catalogFile must point to catalog.json relative to projectRoot.
- */
-export const getKnownPuzzleIds = (
-  options: { catalogFile?: string; projectRoot?: string } = {},
-): string[] => {
-  const { catalogFile = "src/assets/puzzles/catalog.json", projectRoot = "." } =
-    options;
-  try {
-    const catalogPath = resolve(projectRoot, catalogFile);
-    const catalogContent = readFileSync(catalogPath, "utf-8");
-    const catalog = JSON.parse(catalogContent);
-    return Object.keys(catalog.puzzles);
-  } catch (error) {
-    throw new Error(`Failed to load puzzle IDs from ${catalogFile}: ${error}`);
-  }
-};
+export { puzzleIds } from "./src/assets/puzzles/catalog.json";
 
 /**
  * Returns a RegExp that exactly matches /:puzzleId or /:puzzleId/,
@@ -66,12 +48,8 @@ export const getIndexRouteRe = (base: string = "/") => {
  * (for known puzzle ids). Use with appType: "mpa". Puzzle ids are read
  * (at startup) from catalogFile.
  */
-export const puzzlesMpaRouting = (catalogFile?: string): Plugin => {
-  const createMiddleware = (
-    projectRoot?: string,
-    base?: string,
-  ): Connect.NextHandleFunction => {
-    const puzzleIds = getKnownPuzzleIds({ catalogFile, projectRoot });
+export const puzzlesMpaRouting = (): Plugin => {
+  const createMiddleware = (base?: string): Connect.NextHandleFunction => {
     const puzzleRouteRe = getPuzzleRouteRe(puzzleIds, base);
     const indexRouteRe = getIndexRouteRe(base);
 
@@ -94,14 +72,14 @@ export const puzzlesMpaRouting = (catalogFile?: string): Plugin => {
         server.config.appType === "mpa",
         "puzzlesSpaRouting plugin requires appType 'mpa'",
       );
-      server.middlewares.use(createMiddleware(server.config.root, server.config.base));
+      server.middlewares.use(createMiddleware(server.config.base));
     },
     configurePreviewServer(server) {
       assert(
         server.config.appType === "mpa",
         "puzzlesSpaRouting plugin requires appType 'mpa'",
       );
-      server.middlewares.use(createMiddleware(server.config.root, server.config.base));
+      server.middlewares.use(createMiddleware(server.config.base));
     },
   };
 };

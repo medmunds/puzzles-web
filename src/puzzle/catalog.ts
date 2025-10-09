@@ -1,4 +1,6 @@
-import catalog from "../assets/puzzles/catalog.json";
+import { puzzles } from "../assets/puzzles/catalog.json";
+
+export { puzzleIds, version } from "../assets/puzzles/catalog.json";
 
 export interface PuzzleDataMap {
   [id: string]: PuzzleData;
@@ -11,5 +13,4 @@ export interface PuzzleData {
   unfinished?: boolean;
 }
 
-export const version: string = catalog.version;
-export const puzzleDataMap: Readonly<PuzzleDataMap> = catalog.puzzles;
+export const puzzleDataMap: Readonly<PuzzleDataMap> = puzzles;

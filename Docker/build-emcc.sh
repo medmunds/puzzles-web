@@ -91,14 +91,16 @@ jq --arg version "$VERSION" -R -s '
     description: .[3],
     objective: .[4],
     unfinished: (.[1] == "unfinished")
-  }) | map({(.id): ({
-    name: .name,
-    description: .description,
-    objective: .objective,
-    unfinished: .unfinished
-  } | if .unfinished then . else del(.unfinished) end)
-  }) | add | {
-    puzzles: .,
+  }) as $puzzles_data
+  | {
+    puzzleIds: ($puzzles_data | map(.id)),
+    puzzles: ($puzzles_data | map({(.id): ({
+      name: .name,
+      description: .description,
+      objective: .objective,
+      unfinished: .unfinished
+    } | if .unfinished then . else del(.unfinished) end)
+    }) | add),
     version: $version
   }
 ' "${BUILD_DIR}/gamedesc.txt" > "${BUILD_DIR}/catalog.json"
