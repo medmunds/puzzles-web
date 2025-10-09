@@ -396,10 +396,10 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
       @media (prefers-reduced-motion: no-preference) {
         /* Longer, flashier animation on the dialog itself */
         dialog.show {
-          animation: swoop-in 400ms ease-in-out forwards;
+          animation: swoop-in 500ms ease forwards;
         }
         dialog.hide {
-          animation: drop-out var(--hide-duration) ease forwards;
+          animation: drop-out 300ms ease forwards;
         }
       }
       
@@ -426,19 +426,19 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
       @keyframes swoop-in {
         from {
           opacity: 0;
-          scale: 0.1;
+          scale: 0.2;
           translate: 0 calc(-50vh + 50%);
         }
-        40% {
-          translate: 0 calc(-50vh + 50% - var(--wa-space-xl));
+        30% {
+          translate: 0 calc(-50vh + 50% - var(--wa-space-l));
         }
         70% {
-          translate: 0 var(--wa-space-l);
+          translate: 0 var(--wa-space-m);
           scale: 1;
         }
         85% {
           opacity: 1;
-          scale: 1.1;
+          scale: 1.03;
           translate: 0 0;
         }
         to {
@@ -448,15 +448,16 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
       
       @keyframes drop-out {
         from {
+          opacity: 1;
           scale: 1;
           translate: 0 0;
         }
-        20% {
+        30% {
           opacity: 1;
           translate: 0 calc(-1 * var(--wa-space-xl));
         }
         to {
-          scale: 0.2;
+          scale: 0.4;
           opacity: 0;
           translate: 0 50%;
         }
