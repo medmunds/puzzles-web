@@ -10,6 +10,7 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome check --write .",
+    "build-server": "tsc --project server && esbuild server/cfworker.ts --bundle --outfile=dist-server/cfworker.js --format=esm",
     "prepare": "husky"
   },
   "dependencies": {

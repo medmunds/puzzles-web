@@ -11,6 +11,7 @@ node_modules/
 /build/
 /dev-dist/
 /dist/
+/dist-server/
 /dist-ssr/
 *.local
 
