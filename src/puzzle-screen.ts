@@ -1,3 +1,4 @@
+import { ResizeController } from "@lit-labs/observers/resize-controller.js";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
@@ -44,6 +45,12 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   @property({ type: String, attribute: "params" })
   params?: string;
 
+  @property({ type: String, reflect: true })
+  size: "large" | "medium" | "small" = "large";
+
+  @property({ type: String, reflect: true })
+  orientation: "horizontal" | "vertical" = "vertical";
+
   @state()
   private puzzleData?: PuzzleData;
 
@@ -62,6 +69,33 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   get puzzle(): Puzzle | undefined {
     return this.puzzleContext?.puzzle;
   }
+
+  private get compactButtons(): boolean {
+    return this.size !== "large";
+  }
+
+  private resize = () => {
+    if (this.isConnected) {
+      // Update this.layout from calculations in css
+      const styles = window.getComputedStyle(this);
+      const orientation = styles.getPropertyValue("--app-orientation");
+      const size = styles.getPropertyValue("--app-size");
+      if (!import.meta.env.PROD) {
+        if (orientation !== "horizontal" && orientation !== "vertical") {
+          throw new Error(`Unknown --app-orientation='${orientation}'`);
+        }
+        if (size !== "large" && size !== "medium" && size !== "small") {
+          throw new Error(`Unknown --app-size='${size}'`);
+        }
+      }
+      this.orientation = orientation as PuzzleScreen["orientation"];
+      this.size = size as PuzzleScreen["size"];
+    }
+  };
+
+  protected resizeController = new ResizeController(this, {
+    callback: this.resize,
+  });
 
   /** If the current game has been saved or loaded, its filename. */
   savedFilename?: string;
@@ -84,6 +118,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
   override connectedCallback() {
     super.connectedCallback();
+    this.resize();
     const { puzzleAutoSaveFilename, puzzleAutoSavePuzzleId } =
       window.history.state ?? {};
     if (
@@ -140,17 +175,25 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         <main>
           <header>
             ${this.renderGameMenu()}
-            <puzzle-preset-menu
-                trigger-appearance="filled" trigger-variant="brand"
+            <puzzle-preset-menu 
+                appearance="plain" 
+                variant="brand"
+                placement=${this.orientation === "vertical" ? "bottom" : "right"}
+                ?without-icon=${this.size === "small" && this.orientation === "vertical"}
+                ?without-label=${this.orientation === "horizontal"}
             ></puzzle-preset-menu>
             <wa-button
-                appearance="filled" variant="brand"
+                appearance="plain" variant="brand"
                 href=${helpUrl(this.puzzleId).href} 
                 @click=${this.showHelp}
-            >
-              <wa-icon slot="start" name="help"></wa-icon>
-              Help
-            </wa-button>
+            >${
+              this.compactButtons
+                ? html`<wa-icon name="help" label="Help"></wa-icon>`
+                : html`
+                  <wa-icon name="help" slot="start"></wa-icon>
+                  Help
+                `
+            }</wa-button>
           </header>
 
           <puzzle-view-interactive 
@@ -212,17 +255,27 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
   private renderGameMenu(): TemplateResult {
     const iconName = this.puzzleData?.unfinished ? "unfinished" : "game";
+    const label = this.puzzleData?.name ?? "Game";
     return html`
-      <wa-dropdown @wa-select=${this.handleGameMenuCommand}>
+      <wa-dropdown
+          placement=${this.orientation === "vertical" ? "bottom" : "right"}
+          @wa-select=${this.handleGameMenuCommand}
+      >
         <wa-button 
             slot="trigger" 
             class="game-menu-trigger" 
-            appearance="filled" variant="brand" 
+            appearance="plain" variant="brand"
             with-caret
-        >
-          <wa-icon slot="start" name=${iconName}></wa-icon>
-          ${this.puzzleData?.name ?? "Game"}
-        </wa-button>
+        >${
+          this.orientation === "horizontal"
+            ? html`<wa-icon name=${iconName} label=${label}></wa-icon>`
+            : this.size === "small"
+              ? label
+              : html`
+                <wa-icon name=${iconName} slot="start"></wa-icon>
+                ${label}
+              `
+        }</wa-button>
         <wa-dropdown-item value="new">
           <wa-icon slot="icon" name="new-game"></wa-icon>
           New game
@@ -626,10 +679,10 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     css`
       :host {
         display: block;
+        box-sizing: border-box;
         width: 100%;
         height: 100%;
-        container-type: size;
-        
+
         --puzzle-theme-color: var(--wa-color-brand-fill-normal);
       }
       
@@ -652,39 +705,71 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   
         display: flex;
         justify-content: flex-start;
-        gap: var(--wa-space-s);
   
         > *:last-child {
-          margin-inline-start: auto;
+          :host([orientation="vertical"]) & {
+            margin-inline-start: auto;
+          }
+          :host([orientation="horizontal"]) & {
+            margin-block-start: auto;
+          }
         }
       }
   
       header {
         align-items: baseline;
-        padding: var(--wa-space-xs);
+        padding-block: var(--wa-space-xs);
+        /* app-padding less button padding */
+        padding-inline: calc(var(--app-padding) - min(var(--wa-form-control-padding-inline), var(--app-padding)));
+        gap: 0; /* toolbar buttons all have lots of padding built in */
         background-color: var(--puzzle-theme-color);
-        
-        wa-button[appearance="filled"]::part(base),
+
+        .game-menu-trigger {
+          /* Larger label and icon, but not larger overall base height */
+          &::part(label), &::part(start) {
+            font-size: var(--app-title-font-size);
+          }
+        }
+
+        puzzle-preset-menu {
+          flex: 0 1 auto;
+          min-width: 1rem;
+        }
+
+        wa-button::part(base),
         puzzle-preset-menu::part(trigger-base) {
           color: var(--wa-color-text-normal);
         }
       }
-  
+
       puzzle-view-interactive {
         flex: 1 1 auto;
         min-height: 5rem; /* allows flexing */
-        margin-block: var(--wa-space-m);
-        margin-inline: var(--wa-space-l);
+        min-width: 5rem;
+        margin-block: var(--app-spacing);
+        margin-inline: var(--app-padding);
   
-        --spacing: var(--wa-space-m);
+        --spacing: var(--app-spacing);
         --background-color: var(--wa-color-surface-default);
         --border-radius: var(--wa-form-control-border-radius);
+        
+        /* In small layouts, fill the cross axis */
+        :host([size="small"]) & {
+          :host([orientation="vertical"]) & {
+            margin-inline: 0;
+            min-width: 100%;
+          }
+          :host([orientation="horizontal"]) & {
+            margin-block: 0;
+            min-height: 100%;
+          }
+        }
       }
       
       puzzle-end-notification {
         &::part(dialog) {
           /* Position at bottom, aligned with puzzle controls */
-          margin-block-end: var(--wa-space-l);
+          margin-block-end: var(--app-padding);
         }
         
         :has(share-dialog[open]) & {
@@ -702,37 +787,36 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   
       footer {
         align-items: end;
-        padding-inline: var(--wa-space-l);
-        padding-block-end: var(--wa-space-l);
+        padding: var(--app-padding);
+        gap: var(--app-spacing);
+        
+        :host([orientation="vertical"]) & {
+          padding-block-start: 0;
+        }
+        :host([orientation="horizontal"]) & {
+          padding-inline-start: 0;
+        }
+
+        :host([size="small"]) & {
+          /* Stack the controls vertically on small screens */
+          flex-direction: column;
+        }
       }
         
-      @container (min-width: 40rem) {
-        .game-menu-trigger {
-          font-size: var(--wa-font-size-l);
+      :host([orientation="horizontal"]) {
+        main {
+          flex-direction: row;
         }
-        puzzle-view-interactive {
-          margin-block: var(--wa-space-l);
-          margin-inline: var(--wa-space-xl);
-          --spacing: var(--wa-space-l);
+        header, footer {
+          flex-direction: column;
+          align-items: end;
         }
-        puzzle-end-notification::part(dialog) {
-          margin-block-end: var(--wa-space-xl);
+        puzzle-keys::part(group) {
+          flex-direction: column;
         }
-        footer {
-          padding-inline: var(--wa-space-xl);
-          padding-block-end: var(--wa-space-xl);
+        header, footer {
+          max-width: fit-content;
         }
-      }
-      @container (max-width: 25rem) {
-        puzzle-view-interactive {
-          margin-inline: 0;
-          min-width: 100%;
-        }
-      }
-  
-      puzzle-preset-menu {
-        flex: 0 1 auto;
-        min-width: 5rem;
       }
   
       wa-skeleton {

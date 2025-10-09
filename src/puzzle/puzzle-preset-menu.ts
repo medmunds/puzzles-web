@@ -31,11 +31,20 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   @property({ type: String })
   label = "Type";
 
-  @property({ type: String, attribute: "trigger-appearance" })
-  triggerAppearance?: WaButton["appearance"];
+  @property({ type: String })
+  appearance?: WaButton["appearance"];
 
-  @property({ type: String, attribute: "trigger-variant" })
-  triggerVariant?: WaButton["variant"];
+  @property({ type: String })
+  variant?: WaButton["variant"];
+
+  @property({ type: Boolean, attribute: "without-icon" })
+  withoutIcon = false;
+
+  @property({ type: Boolean, attribute: "without-label" })
+  withoutLabel = false;
+
+  @property({ type: String })
+  placement: HTMLElementTagNameMap["wa-dropdown"]["placement"] = "bottom";
 
   // Game presets, with submenus flattened
   @state()
@@ -74,12 +83,9 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
   }
 
   override render(): TemplateResult {
-    const labelContentClasses = classMap({
-      "dropdown-label-content": true,
-      "show-value": this.puzzle !== undefined && !this.open,
-    });
     return html`
       <wa-dropdown 
+          placement=${this.placement}
           @wa-show=${this.handleDropdownShow}
           @wa-after-show=${this.handleDropdownAfterShow}
           @wa-hide=${this.handleDropdownHide}
@@ -89,21 +95,42 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
             slot="trigger"
             part="trigger"
             exportparts="base:trigger-base"
-            appearance=${this.triggerAppearance ?? nothing}
-            variant=${this.triggerVariant ?? nothing}
+            appearance=${this.appearance ?? nothing}
+            variant=${this.variant ?? nothing}
             with-caret
-        >
-          <wa-icon slot="start" name="puzzle-type"></wa-icon>
-          <div class="dropdown-label">
-            <div class=${labelContentClasses}>
-              ${this.label}<br>
-              ${this.currentGameTypeLabel}
-            </div>
-          </div>
-        </wa-button>
+        >${this.renderTriggerContent()}</wa-button>
         ${this.renderPresetMenuItems()}
         <slot></slot>
       </wa-dropdown>
+    `;
+  }
+
+  private renderTriggerContent() {
+    if (this.withoutLabel) {
+      return html`
+        <wa-icon 
+            name="puzzle-type" 
+            label="${this.label}: ${this.currentGameTypeLabel}"
+        ></wa-icon>
+      `;
+    }
+
+    const labelContentClasses = classMap({
+      "dropdown-label-content": true,
+      "show-value": this.puzzle !== undefined && !this.open,
+    });
+    return html`
+      ${
+        this.withoutIcon
+          ? nothing
+          : html`<wa-icon slot="start" name="puzzle-type"></wa-icon>`
+      }
+      <div class="dropdown-label">
+        <div class=${labelContentClasses}>
+          ${this.label}<br>
+          ${this.currentGameTypeLabel}
+        </div>
+      </div>
     `;
   }
 

@@ -76,7 +76,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     const keyGroups = [this.keyLabels.slice(0, split), this.keyLabels.slice(split)];
     return keyGroups.map(
       (keys) => html`
-          <div class="group">${keys.map(this.renderVirtualKey)}</div>`,
+          <div part="group">${keys.map(this.renderVirtualKey)}</div>`,
     );
   }
 
@@ -106,7 +106,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
         gap: var(--gap);
       }
   
-      .group {
+      [part~="group"] {
         display: flex;
         gap: var(--gap);
       }
