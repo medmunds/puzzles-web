@@ -1,0 +1,7 @@
+# Cloudflare Pages deployment
+
+# Production project name is set via --project-name flag in CI/CD.
+# This placeholder is used for local `wrangler pages dev`:
+name = "puzzles-local"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"

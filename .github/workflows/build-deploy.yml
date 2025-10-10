@@ -172,12 +172,11 @@ jobs:
 
       - name: Build app
         env:
-          BASE_URL: ${{ vars.S3_BUCKET_PREFIX == '' && '/' || format('/{0}/', vars.S3_BUCKET_PREFIX) }}
           VITE_ANALYTICS_BLOCK: ${{ vars.VITE_ANALYTICS_BLOCK }}
           VITE_APP_NAME: ${{ vars.APP_NAME }}
           VITE_GIT_SHA: ${{ github.sha }}
           VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
-        run: npm run build -- --base="${BASE_URL}"
+        run: npm run build
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
@@ -186,29 +185,37 @@ jobs:
           path: dist
 
   deploy:
-    name: Deploy to S3
+    name: Deploy to Cloudflare Pages
     needs: [build-app]
     runs-on: ubuntu-latest
     environment: production
     permissions:
+      contents: read
       actions: read  # artifacts
-      id-token: write  # configure-aws-credentials
+      deployments: write
     steps:
+      # Source and generated puzzles assets (catalog.json) are required
+      # for wrangler to bundle the routing worker function.
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Download puzzles artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: puzzles
+          path: src/assets/puzzles
+
       - name: Download dist artifact
         uses: actions/download-artifact@v5
         with:
           name: dist
           path: dist
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
         with:
-          role-to-assume: ${{ secrets.AWS_PUBLISHING_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
-
-      - name: Deploy to S3
-        env:
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          S3_BUCKET_PREFIX: ${{ vars.S3_BUCKET_PREFIX  }}
-        run: |
-          aws s3 sync dist/ "s3://${S3_BUCKET_NAME}/${S3_BUCKET_PREFIX}/"
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PROJECT_NAME }}

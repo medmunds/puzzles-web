@@ -7,10 +7,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "preview:pages": "wrangler pages dev dist",
+    "generate-types": "wrangler types --cwd functions",
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome check --write .",
-    "build-server": "tsc --project server && esbuild server/cfworker.ts --bundle --outfile=dist-server/cfworker.js --format=esm",
     "prepare": "husky"
   },
   "dependencies": {
@@ -38,7 +39,8 @@
     "vite-plugin-pwa": "^1.0.3",
     "workbox-core": "^7.3.0",
     "workbox-precaching": "^7.3.0",
-    "workbox-routing": "^7.3.0"
+    "workbox-routing": "^7.3.0",
+    "wrangler": "^4.42.2"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx,json,css,html}": [
