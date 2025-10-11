@@ -5,15 +5,15 @@
  *
  * Pages already handles these cases (for existing dist/ static assets):
  *   - / serves dist/index.html
- *   - /index and /index.html 307 redirect to /
+ *   - /index and /index.html 308 redirect to /
  *   - /help/blackbox serves dist/help/blackbox.html
- *   - /help/blackbox/ and /help/blackbox.html 307 redirect to /help/blackbox
+ *   - /help/blackbox/ and /help/blackbox.html 308 redirect to /help/blackbox
  *   - /help/ serves dist/help/index.html
- *   - /help and /help/index and /help/index.html 307 redirect to /help/
+ *   - /help and /help/index and /help/index.html 308 redirect to /help/
  *
  * This function implements:
  *   - /<puzzleId> serves dist/puzzle.html for known puzzle ids
- *   - /<puzzleId>/ and /<puzzleId>.html 307 redirect to /<puzzleId>
+ *   - /<puzzleId>/ and /<puzzleId>.html 308 redirect to /<puzzleId>
  *
  * Notes:
  *
@@ -22,7 +22,7 @@
  *
  * 2. Our service worker precaching will fetch /puzzle.html?__WB_REVISION=<cachebuster>
  *    (and /index.html?__WB_REVISION, and similar for all the help files).
- *    Pages will 307 redirect those to strip .html, but the desired content
+ *    Pages will 308 redirect those to strip .html, but the desired content
  *    should still end up in the cache via the redirect.
  */
 
@@ -42,7 +42,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       if (url.pathname !== canonicalPath) {
         const redirectUrl = new URL(canonicalPath, url);
         redirectUrl.search = url.search;
-        return Response.redirect(redirectUrl.toString(), 307);
+        return Response.redirect(redirectUrl.toString(), 308);
       }
       return context.env.ASSETS.fetch(new URL("/puzzle.html", url.origin));
     }
