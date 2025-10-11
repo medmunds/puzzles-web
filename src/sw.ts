@@ -1,6 +1,10 @@
 /// <reference lib="webworker" />
 import type { RouteHandlerCallback, RouteMatchCallback } from "workbox-core/src/types";
-import { cleanupOutdatedCaches, precacheAndRoute } from "workbox-precaching";
+import {
+  cleanupOutdatedCaches,
+  matchPrecache,
+  precacheAndRoute,
+} from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
 import { puzzleIds } from "./assets/puzzles/catalog.json";
 
@@ -52,22 +56,23 @@ const mpaFallbackRouteMatcher: RouteMatchCallback = ({ request, url }) => {
 };
 
 const mpaFallbackRouteHandler: RouteHandlerCallback = async ({ url }) => {
-  // Determine which file to serve
-  let file = "index.html";
+  // Determine which precached file to serve (key is __WB_MANIFEST entry)
+  let pathname = "index.html";
   if (url.pathname.startsWith(basePath)) {
     const relativePath = url.pathname.slice(basePath.length).replace(/\/$/, "");
     if (puzzleIds.includes(relativePath)) {
-      file = "puzzle.html";
+      pathname = "puzzle.html";
     }
   }
 
-  const cache = await caches.open("page-cache");
-  const cachedResponse = await cache.match(file);
-  if (cachedResponse) {
-    return cachedResponse;
+  // Serve from Workbox’s precache (handles cleanUrls and revision params)
+  const precached = await matchPrecache(pathname);
+  if (precached) {
+    return precached;
   }
 
-  return fetch(file);
+  // Fallback to network; follow redirects so we don’t return a 30x to a navigation
+  return fetch(new Request(pathname, { redirect: "follow" }));
 };
 
 registerRoute(mpaFallbackRouteMatcher, mpaFallbackRouteHandler);
