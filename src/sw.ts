@@ -28,7 +28,10 @@ self.addEventListener("message", async (event) => {
 //
 
 cleanupOutdatedCaches();
-precacheAndRoute(self.__WB_MANIFEST);
+precacheAndRoute(self.__WB_MANIFEST, {
+  // All URL parameters are handled locally
+  ignoreURLParametersMatching: [/.*/],
+});
 
 //
 // MPA routing
