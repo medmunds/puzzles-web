@@ -21,6 +21,9 @@ export default defineConfig({
     "import.meta.env.VITE_ANALYTICS_BLOCK": JSON.stringify(
       process.env.VITE_ANALYTICS_BLOCK ?? "",
     ),
+    "import.meta.env.VITE_CANONICAL_BASE_URL": JSON.stringify(
+      process.env.VITE_CANONICAL_BASE_URL ?? "",
+    ),
   },
   plugins: [
     license({

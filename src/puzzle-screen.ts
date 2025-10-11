@@ -3,11 +3,15 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
-import { when } from "lit/directives/when.js";
 import { type PuzzleData, puzzleDataMap } from "./puzzle/catalog.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
-import { helpUrl, indexPageUrl, navigateToIndexPage } from "./routing.ts";
+import {
+  canonicalPuzzlePageUrl,
+  helpUrl,
+  indexPageUrl,
+  navigateToIndexPage,
+} from "./routing.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { cssWATweaks } from "./utils/css.ts";
@@ -149,6 +153,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       throw new Error("PuzzleScreen.render without puzzleData");
     }
 
+    const canonicalUrl = canonicalPuzzlePageUrl(this.puzzleId);
     const iconUrl = new URL(`./assets/icons/${this.puzzleId}-64d8.png`, import.meta.url)
       .href;
 
@@ -168,7 +173,8 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           <meta name="application-name" content="${this.puzzleData.name}">
           <meta name="application-title" content="${this.puzzleData.name}">
           <meta name="description" content="${this.puzzleData.description}">
-          ${when(this.themeColor, () => html`<meta name="theme-color" content=${this.themeColor}>`)}
+          ${this.themeColor ? html`<meta name="theme-color" content=${this.themeColor}>` : nothing}
+          ${canonicalUrl ? html`<link rel="canonical" href="${canonicalUrl}">` : nothing}
           <link rel="icon" href=${iconUrl}>
         </head-matter>
         
@@ -284,16 +290,16 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           <wa-icon slot="icon" name="restart-game"></wa-icon>
           Restart game
         </wa-dropdown-item>
-        ${when(
-          this.puzzle?.canSolve,
-          () =>
-            html`
-                  <wa-dropdown-item value="solve" ?disabled=${this.puzzle?.status === "solved"}>
-                    <wa-icon slot="icon" name="show-solution"></wa-icon>
-                    Solve
-                  </wa-dropdown-item>
-                `,
-        )}
+        ${
+          this.puzzle?.canSolve
+            ? html`
+              <wa-dropdown-item value="solve" ?disabled=${this.puzzle?.status === "solved"}>
+                <wa-icon slot="icon" name="show-solution"></wa-icon>
+                Solve
+              </wa-dropdown-item>
+              `
+            : nothing
+        }
         <wa-divider></wa-divider>
         <wa-dropdown-item value="share">
           <wa-icon slot="icon" name="share"></wa-icon>
