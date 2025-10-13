@@ -59,4 +59,4 @@ import "./icons";
 // Install PWA service worker
 import { pwaManager } from "./utils/pwa.ts";
 
-pwaManager.registerSW();
+await pwaManager.registerSW();

@@ -212,21 +212,21 @@ export class AboutDialog extends SignalWatcher(LitElement) {
       case UpdateStatus.UpToDate:
         return html`
           Up to date 
-          (<a href="#" @click=${this.checkForUpdate}>check again</a>)
+          (<a href="#" @click=${this.handleCheckForUpdate}>check again</a>)
         `;
       case UpdateStatus.Checking:
         return html`<wa-spinner></wa-spinner> Checking for update&hellip;`;
       case UpdateStatus.Available:
         return html`
           Update available: 
-          <a href="#" @click=${this.installUpdate}>install now</a>
+          <a href="#" @click=${this.handleInstallUpdate}>install now</a>
         `;
       case UpdateStatus.Installing:
         return html`<wa-spinner></wa-spinner> Installing update&hellip;`;
       case UpdateStatus.Error:
         return html`
           <wa-icon name="error"></wa-icon> Update error
-          (<a href="#" @click=${this.reloadApp}>reload app</a>)
+          (<a href="#" @click=${this.handleReloadApp}>reload app</a>)
         `;
     }
   }
@@ -236,19 +236,29 @@ export class AboutDialog extends SignalWatcher(LitElement) {
     // (The wa-details elements also emit wa-show, and we don't want to check
     // for updates when those are expanded.)
     if (event.target instanceof HTMLElement && event.target.localName === "wa-dialog") {
-      await this.checkForUpdate();
+      const status = pwaManager.updateStatus;
+      if (
+        status !== UpdateStatus.Available &&
+        status !== UpdateStatus.Installing &&
+        status !== UpdateStatus.Checking
+      ) {
+        await pwaManager.checkForUpdate();
+      }
     }
   }
 
-  private async checkForUpdate() {
+  private async handleCheckForUpdate(event: UIEvent) {
+    event.preventDefault();
     await pwaManager.checkForUpdate();
   }
 
-  private async installUpdate() {
-    await pwaManager.installUpdate();
+  private handleInstallUpdate(event: UIEvent) {
+    event.preventDefault();
+    pwaManager.installUpdate();
   }
 
-  private reloadApp() {
+  private handleReloadApp(event: UIEvent) {
+    event.preventDefault();
     window.location.reload();
   }
 
