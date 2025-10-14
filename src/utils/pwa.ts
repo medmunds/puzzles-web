@@ -79,7 +79,6 @@ class PWAManager {
     this.wb = new Workbox(`${base}sw.js`, { scope: base });
 
     this.wb.addEventListener("waiting", this.handleSWWaiting);
-    this.wb.addEventListener("activated", this.handleSWActivated);
     this.wb.addEventListener("controlling", this.handleSWControlling);
 
     // Register the service worker
@@ -93,6 +92,7 @@ class PWAManager {
       Sentry.captureException(error);
       this._updateStatus.set(UpdateStatus.Error);
     }
+    void this.checkInstalledOffline();
   }
 
   private handleSWWaiting = (event: WorkboxLifecycleEvent) => {
@@ -105,12 +105,6 @@ class PWAManager {
     }
   };
 
-  private handleSWActivated = (_event: WorkboxLifecycleEvent) => {
-    // Precache is fully populated once it has handled the activated event.
-    console.log("App is ready for offline use");
-    this._offlineReady.set(true);
-  };
-
   private handleSWControlling = (event: WorkboxLifecycleEvent) => {
     // Handle controlling event: reload all tabs when new SW takes control in any tab.
     // event.isExternal is true if some other tab is responsible, but we want to pick
@@ -121,6 +115,20 @@ class PWAManager {
       window.location.reload();
     }
   };
+
+  private async checkInstalledOffline() {
+    if (!this.wb) {
+      return;
+    }
+    await this.wb.active;
+    const { isInstalledOffline } = (await this.wb.messageSW({
+      type: "CHECK_INSTALLED_OFFLINE",
+    })) as { isInstalledOffline: boolean };
+    if (isInstalledOffline) {
+      console.log("App is ready for offline use");
+    }
+    this._offlineReady.set(isInstalledOffline);
+  }
 
   private handleUpdateWaiting() {
     // Change updateStatus to Available and initiate auto update if enabled
@@ -180,6 +188,23 @@ class PWAManager {
     // Tell the waiting service worker to skip waiting and activate.
     // The 'controlling' event listener will handle the reload when ready.
     this.wb.messageSkipWaiting();
+  }
+
+  async installOffline() {
+    if (!this.wb) {
+      throw new Error("Cannot install offline without service worker");
+    }
+    const { success, error } = (await this.wb.messageSW({
+      type: "INSTALL_OFFLINE",
+    })) as { success: boolean; error?: Error };
+    if (success) {
+      this._offlineReady.set(true);
+    }
+    if (error) {
+      Sentry.captureException(error);
+      console.error(error);
+    }
+    return success;
   }
 }
 

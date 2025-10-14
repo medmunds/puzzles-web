@@ -151,7 +151,18 @@ export class AboutDialog extends SignalWatcher(LitElement) {
           </p>
           <p>
             Version <span class="version">${version}</span><br>
-            ${this.renderUpdateInfo()}
+            ${this.renderUpdateInfo()}<br>
+            ${
+              pwaManager.offlineReady
+                ? html`
+                    Ready for offline use 
+                    (<a href="#" @click=${this.handleInstallOffline}>reinstall</a>)
+                  `
+                : html`
+                    <a href="#" @click=${this.handleInstallOffline}
+                    >Install</a> for offline use
+                  `
+            }
           </p>
           <p>
             Source code: 
@@ -260,6 +271,11 @@ export class AboutDialog extends SignalWatcher(LitElement) {
   private handleReloadApp(event: UIEvent) {
     event.preventDefault();
     window.location.reload();
+  }
+
+  private async handleInstallOffline(event: UIEvent) {
+    event.preventDefault();
+    await pwaManager.installOffline();
   }
 
   static styles = [
