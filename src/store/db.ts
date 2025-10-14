@@ -6,6 +6,9 @@ export type EncodedParams = string;
 
 // Settings shared by all puzzles
 export interface CommonSettings {
+  // App level settings
+  allowOfflineUse?: boolean;
+
   // Catalog-level settings
   favoritePuzzles?: PuzzleId[];
   showUnfinishedPuzzles?: boolean;

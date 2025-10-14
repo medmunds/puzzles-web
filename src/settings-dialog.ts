@@ -13,7 +13,7 @@ import { audioClick } from "./utils/audio.ts";
 import { autoBind } from "./utils/autobind.ts";
 import { cssWATweaks } from "./utils/css.ts";
 import { clamp } from "./utils/math.ts";
-import { isRunningAsApp } from "./utils/pwa.ts";
+import { isRunningAsApp, pwaManager } from "./utils/pwa.ts";
 import { sleep } from "./utils/timing.ts";
 
 // Register components
@@ -229,9 +229,17 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     const item = event.detail.item as HTMLElementTagNameMap["wa-dropdown-item"];
     const command = item.value;
     switch (command) {
-      case "clear-settings":
+      case "clear-settings": {
+        // Ugh: need to preserve service worker status
+        // (since user probably doesn't want to disable
+        // offline as part of clearing settings)
+        const wasAvailableOffline = settings.allowOfflineUse;
         await settings.clearAllSettings();
+        if (wasAvailableOffline) {
+          settings.allowOfflineUse = true;
+        }
         break;
+      }
       case "clear-games-autosave":
         await savedGames.removeAllAutoSavedGames();
         break;
@@ -239,7 +247,11 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         await savedGames.removeAllSavedGames();
         break;
       case "clear-all":
-        await Promise.all([settings.clearAllSettings(), savedGames.removeAll()]);
+        await Promise.all([
+          settings.clearAllSettings(),
+          savedGames.removeAll(),
+          settings.allowOfflineUse ? pwaManager.unregisterSW() : null,
+        ]);
         break;
       case "settings-backup":
         await this.settingsBackup();

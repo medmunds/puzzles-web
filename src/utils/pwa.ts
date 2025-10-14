@@ -2,6 +2,7 @@
 import { signal } from "@lit-labs/signals";
 import * as Sentry from "@sentry/browser";
 import { Workbox, type WorkboxLifecycleEvent } from "workbox-window";
+import { settings } from "../store/settings.ts";
 import { sleep } from "./timing.ts";
 
 if (typeof window === "undefined") {
@@ -19,7 +20,7 @@ export const isRunningAsApp = !window.matchMedia("(display-mode: browser)").matc
  * don't confuse them with similarly-named service worker events)
  */
 export enum UpdateStatus {
-  Unknown = 0,
+  Unknown = 0, // also applies when not installed for offline use
   UpToDate,
   Checking,
   Available,
@@ -33,6 +34,20 @@ class PWAManager {
   private _updateStatus = signal<UpdateStatus>(UpdateStatus.Unknown);
 
   private wb?: Workbox;
+
+  async initialize() {
+    const wantsOffline = settings.allowOfflineUse ?? isRunningAsApp;
+    if (wantsOffline) {
+      await this.registerSW();
+    }
+  }
+
+  async makeAvailableOffline() {
+    settings.allowOfflineUse = true;
+    if (!this.wb) {
+      await this.registerSW();
+    }
+  }
 
   /**
    * Reactive service worker update status.
@@ -63,14 +78,8 @@ class PWAManager {
    * Register the PWA service worker.
    * The app must call this (relatively early) to enable caching and offline use.
    */
-  async registerSW() {
+  private async registerSW() {
     if (!("serviceWorker" in navigator)) {
-      return;
-    }
-    if (import.meta.env.DEV) {
-      // Skip service worker in dev (like vite-plugin-pwa does).
-      // It interferes with HMR and generally causes confusion.
-      // (You can allow it here for specific debugging.)
       return;
     }
 
@@ -79,30 +88,46 @@ class PWAManager {
     this.wb = new Workbox(`${base}sw.js`, { scope: base });
 
     this.wb.addEventListener("waiting", this.handleSWWaiting);
+    this.wb.addEventListener("installing", this.handleSWInstalling);
+    this.wb.addEventListener("installed", this.handleSWInstalled);
     this.wb.addEventListener("controlling", this.handleSWControlling);
 
     // Register the service worker
     try {
-      await this.wb.register();
-      if (this.updateStatus === UpdateStatus.Unknown) {
+      const registration = await this.wb.register();
+      if (registration?.active) {
         this._updateStatus.set(UpdateStatus.UpToDate);
+        this._offlineReady.set(true);
+      }
+      if (registration?.waiting) {
+        this.handleUpdateWaiting();
       }
     } catch (error) {
       console.error("Service worker registration failed:", error);
       Sentry.captureException(error);
       this._updateStatus.set(UpdateStatus.Error);
     }
-    void this.checkInstalledOffline();
   }
 
   private handleSWWaiting = (event: WorkboxLifecycleEvent) => {
     // Waiting service worker means update available.
     // workbox shouldn't send this for first install, but it *will* send it
     // with isUpdate undefined if there's a waiting worker at registration time.
-    console.log(`SW waiting isUpdate=${event.isUpdate}`);
-    if (event.isUpdate !== false) {
+    if (event.isUpdate) {
       this.handleUpdateWaiting();
     }
+  };
+
+  private handleSWInstalling = (_event: WorkboxLifecycleEvent) => {
+    this._offlineReady.set(false);
+    this._updateStatus.set(UpdateStatus.Installing);
+  };
+
+  private handleSWInstalled = (_event: WorkboxLifecycleEvent) => {
+    // Precache is fully populated once it has handled the "install" event.
+    // (Additional cleanup occurs during "activate", but offline is ready when installed.)
+    console.log("App is ready for offline use");
+    this._offlineReady.set(true);
   };
 
   private handleSWControlling = (event: WorkboxLifecycleEvent) => {
@@ -116,24 +141,11 @@ class PWAManager {
     }
   };
 
-  private async checkInstalledOffline() {
-    if (!this.wb) {
-      return;
-    }
-    await this.wb.active;
-    const { isInstalledOffline } = (await this.wb.messageSW({
-      type: "CHECK_INSTALLED_OFFLINE",
-    })) as { isInstalledOffline: boolean };
-    if (isInstalledOffline) {
-      console.log("App is ready for offline use");
-    }
-    this._offlineReady.set(isInstalledOffline);
-  }
-
   private handleUpdateWaiting() {
     // Change updateStatus to Available and initiate auto update if enabled
     console.log("App update available");
     this._updateStatus.set(UpdateStatus.Available);
+    this._offlineReady.set(false);
     if (this.autoUpdate) {
       this.installUpdate();
     }
@@ -190,21 +202,40 @@ class PWAManager {
     this.wb.messageSkipWaiting();
   }
 
-  async installOffline() {
-    if (!this.wb) {
-      throw new Error("Cannot install offline without service worker");
-    }
-    const { success, error } = (await this.wb.messageSW({
-      type: "INSTALL_OFFLINE",
-    })) as { success: boolean; error?: Error };
-    if (success) {
-      this._offlineReady.set(true);
-    }
-    if (error) {
+  /**
+   * Unregister the service worker and remove all caches
+   */
+  async unregisterSW(): Promise<boolean> {
+    try {
+      // Unregister the service worker
+      const registration = await navigator.serviceWorker?.getRegistration();
+      if (registration) {
+        const success = await registration.unregister();
+        if (!success) {
+          console.warn("Service worker unregister returned false");
+        }
+      }
+
+      // Delete all caches created by the service worker
+      // (Workbox uses predictable cache names, but safest to just delete all)
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+
+      console.log(
+        `Unregistered service worker and deleted ${cacheNames.length} cache(s)`,
+      );
+
+      // Reset state
+      this.wb = undefined;
+      this._offlineReady.set(false);
+      this._updateStatus.set(UpdateStatus.Unknown);
+
+      return true;
+    } catch (error) {
+      console.error("Failed to unregister service worker:", error);
       Sentry.captureException(error);
-      console.error(error);
+      return false;
     }
-    return success;
   }
 }
 

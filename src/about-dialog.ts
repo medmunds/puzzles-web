@@ -102,6 +102,9 @@ export class AboutDialog extends SignalWatcher(LitElement) {
   }
 
   @state()
+  private hasCheckedForUpdates = false;
+
+  @state()
   private dependencies?: DependencyInfo["dependencies"];
 
   private async loadDependencies() {
@@ -151,18 +154,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
           </p>
           <p>
             Version <span class="version">${version}</span><br>
-            ${this.renderUpdateInfo()}<br>
-            ${
-              pwaManager.offlineReady
-                ? html`
-                    Ready for offline use 
-                    (<a href="#" @click=${this.handleInstallOffline}>reinstall</a>)
-                  `
-                : html`
-                    <a href="#" @click=${this.handleInstallOffline}
-                    >Install</a> for offline use
-                  `
-            }
+            ${this.renderUpdateInfo()}
           </p>
           <p>
             Source code: 
@@ -218,12 +210,18 @@ export class AboutDialog extends SignalWatcher(LitElement) {
     // Reactive updateStatus
     switch (pwaManager.updateStatus) {
       case UpdateStatus.Unknown:
-        // Shouldn't really occur (certainly not for long)
-        return html`<wa-spinner></wa-spinner> Initializing&hellip;`;
+        if (pwaManager.offlineReady) {
+          // Shouldn't really occur (certainly not for long)
+          return html`<wa-spinner></wa-spinner> Initializing&hellip;`;
+        }
+        // UpdateStatus.Unknown + !offlineReady means not installed for offline use
+        return html`<a href="#" @click=${this.handleInstallOffline}>Make available offline</a>`;
       case UpdateStatus.UpToDate:
         return html`
-          Up to date 
-          (<a href="#" @click=${this.handleCheckForUpdate}>check again</a>)
+          Offline ready, up to date
+          (<a href="#" @click=${this.handleCheckForUpdate}>${
+            !this.hasCheckedForUpdates ? "check for updates" : "check again"
+          }</a>)
         `;
       case UpdateStatus.Checking:
         return html`<wa-spinner></wa-spinner> Checking for update&hellip;`;
@@ -233,10 +231,10 @@ export class AboutDialog extends SignalWatcher(LitElement) {
           <a href="#" @click=${this.handleInstallUpdate}>install now</a>
         `;
       case UpdateStatus.Installing:
-        return html`<wa-spinner></wa-spinner> Installing update&hellip;`;
+        return html`<wa-spinner></wa-spinner> Installing&hellip;`;
       case UpdateStatus.Error:
         return html`
-          <wa-icon name="error"></wa-icon> Update error
+          <wa-icon name="error"></wa-icon> Installation error
           (<a href="#" @click=${this.handleReloadApp}>reload app</a>)
         `;
     }
@@ -249,6 +247,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
     if (event.target instanceof HTMLElement && event.target.localName === "wa-dialog") {
       const status = pwaManager.updateStatus;
       if (
+        status !== UpdateStatus.Unknown &&
         status !== UpdateStatus.Available &&
         status !== UpdateStatus.Installing &&
         status !== UpdateStatus.Checking
@@ -260,6 +259,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
 
   private async handleCheckForUpdate(event: UIEvent) {
     event.preventDefault();
+    this.hasCheckedForUpdates = true;
     await pwaManager.checkForUpdate();
   }
 
@@ -275,7 +275,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
 
   private async handleInstallOffline(event: UIEvent) {
     event.preventDefault();
-    await pwaManager.installOffline();
+    await pwaManager.makeAvailableOffline();
   }
 
   static styles = [
