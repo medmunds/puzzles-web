@@ -1,6 +1,5 @@
-import { ResizeController } from "@lit-labs/observers/resize-controller.js";
 import { SignalWatcher } from "@lit-labs/signals";
-import { css, html, LitElement, nothing, type TemplateResult } from "lit";
+import { css, html, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { type PuzzleData, puzzleDataMap } from "./puzzle/catalog.ts";
@@ -12,6 +11,7 @@ import {
   indexPageUrl,
   navigateToIndexPage,
 } from "./routing.ts";
+import { Screen } from "./screen.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { cssWATweaks } from "./utils/css.ts";
@@ -36,7 +36,7 @@ import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
 
 @customElement("puzzle-screen")
-export class PuzzleScreen extends SignalWatcher(LitElement) {
+export class PuzzleScreen extends SignalWatcher(Screen) {
   /** The puzzle type, e.g. "blackbox" */
   @property({ type: String, attribute: "puzzleid" })
   puzzleId = "";
@@ -49,23 +49,11 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   @property({ type: String, attribute: "params" })
   params?: string;
 
-  @property({ type: String, reflect: true })
-  size: "large" | "medium" | "small" = "large";
-
-  @property({ type: String, reflect: true })
-  orientation: "horizontal" | "vertical" = "vertical";
-
   @state()
   private puzzleData?: PuzzleData;
 
   @state()
   private puzzleLoaded = false;
-
-  @state()
-  private themeColor?: string;
-
-  @query("dynamic-content")
-  private dynamicContent?: HTMLElementTagNameMap["dynamic-content"];
 
   @query("puzzle-context")
   private puzzleContext?: HTMLElementTagNameMap["puzzle-context"];
@@ -73,33 +61,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
   get puzzle(): Puzzle | undefined {
     return this.puzzleContext?.puzzle;
   }
-
-  private get compactButtons(): boolean {
-    return this.size !== "large";
-  }
-
-  private resize = () => {
-    if (this.isConnected) {
-      // Update this.layout from calculations in css
-      const styles = window.getComputedStyle(this);
-      const orientation = styles.getPropertyValue("--app-orientation");
-      const size = styles.getPropertyValue("--app-size");
-      if (!import.meta.env.PROD) {
-        if (orientation !== "horizontal" && orientation !== "vertical") {
-          throw new Error(`Unknown --app-orientation='${orientation}'`);
-        }
-        if (size !== "large" && size !== "medium" && size !== "small") {
-          throw new Error(`Unknown --app-size='${size}'`);
-        }
-      }
-      this.orientation = orientation as PuzzleScreen["orientation"];
-      this.size = size as PuzzleScreen["size"];
-    }
-  };
-
-  protected resizeController = new ResizeController(this, {
-    callback: this.resize,
-  });
 
   /** If the current game has been saved or loaded, its filename. */
   savedFilename?: string;
@@ -122,7 +83,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
 
   override connectedCallback() {
     super.connectedCallback();
-    this.resize();
     const { puzzleAutoSaveFilename, puzzleAutoSavePuzzleId } =
       window.history.state ?? {};
     if (
@@ -131,9 +91,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     ) {
       this._autoSaveFilename = puzzleAutoSaveFilename;
     }
-    this.themeColor = window
-      .getComputedStyle(this)
-      .getPropertyValue("--puzzle-theme-color");
   }
 
   protected override async willUpdate(changedProperties: Map<string, unknown>) {
@@ -145,6 +102,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
       this.puzzleData = data;
       this.autoSaveFilename = undefined;
       this.puzzleLoaded = false;
+      this.defaultHelpLabel = `${this.puzzleData.name} Help`;
     }
   }
 
@@ -191,7 +149,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
             <wa-button
                 appearance="plain" variant="brand"
                 href=${helpUrl(this.puzzleId).href} 
-                @click=${this.showHelp}
             >${
               this.compactButtons
                 ? html`<wa-icon name="help" label="Help"></wa-icon>`
@@ -254,7 +211,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         <wa-button
             slot="extra-actions-solved"
             href=${otherPuzzlesUrl}
-            @click=${this.handleOtherPuzzles}
         >
           <wa-icon slot="start" name="back-to-catalog"></wa-icon>
           Other puzzles
@@ -448,28 +404,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     }
   }
 
-  private async showAboutDialog() {
-    await import("./about-dialog.ts");
-    const dialog = await this.dynamicContent?.addItem({
-      tagName: "about-dialog",
-      render: () => html`<about-dialog></about-dialog>`,
-    });
-    if (dialog && !dialog.open) {
-      dialog.open = true;
-    }
-  }
-
-  private async showSettingsDialog() {
-    await import("./settings-dialog.ts");
-    const dialog = await this.dynamicContent?.addItem({
-      tagName: "settings-dialog",
-      render: () => html`<settings-dialog></settings-dialog>`,
-    });
-    if (dialog && !dialog.open) {
-      await dialog.show();
-    }
-  }
-
   private handleLoadGame = async (event: HTMLElementEventMap["load-game-load"]) => {
     // (dynamic-content event listener: must be self-bound function)
     const dialog = event.target as HTMLElementTagNameMap["load-game-dialog"];
@@ -552,31 +486,10 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
     }
   };
 
-  private async showHelp(event: UIEvent) {
-    event.preventDefault();
-    await import("./help-viewer.ts");
-    const helpViewer = await this.dynamicContent?.addItem({
-      tagName: "help-viewer",
-      render: () => html`
-        <help-viewer 
-            src=${helpUrl(this.puzzleId).href} 
-            label=${`${this.puzzleData?.name} Help`}
-        ></help-viewer>
-      `,
-    });
-    helpViewer?.show();
-  }
-
   private async handleChangeType() {
     // Show the Type menu, from the button in the puzzle-end-notification
     await this.shadowRoot?.querySelector("puzzle-end-notification")?.hide();
     this.shadowRoot?.querySelector("puzzle-preset-menu")?.show();
-  }
-
-  private handleOtherPuzzles(event: Event) {
-    // TODO: remove this; interceptHrefClick throughout puzzle-screen instead
-    event.preventDefault();
-    navigateToIndexPage();
   }
 
   private async handlePuzzleLoaded(event: PuzzleEvent) {
@@ -692,8 +605,6 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         box-sizing: border-box;
         width: 100%;
         height: 100%;
-
-        --puzzle-theme-color: var(--wa-color-brand-fill-normal);
       }
       
       main {
@@ -732,7 +643,7 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
         /* app-padding less button padding */
         padding-inline: calc(var(--app-padding) - min(var(--wa-form-control-padding-inline), var(--app-padding)));
         gap: 0; /* toolbar buttons all have lots of padding built in */
-        background-color: var(--puzzle-theme-color);
+        background-color: var(--app-theme-color);
 
         .game-menu-trigger {
           /* Larger label and icon, but not larger overall base height */

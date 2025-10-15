@@ -50,6 +50,7 @@ body.js-ready .nojs {
   --app-gap: var(--wa-space-xl);
   --app-spacing: var(--wa-space-l);
   --app-title-font-size: var(--wa-font-size-l);
+  --app-theme-color: var(--wa-color-brand-fill-normal);
 }
 @media (max-width: 40rem) {
   :root {

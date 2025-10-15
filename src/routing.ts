@@ -31,8 +31,8 @@ export const puzzlePageUrl = ({
   return url;
 };
 
-export const helpUrl = (puzzleId: string) =>
-  new URL(`help/${puzzleId}-overview.html`, baseUrl);
+export const helpUrl = (puzzleId?: string) =>
+  new URL(puzzleId ? `help/${puzzleId}-overview.html` : "help/", baseUrl);
 
 export const isHelpUrl = (href: string | URL): boolean =>
   relativePathname(href)?.startsWith("help") ?? false;
