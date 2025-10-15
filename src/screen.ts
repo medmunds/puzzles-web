@@ -1,7 +1,7 @@
 import { html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { property, state } from "lit/decorators.js";
-import { helpUrl, indexPageUrl, isHelpUrl, navigateToIndexPage } from "./routing.ts";
+import { helpUrl, homePageUrl, isHelpUrl, navigateToHomePage } from "./routing.ts";
 
 export abstract class Screen extends LitElement {
   //
@@ -63,9 +63,9 @@ export abstract class Screen extends LitElement {
     for (const target of event.composedPath()) {
       const href = target instanceof HTMLElement && target.getAttribute("href");
       if (href) {
-        if (href === indexPageUrl().href) {
+        if (href === homePageUrl().href) {
           event.preventDefault();
-          navigateToIndexPage();
+          navigateToHomePage();
         } else if (isHelpUrl(href)) {
           event.preventDefault();
           await this.showHelpViewer(href);

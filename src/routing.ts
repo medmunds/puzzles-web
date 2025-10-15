@@ -4,7 +4,7 @@ export const validPuzzleIds = new Set(puzzleIds);
 
 export const baseUrl = new URL(import.meta.env.BASE_URL, window.location.href);
 
-export const indexPageUrl = () => new URL("", baseUrl);
+export const homePageUrl = () => new URL("", baseUrl);
 
 export interface PuzzleUrlParams {
   puzzleId: string; // from path
@@ -73,20 +73,17 @@ export function parsePuzzleUrl(href?: string | URL): PuzzleUrlParams | undefined
   };
 }
 
-export function navigateToIndexPage() {
+export function navigateToHomePage() {
   // If navigating back would get us to the index page, do that instead.
-  const indexUrl = indexPageUrl();
+  const homeUrl = homePageUrl();
   if (document.referrer) {
     const referrer = new URL(document.referrer);
-    if (
-      referrer.origin === indexUrl.origin &&
-      referrer.pathname === indexUrl.pathname
-    ) {
+    if (referrer.origin === homeUrl.origin && referrer.pathname === homeUrl.pathname) {
       window.history.back();
       return;
     }
   }
-  window.location.href = indexUrl.href;
+  window.location.href = homeUrl.href;
 }
 
 export const canonicalBaseUrl = import.meta.env.VITE_CANONICAL_BASE_URL;

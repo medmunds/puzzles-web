@@ -8,8 +8,8 @@ import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
 import {
   canonicalPuzzlePageUrl,
   helpUrl,
-  indexPageUrl,
-  navigateToIndexPage,
+  homePageUrl,
+  navigateToHomePage,
 } from "./routing.ts";
 import { Screen } from "./screen.ts";
 import { savedGames } from "./store/saved-games.ts";
@@ -191,7 +191,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   }
 
   private renderEndNotification() {
-    const otherPuzzlesUrl = indexPageUrl().href;
+    const otherPuzzlesUrl = homePageUrl().href;
     return html`
       <puzzle-end-notification>
         <wa-button
@@ -325,7 +325,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         await this.showAboutDialog();
         break;
       case "catalog":
-        navigateToIndexPage();
+        navigateToHomePage();
         break;
       case "preferences":
         await this.showSettingsDialog();

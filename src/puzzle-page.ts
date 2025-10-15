@@ -1,10 +1,6 @@
 import "./main.ts";
 
-import {
-  navigateToIndexPage,
-  type PuzzleUrlParams,
-  parsePuzzleUrl,
-} from "./routing.ts";
+import { navigateToHomePage, type PuzzleUrlParams, parsePuzzleUrl } from "./routing.ts";
 
 // Register components
 import "./puzzle-screen.ts";
@@ -31,7 +27,7 @@ function initialize({ puzzleId, puzzleParams, puzzleGameId }: PuzzleUrlParams) {
 
 const urlParams = parsePuzzleUrl();
 if (!urlParams?.puzzleId) {
-  navigateToIndexPage();
+  navigateToHomePage();
 } else if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => initialize(urlParams));
 } else {
