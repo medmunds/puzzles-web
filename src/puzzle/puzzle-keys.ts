@@ -4,6 +4,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { cssWATweaks } from "../utils/css.ts";
+import { getDelegatedTarget } from "../utils/events.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { KeyLabel } from "./types.ts";
@@ -55,15 +56,22 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     this.keyLabels = (await this.puzzle?.requestKeys()) ?? [];
   }
 
-  protected override render() {
-    return html`
-      <slot name="before"></slot>
-      ${this.renderVirtualKeys()}
-      <slot name="after"></slot>
-    `;
+  override connectedCallback() {
+    super.connectedCallback();
+    // Activate virtual keys on pointerdown with touch/pen,
+    // for better responsiveness in rapid "typing"
+    this.addEventListener("pointerdown", this.handleButtonPress);
+    // But also handle click for keyboard activation
+    this.addEventListener("click", this.handleButtonPress);
   }
 
-  private renderVirtualKeys() {
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener("pointerdown", this.handleButtonPress);
+    this.removeEventListener("click", this.handleButtonPress);
+  }
+
+  protected override render() {
     if (!this.keyLabels || this.keyLabels.length === 0) {
       return nothing;
     }
@@ -83,16 +91,35 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
   private renderVirtualKey = (key: KeyLabel) => {
     const label = key.label;
     const icon = this.labelIcons[label];
-    const classes = { single: icon || label.length === 1 };
+    const classes = classMap({ single: icon || label.length === 1 });
     const content = icon
       ? html`<wa-icon name=${icon} label=${label}></wa-icon>`
       : label;
-    return html`            
-      <wa-button
-          class=${classMap(classes)}
-          @pointerdown=${() => this.puzzle?.processKey(key.button)}
-        >${content}</wa-button>
+    return html`
+      <wa-button class=${classes} data-button=${key.button}>${content}</wa-button>
     `;
+  };
+
+  private handleButtonPress = async (event: PointerEvent) => {
+    // Delegated listener for both click and pointerdown events.
+    // Handle pointerdown on touch/pen devices,
+    // and click on other devices (mouse, keyboard, etc.).
+    if (
+      (event.type === "pointerdown") ===
+      (event.pointerType === "touch" || event.pointerType === "pen")
+    ) {
+      const target = getDelegatedTarget(event);
+      const dataButton = target?.getAttribute("data-button") ?? null;
+      if (dataButton !== null) {
+        event.preventDefault();
+        const button = Number.parseInt(dataButton, 10);
+        if (!Number.isNaN(button)) {
+          await this.puzzle?.processKey(button);
+        } else if (!import.meta.env.PROD) {
+          throw new Error(`Invalid data-button="${dataButton}"`);
+        }
+      }
+    }
   };
 
   static styles = [

@@ -71,3 +71,18 @@ const shouldPreventDoubleTapZoom = (target: EventTarget) =>
   doubleTapZoomExemptTagNames.has(target.localName) &&
   // Must not prevent default on <wa-button href=...>
   (!("href" in target) || !target.href);
+
+/**
+ * Return the event's targeted element in its shadow root.
+ * Useful in a delegated event listener attached to an element using shadow DOM
+ * (where event.target is always the listener element itself).
+ */
+export function getDelegatedTarget(event: Event) {
+  const root = (event.target as HTMLElement).shadowRoot;
+  for (const element of event.composedPath()) {
+    if (element instanceof HTMLElement && element.getRootNode() === root) {
+      return element;
+    }
+  }
+  return null;
+}
