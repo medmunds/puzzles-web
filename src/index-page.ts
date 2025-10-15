@@ -1,7 +1,7 @@
 import "./main.ts";
 import { html } from "lit";
 import { puzzleDataMap } from "./puzzle/catalog.ts";
-import { isHelpUrl, parsePuzzleUrl } from "./routing.ts";
+import { isHelpUrl } from "./routing.ts";
 import { clamp } from "./utils/math.ts";
 
 // Register components
@@ -110,12 +110,7 @@ async function interceptHrefClick(event: MouseEvent) {
   for (const target of event.composedPath()) {
     const href = target instanceof HTMLElement && target.getAttribute("href");
     if (href) {
-      const puzzleUrl = parsePuzzleUrl(href);
-      if (puzzleUrl?.puzzleId) {
-        // Navigate to a puzzle (e.g., from catalog-card click)
-        event.preventDefault();
-        window.location.href = href;
-      } else if (isHelpUrl(href)) {
+      if (isHelpUrl(href)) {
         event.preventDefault();
         await showHelpViewer(href);
       } else if (href === "#about") {
