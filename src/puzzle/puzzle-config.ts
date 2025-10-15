@@ -371,7 +371,7 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
   protected override render() {
     return html`
       <wa-dialog label=${this.dialogTitle}>
-        <wa-scroller orientation="vertical" without-tabindex>
+        <wa-scroller orientation="vertical">
           ${this.renderConfigForm()}
         </wa-scroller>
         
