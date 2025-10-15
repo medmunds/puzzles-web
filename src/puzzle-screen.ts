@@ -218,7 +218,11 @@ export class PuzzleScreen extends SignalWatcher(LitElement) {
           </puzzle-view-interactive>
 
           <footer>
-            ${settings.showPuzzleKeyboard ? html`<puzzle-keys></puzzle-keys>` : nothing}
+            ${
+              settings.showPuzzleKeyboard
+                ? html`<puzzle-keys tabindex="-1"></puzzle-keys>`
+                : nothing
+            }
             <puzzle-history></puzzle-history>
           </footer>
         </main>
