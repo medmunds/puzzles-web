@@ -59,4 +59,10 @@ import "./icons";
 // Install PWA service worker
 import { pwaManager } from "./utils/pwa.ts";
 
-await pwaManager.initialize();
+if (document.readyState === "complete") {
+  await pwaManager.initialize();
+} else {
+  window.addEventListener("load", async () => {
+    await pwaManager.initialize();
+  });
+}

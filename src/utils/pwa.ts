@@ -35,6 +35,10 @@ class PWAManager {
 
   private wb?: Workbox;
 
+  /**
+   * Install the offline service worker if requested.
+   * The app should call this from the window.load event.
+   */
   async initialize() {
     const wantsOffline = settings.allowOfflineUse ?? isRunningAsApp;
     if (wantsOffline) {
@@ -76,7 +80,6 @@ class PWAManager {
 
   /**
    * Register the PWA service worker.
-   * The app must call this (relatively early) to enable caching and offline use.
    */
   private async registerSW() {
     if (!("serviceWorker" in navigator)) {
