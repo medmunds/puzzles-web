@@ -7,3 +7,8 @@ body,
   height: 100vh;
   overflow: hidden;
 }
+
+noscript section {
+  max-width: 55ch;
+  margin: var(--app-padding);
+}

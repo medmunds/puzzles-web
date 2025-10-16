@@ -78,6 +78,10 @@ section {
   max-width: 55ch;
 }
 
+noscript section {
+  margin-inline: var(--app-padding);
+}
+
 #xrefs {
   /* Format dl as table */
   --row-gap: var(--wa-space-l);

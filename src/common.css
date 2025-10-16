@@ -35,6 +35,16 @@ body,
   min-height: 100vh;
 }
 
+.warning {
+  box-sizing: border-box;
+  padding: var(--app-spacing);
+  background-color: var(--wa-color-surface-default);
+  color: var(--wa-color-text-normal);
+  border: var(--wa-border-width-l) var(--wa-border-style)
+    var(--wa-color-warning-border-loud);
+  border-radius: var(--wa-panel-border-radius);
+}
+
 body:not(.js-ready) .js {
   display: none;
 }
