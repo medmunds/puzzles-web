@@ -6,10 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Puzzles&thinsp;&ndash;&thinsp;from Simon Tatham’s portable puzzle collection</title>
     <meta name="application-name" content="Puzzles">
-    <link rel="canonical" href="%VITE_CANONICAL_BASE_URL%">
     <link rel="stylesheet" href="/src/home.css">
-    <script type="module" src="/src/main.ts"></script>
-    <script type="module" src="/src/home-screen.ts"></script>
+    <script type="module" src="/src/home-page.ts"></script>
   </head>
   <body>
     <home-screen>
@@ -18,10 +16,7 @@
         <h1 class="title">Puzzles</h1>
         <div class="subtitle">from Simon&nbsp;Tatham’s
           portable&nbsp;puzzle&nbsp;collection</div>
-        <wa-button class="help-button" href="help/index.html" appearance="filled" variant="brand">
-          <wa-icon name="help" slot="start"></wa-icon>
-          Help
-        </wa-button>
+        <!-- TODO: home-screen component should insert app bar controls here -->
       </header>
 
       <section id="intro" slot="before">

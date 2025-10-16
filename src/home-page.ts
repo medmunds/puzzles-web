@@ -1,6 +1,9 @@
 import "./main.ts";
 import { puzzleDataMap } from "./puzzle/catalog.ts";
 
+// Register components
+import "./home-screen.ts";
+
 function randomizePuzzleLink(sectionId: string) {
   // Swap a random puzzle into the xrefs.
   const section = document.getElementById(sectionId);

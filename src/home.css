@@ -129,10 +129,17 @@ section {
   inherits: true;
   initial-value: 0;
 }
+@property --scroll-animation-duration {
+  /* Fallback "duration" for manual animations */
+  /* Have getComputedStyle return seconds for this property */
+  syntax: "<time>";
+  inherits: true;
+  initial-value: 1000ms;
+}
 
 header {
   --scroll-range-end: calc(3.5em + var(--app-padding));
-  --scroll-animation-options: 1000ms linear forwards paused;
+  --scroll-animation-options: var(--scroll-animation-duration) linear forwards paused;
 }
 
 @supports (animation-timeline: scroll()) {
