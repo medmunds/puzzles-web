@@ -1,6 +1,5 @@
 @import url("/node_modules/@awesome.me/webawesome/dist/styles/themes/default.css");
 @import url("utils/css/native.css");
-@import url("utils/css/wa-tweaks.css");
 
 :root {
   font-family: var(--wa-font-family-body), sans-serif;
@@ -43,13 +42,6 @@ body,
   border: var(--wa-border-width-l) var(--wa-border-style)
     var(--wa-color-warning-border-loud);
   border-radius: var(--wa-panel-border-radius);
-}
-
-body:not(.js-ready) .js {
-  display: none;
-}
-body.js-ready .nojs {
-  display: none;
 }
 
 /* Responsive layout tokens */

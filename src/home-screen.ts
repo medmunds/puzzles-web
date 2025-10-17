@@ -1,9 +1,10 @@
 import { SignalWatcher } from "@lit-labs/signals";
-import { css, html, nothing } from "lit";
+import { css, html, nothing, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
+import rawHomeScreenCSS from "./css/home-screen.css?inline";
 import { canonicalBaseUrl } from "./routing.ts";
 import { Screen } from "./screen.ts";
-import { cssWATweaks } from "./utils/css.ts";
+import { cssNative, cssWATweaks } from "./utils/css.ts";
 import { ScrollAnimationController } from "./utils/scroll-animation-controller.ts";
 
 // Register components
@@ -20,34 +21,42 @@ export class HomeScreen extends SignalWatcher(Screen) {
     // Fallback for shrinking sticky header using animation-timeline: scroll()
     new ScrollAnimationController(this, {
       scrollContainer: document.documentElement,
-      animationElement: (): Element =>
-        this.shadowRoot
-          ?.querySelector<HTMLSlotElement>('slot[name="header"]')
-          ?.assignedElements()[0] ?? this,
+      animationElement: (): Element => this.shadowRoot?.querySelector("header") ?? this,
     });
   }
 
-  override connectedCallback() {
-    super.connectedCallback();
-
-    // TODO: move dynamic content into here; remove js-ready class logic
-    document.body.classList.add("js-ready");
-  }
-
   protected override render() {
+    // Deliberately skip <slot name="header"> and <slot="footer">
+    // to substitute our interactive versions for the static ones in index.html.
     return html`
       <head-matter>
         ${this.themeColor ? html`<meta name="theme-color" content=${this.themeColor}>` : nothing}
         ${canonicalBaseUrl ? html`<link rel="canonical" href="${canonicalBaseUrl}">` : nothing}
       </head-matter>
-      
-      <slot name="header"></slot>
+
+      <header part="header">
+        <img class="logo" src="/favicon.svg" role="presentation">
+        <h1 class="title">Puzzles</h1>
+        <div class="subtitle">from Simon&nbsp;Tatham’s
+          portable&nbsp;puzzle&nbsp;collection</div>
+        <wa-button class="help-button" href="help/" appearance="filled" variant="brand">
+          <wa-icon name="help" slot="start"></wa-icon>
+          Help
+        </wa-button>
+      </header>
+
       <slot name="before"></slot>
       
       <catalog-list></catalog-list>
       
       <slot name="after"></slot>
-      <slot name="footer"></slot>
+
+      <footer slot="footer">
+        <div>Credits, privacy info, copyright notices and licenses are in the
+          <a href="#about">about box</a>.</div>
+        <div><a href="#settings">Settings</a></div> <!-- TODO: remove this -->
+      </footer>
+
       <dynamic-content></dynamic-content>
     `;
   }
@@ -58,9 +67,12 @@ export class HomeScreen extends SignalWatcher(Screen) {
 
   static styles = [
     cssWATweaks,
+    cssNative,
+    css`${unsafeCSS(rawHomeScreenCSS)}`,
     css`
       :host {
-        display: contents;
+        display: block;
+        box-sizing: border-box;
       }
     `,
   ];
