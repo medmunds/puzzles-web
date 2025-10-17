@@ -1,5 +1,5 @@
 @import url("/node_modules/@awesome.me/webawesome/dist/styles/themes/default.css");
-@import url("utils/css/native.css");
+@import url("native.css");
 
 :root {
   font-family: var(--wa-font-family-body), sans-serif;

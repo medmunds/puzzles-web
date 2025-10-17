@@ -1,5 +1,5 @@
-@import url("./common.css");
-@import url("./css/home-screen.css");
+@import url("common.css");
+@import url("home-screen.css");
 
 :root {
   --app-padding: var(--wa-space-xl);

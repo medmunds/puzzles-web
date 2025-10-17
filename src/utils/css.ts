@@ -1,8 +1,8 @@
 // CSS that needs to be shared between various shadow DOMs
 import { css, unsafeCSS } from "lit";
 
-import cssNativeRaw from "./css/native.css?inline";
-import cssWATweaksRaw from "./css/wa-tweaks.css?inline";
+import cssNativeRaw from "../css/native.css?inline";
+import cssWATweaksRaw from "../css/wa-tweaks.css?inline";
 
 /**
  * Our styling for native tags (a, h1, p, etc.).
