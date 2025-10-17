@@ -52,6 +52,13 @@ export function hasCtrlKey(event: MouseEvent | KeyboardEvent) {
 }
 
 /**
+ * Returns true if event has any modifier key pressed.
+ */
+export function hasAnyModifier(event: MouseEvent | KeyboardEvent) {
+  return event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
+}
+
+/**
  * Install this as a click event listener to disable iOS's double-tap-zoom
  * on all buttons (which are likely to be clicked rapidly in succession).
  * (Sadly, CSS `touch-action: ...` doesn't achieve this on iOS.)

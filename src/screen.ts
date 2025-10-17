@@ -2,6 +2,7 @@ import { html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { property, state } from "lit/decorators.js";
 import { helpUrl, homePageUrl, isHelpUrl, navigateToHomePage } from "./routing.ts";
+import { hasAnyModifier } from "./utils/events.ts";
 
 export abstract class Screen extends LitElement {
   //
@@ -64,11 +65,18 @@ export abstract class Screen extends LitElement {
       const href = target instanceof HTMLElement && target.getAttribute("href");
       if (href) {
         if (href === homePageUrl().href) {
-          event.preventDefault();
-          navigateToHomePage();
+          if (!hasAnyModifier(event)) {
+            event.preventDefault();
+            navigateToHomePage();
+          }
+          // Otherwise let the browser handle it: click with modifier key
+          // typically opens a new tab or window or saves the link
+          // rather than navigating the current tab.
         } else if (isHelpUrl(href)) {
-          event.preventDefault();
-          await this.showHelpViewer(href);
+          if (!hasAnyModifier(event)) {
+            event.preventDefault();
+            await this.showHelpViewer(href);
+          }
         } else if (href === "#about") {
           event.preventDefault();
           await this.showAboutDialog();
