@@ -11,7 +11,13 @@ function initialize({ puzzleId, puzzleParams, puzzleGameId }: PuzzleUrlParams) {
     throw new Error("Missing #app in puzzle page");
   }
 
-  // TODO: clear params from url
+  if (puzzleParams || puzzleGameId) {
+    // Strip params we consume from the url
+    const url = new URL(window.location.href);
+    url.searchParams.delete("type"); // puzzleParams
+    url.searchParams.delete("id"); // puzzleGameId
+    window.history.replaceState(window.history.state, "", url.href);
+  }
 
   const puzzleScreen = document.createElement("puzzle-screen");
   puzzleScreen.setAttribute("puzzleid", puzzleId);
