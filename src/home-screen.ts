@@ -9,6 +9,9 @@ import { ScrollAnimationController } from "./utils/scroll-animation-controller.t
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
+import "@awesome.me/webawesome/dist/components/divider/divider.js";
+import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
+import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "./catalog-list.ts";
 import "./dynamic-content.ts";
@@ -34,16 +37,9 @@ export class HomeScreen extends SignalWatcher(Screen) {
         ${canonicalBaseUrl ? html`<link rel="canonical" href="${canonicalBaseUrl}">` : nothing}
       </head-matter>
 
-      <header part="header">
-        <img class="logo" src="/favicon.svg" role="presentation">
-        <h1 class="title">Puzzles</h1>
-        <div class="subtitle">from Simon&nbsp;Tatham’s
-          portable&nbsp;puzzle&nbsp;collection</div>
-        <wa-button class="help-button" href="help/" appearance="filled" variant="brand">
-          <wa-icon name="help" slot="start"></wa-icon>
-          Help
-        </wa-button>
-      </header>
+      <header part="header">${
+        this.size === "large" ? this.renderWideHeader() : this.renderCompactHeader()
+      }</header>
 
       <slot name="before"></slot>
       
@@ -54,10 +50,79 @@ export class HomeScreen extends SignalWatcher(Screen) {
       <footer slot="footer">
         <div>Credits, privacy info, copyright notices and licenses are in the
           <a href="#about">about box</a>.</div>
-        <div><a href="#settings">Settings</a></div> <!-- TODO: remove this -->
       </footer>
 
       <dynamic-content></dynamic-content>
+    `;
+  }
+
+  private renderWideHeader() {
+    // When we have space, render separate title, options menu, and help button
+    return html`
+      <img class="logo" src="/favicon.svg" alt="" role="presentation">
+      <div class="title">
+        <h1>Puzzles</h1>
+      </div>
+      <div class="subtitle">from Simon&nbsp;Tatham’s
+        portable&nbsp;puzzle&nbsp;collection</div>
+
+      <div class="controls">
+        <wa-dropdown>
+          <wa-button slot="trigger" appearance="plain" variant="brand" with-caret>
+            <wa-icon slot="start" name="options"></wa-icon>
+            Options
+          </wa-button>
+          ${this.renderOptionsMenuContent()}
+        </wa-dropdown>
+        <wa-button href="help/" appearance="plain" variant="brand">
+          <wa-icon name="help" slot="start"></wa-icon>
+          Help
+        </wa-button>
+      </div>
+    `;
+  }
+
+  private renderCompactHeader() {
+    // When space is tight, turn the title into the options menu trigger
+    // (but keep the separate help button)
+    return html`
+      <img class="logo" src="/favicon.svg" alt="" role="presentation">
+      <div class="title">
+        <wa-dropdown>
+          <wa-button slot="trigger" appearance="plain" variant="brand" with-caret>
+            <h1>Puzzles</h1>
+          </wa-button>
+          ${this.renderOptionsMenuContent()}
+        </wa-dropdown>
+      </div>
+      <div class="subtitle">from Simon&nbsp;Tatham’s
+        portable&nbsp;puzzle&nbsp;collection</div>
+
+      <div class="controls">
+        <wa-button href="help/" appearance="plain" variant="brand">${
+          this.size === "small"
+            ? html`<wa-icon name="help" label="Help"></wa-icon>`
+            : html`
+                <wa-icon name="help" slot="start"></wa-icon>
+                Help
+              `
+        }</wa-button>
+      </div>
+    `;
+  }
+
+  private renderOptionsMenuContent() {
+    // TODO: add view options here
+    return html`
+      <wa-dropdown-item data-command="#settings" value="new">
+        <wa-icon slot="icon" name="settings"></wa-icon>
+        Preferences
+      </wa-dropdown-item>
+      <wa-divider></wa-divider>
+      <wa-dropdown-item data-command="#about">
+        <wa-icon slot="icon" name="info"></wa-icon>
+        About
+      </wa-dropdown-item>
     `;
   }
 
@@ -73,6 +138,18 @@ export class HomeScreen extends SignalWatcher(Screen) {
       :host {
         display: block;
         box-sizing: border-box;
+      }
+      
+      .title wa-button[slot="trigger"] {
+        margin-block: calc(
+          (var(--wa-font-size-xl) * var(--wa-line-height-condensed) 
+           - var(--wa-form-control-height)
+          ) / 2
+        );
+        margin-inline: calc(-1 * (
+            var(--wa-form-control-padding-inline) +
+            var(--wa-border-width-s))
+        );
       }
     `,
   ];

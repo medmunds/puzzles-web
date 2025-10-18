@@ -37,6 +37,7 @@ import share2Icon from "lucide-static/icons/share-2.svg";
 import shieldCheckIcon from "lucide-static/icons/shield-check.svg";
 import sparklesIcon from "lucide-static/icons/sparkles.svg";
 import squareArrowOutUpRightIcon from "lucide-static/icons/square-arrow-out-up-right.svg";
+import squareMenuIcon from "lucide-static/icons/square-menu.svg";
 import squarePenIcon from "lucide-static/icons/square-pen.svg";
 import swatchBookIcon from "lucide-static/icons/swatch-book.svg";
 import thumbsUpIcon from "lucide-static/icons/thumbs-up.svg";
@@ -73,6 +74,7 @@ const defaultIcons: IconMap = {
   "history-checkpoint": circleCheckIcon,
   "history-current-move": playIcon,
   "new-game": plusIcon,
+  "options": squareMenuIcon,
   "puzzle-type": swatchBookIcon,
   "redo": redo2Icon,
   "restart-game": restartIcon,
