@@ -106,6 +106,16 @@ class AutoBindDirective<T extends object, K extends keyof T> extends AsyncDirect
       this.listen();
     }
 
+    if (this.isConnected && part.type === PartType.BOOLEAN_ATTRIBUTE) {
+      // Also update the property directly on the element
+      // (keeps .checked prop from getting out of sync
+      // when ?checked attr is autobound to reactive signal)
+      if (property in part.element) {
+        const element = part.element as unknown as { [key: string]: T[K] };
+        element[property] = object[field];
+      }
+    }
+
     return this.render(object, field, options);
   }
 
