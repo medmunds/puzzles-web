@@ -62,7 +62,10 @@ export abstract class Screen extends LitElement {
     // If the click was within an element with an href (`<a>`, wa-button, etc.),
     // and the href matches a route, intercept it.
     for (const target of event.composedPath()) {
-      const href = target instanceof HTMLElement && target.getAttribute("href");
+      const href =
+        target instanceof HTMLElement
+          ? (target.getAttribute("href") ?? target.getAttribute("data-command"))
+          : null;
       if (href) {
         if (href === homePageUrl().href) {
           if (!hasAnyModifier(event)) {
@@ -84,7 +87,7 @@ export abstract class Screen extends LitElement {
           event.preventDefault();
           await this.showSettingsDialog();
         }
-        break; // stop at first element with an href
+        break; // stop at first element with an href or data-command
       }
     }
   };
