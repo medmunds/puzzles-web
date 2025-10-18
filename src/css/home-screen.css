@@ -92,6 +92,10 @@ header {
 
 section {
   max-width: 55ch;
+
+  *:first-child {
+    margin-block-start: 0;
+  }
 }
 
 noscript section {

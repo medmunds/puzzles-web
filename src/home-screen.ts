@@ -4,6 +4,7 @@ import { customElement } from "lit/decorators.js";
 import rawHomeScreenCSS from "./css/home-screen.css?inline";
 import { canonicalBaseUrl } from "./routing.ts";
 import { Screen } from "./screen.ts";
+import { settings } from "./store/settings.ts";
 import { cssNative, cssWATweaks } from "./utils/css.ts";
 import { ScrollAnimationController } from "./utils/scroll-animation-controller.ts";
 
@@ -13,6 +14,7 @@ import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
+import "@awesome.me/webawesome/dist/components/tooltip/tooltip.js";
 import "./catalog-list.ts";
 import "./dynamic-content.ts";
 import "./head-matter.ts";
@@ -41,7 +43,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
         this.size === "large" ? this.renderWideHeader() : this.renderCompactHeader()
       }</header>
 
-      <slot name="before"></slot>
+      ${settings.showIntro ? this.renderIntro() : nothing}
       
       <catalog-list></catalog-list>
       
@@ -126,6 +128,27 @@ export class HomeScreen extends SignalWatcher(Screen) {
     `;
   }
 
+  private renderIntro() {
+    return html`
+      <div part="intro">
+        <wa-button 
+            id="dismiss-intro" 
+            appearance="outlined" 
+            size="small"
+            @click=${this.dismissIntro}
+        >
+          <wa-icon library="system" name="xmark" variant="solid" label="Hide intro"></wa-icon>
+        </wa-button>
+        <wa-tooltip for="dismiss-intro">Hide intro</wa-tooltip>
+        <slot name="intro"></slot>
+      </div>
+    `;
+  }
+
+  private dismissIntro() {
+    settings.showIntro = false;
+  }
+
   //
   // Styles
   //
@@ -150,6 +173,23 @@ export class HomeScreen extends SignalWatcher(Screen) {
             var(--wa-form-control-padding-inline) +
             var(--wa-border-width-s))
         );
+      }
+      
+      [part="intro"] {
+        display: block;
+        max-width: 55ch;
+
+        &::slotted(section) {
+          display: contents;
+        }
+        
+        wa-button {
+          float: inline-end;
+          margin-block-start: var(--app-padding);
+          margin-block-end: var(--wa-space-s);
+          margin-inline-start: var(--wa-space-s);
+          margin-inline-end: var(--app-padding);
+        }
       }
     `,
   ];

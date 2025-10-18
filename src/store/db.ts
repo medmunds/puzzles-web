@@ -11,6 +11,7 @@ export interface CommonSettings {
 
   // Catalog-level settings
   favoritePuzzles?: PuzzleId[];
+  showIntro?: boolean;
   showUnfinishedPuzzles?: boolean;
 
   // Preferences shared between all puzzles

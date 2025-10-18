@@ -27,6 +27,7 @@ export const isSerializedSettings = (obj: unknown): obj is SerializedSettings =>
 const defaultSettings = {
   allowOfflineUse: null,
   favoritePuzzles: new Set<PuzzleId>(),
+  showIntro: true,
   showUnfinishedPuzzles: false,
   rightButtonLongPress: true,
   rightButtonTwoFingerTap: true,
@@ -47,6 +48,7 @@ class Settings {
   private _favoritePuzzles = signal<ReadonlySet<PuzzleId>>(
     defaultSettings.favoritePuzzles,
   );
+  private _showIntro = signal<boolean>(defaultSettings.showIntro);
   private _showUnfinishedPuzzles = signal<boolean>(
     defaultSettings.showUnfinishedPuzzles,
   );
@@ -97,6 +99,7 @@ class Settings {
       if (!equalSet(favoritePuzzles, this._favoritePuzzles.get())) {
         this._favoritePuzzles.set(favoritePuzzles);
       }
+      update(this._showIntro, commonSettings.showIntro);
       update(this._showUnfinishedPuzzles, commonSettings.showUnfinishedPuzzles);
       update(this._rightButtonLongPress, commonSettings.rightButtonLongPress);
       update(this._rightButtonTwoFingerTap, commonSettings.rightButtonTwoFingerTap);
@@ -141,6 +144,14 @@ class Settings {
       }
       this.favoritePuzzles = favorites;
     }
+  }
+
+  get showIntro(): boolean {
+    return this._showIntro.get();
+  }
+  set showIntro(value: boolean) {
+    this._showIntro.set(value);
+    this.saveCommonSettingOrLogError("showIntro", value);
   }
 
   get showUnfinishedPuzzles(): boolean {
