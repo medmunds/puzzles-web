@@ -12,6 +12,7 @@ export default defineConfig({
       input: {
         main: "index.html",
         puzzle: "puzzle.html",
+        unsupported: "unsupported.html",
       },
     },
     sourcemap: true,

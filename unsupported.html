@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Unsupported browser</title>
+  <!-- TODO: inline minimal stylesheet without variables -->
+  <link rel="stylesheet" href="/src/css/common.css">
+  <style>
+    body {
+      padding: 2em;
+    }
+    h1, ul, p {
+      margin-bottom: 1.5em;
+    }
+    li {
+      margin-bottom: 1em;
+    }
+    section.warning {
+      display: inline-block;
+    }
+
+  </style>
+</head>
+<body>
+  <h1>Unsupported browser</h1>
+  <section class="warning">
+    ⚠️ Sorry, this browser is missing features needed for the puzzles.
+  </section>
+  <section>
+    <p>Please make sure your web browser is up to date and then <a href="/">try
+      again</a>. (Enabling your browser’s “auto update” setting is <em>strongly
+      recommended</em>.)</p>
+    <p>If you’re not able to update your browser, you might try these
+      alternative portable puzzles collection sites:</p>
+    <ul>
+      <li><a href="https://www.chiark.greenend.org.uk/~sgtatham/puzzles/"
+        >https://www.chiark.greenend.org.uk/~sgtatham/puzzles/</a><br>
+        the original, official <cite>Simon Tatham’s portable puzzles
+        collection</cite> website</li>
+      <li><a href="https://medmunds.github.io/puzzles/"
+        >https://medmunds.github.io/puzzles/</a><br>
+        a <em>much older, incomplete</em> web version that may work
+        with outdated browsers (but hasn’t had any updates or fixes itself
+        since 2013)</li>
+    </ul>
+  </section>
+  <hr>
+  <details>
+    <summary>Missing features (technical details)</summary>
+    <ul id="missing"></ul>
+  </details>
+
+  <script>
+    // Extract query string 'f' params using es5 only
+    (function () {
+      function redirectHome() {
+        try { window.location.href = '/'; } catch (e) {}
+      }
+
+      var origin = window.location.origin || "";
+      if (document.referrer && origin
+        && document.referrer.slice(0, origin.length) !== origin)
+      {
+        return redirectHome();
+      }
+
+      var qs = window.location.search || "";
+      if (!qs) {
+        return redirectHome();
+      }
+
+      function safeDecode(s) {
+        try { return decodeURIComponent(s.replace(/\+/g, ' ')); }
+        catch (e) { return ""; }
+      }
+
+      var features = [];
+      var raw = qs.charAt(0) === '?' ? qs.slice(1) : qs;
+      if (raw) {
+        var pairs = raw.split('&');
+        for (var i = 0; i < pairs.length; i++) {
+          var part = pairs[i];
+          if (!part) continue;
+          var eq = part.indexOf('=');
+          var key, val;
+          if (eq > 0) {
+            key = safeDecode(part.slice(0, eq));
+            val = safeDecode(part.slice(eq + 1));
+            if (key === 'f' && val) {
+              features.push(val);
+            }
+          }
+        }
+      }
+
+      if (!features.length) {
+        return redirectHome();
+      }
+
+      // Populate the <ul id="missing">
+      var ul = document.getElementById('missing');
+      if (!ul) return;
+
+      for (var k = 0; k < features.length; k++) {
+        var li = document.createElement('li');
+        li.appendChild(document.createTextNode(features[k]));
+        ul.appendChild(li);
+      }
+    })();
+  </script>
+  %VITE_ANALYTICS_BLOCK%
+</body>
+</html>
