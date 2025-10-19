@@ -3,7 +3,9 @@
  */
 
 import assert from "node:assert";
-import type { Connect, Plugin } from "vite";
+import fs from "node:fs";
+import path from "node:path";
+import type { Connect, Plugin, PreviewServer, ViteDevServer } from "vite";
 import { puzzleIds } from "./src/assets/puzzles/catalog.json";
 
 declare global {
@@ -23,41 +25,95 @@ function validateBase(base: string) {
 export { puzzleIds } from "./src/assets/puzzles/catalog.json";
 
 /**
- * Returns a RegExp that exactly matches /:puzzleId or /:puzzleId/,
+ * Returns a RegExp that exactly matches base:puzzleId,
  * where :puzzleId is one of the given puzzleIds.
- * Any search params are allowed (/:puzzleId?type=3 matches),
- * but trailing path portions are not (/:puzzleId/other won't match).
  */
 export const getPuzzleRouteRe = (puzzleIds: string[], base: string = "/"): RegExp => {
   validateBase(base);
   const puzzleIdsRe = puzzleIds.map(RegExp.escape).join("|");
-  // Entire match must start at beginning and terminate either at end or at '?'.
-  return new RegExp(`^${RegExp.escape(base)}(${puzzleIdsRe})/?($|[?])`);
+  return new RegExp(`^${RegExp.escape(base)}(${puzzleIdsRe})$`);
 };
 
 /**
- * Returns a RegExp that exactly matches index route.
- */
-export const getIndexRouteRe = (base: string = "/") => {
-  validateBase(base);
-  return new RegExp(`^${RegExp.escape(base)}?($|[?])`);
-};
-
-/**
- * Vite plugin that routes / to /index.html and /:puzzleId to /puzzle.html
- * (for known puzzle ids). Use with appType: "mpa". Puzzle ids are read
- * (at startup) from catalogFile.
+ * Vite plugin that replicates Cloudflare Pages' index routing
+ * and clean urls plus with our custom puzzles MPA routing:
+ * - Index routing: /base/help/ serves /dist/help/index.html
+ *   - /base/help/index.html redirects to /base/help/
+ * - Clean URLs: /base/help/intro serves /dist/help/intro.html
+ *   - /base/help/intro.html redirects to /base/help/intro
+ * - Puzzles MPA: /base/:puzzleId serves /dist/puzzle.html for known puzzleIds
+ *   - but /base/help/:puzzleId or /base/assets/:puzzleId is not affected
  */
 export const puzzlesMpaRouting = (): Plugin => {
-  const createMiddleware = (base?: string): Connect.NextHandleFunction => {
+  const createMiddleware = (
+    server: ViteDevServer | PreviewServer,
+    { isDevServer }: { isDevServer: boolean },
+  ): Connect.NextHandleFunction => {
+    const base = server.config?.base ?? "/";
     const puzzleRouteRe = getPuzzleRouteRe(puzzleIds, base);
-    const indexRouteRe = getIndexRouteRe(base);
 
-    return (req, _res, next) => {
+    // Resolving urls to files like Vite does:
+    const servableDirs = isDevServer
+      ? [server.config.publicDir, server.config.root]
+      : [server.config.build.outDir];
+
+    const fileExists = (pathname: string): boolean => {
+      const relativePathname = pathname.startsWith(base)
+        ? pathname.slice(base.length)
+        : pathname;
+      for (const dir of servableDirs) {
+        const resolvedPath = path.join(dir, relativePathname);
+        if (fs.existsSync(resolvedPath)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    return (req, res, next) => {
       if (req.url) {
-        if (indexRouteRe.test(req.url)) {
-          req.url = `${base}index.html`;
-        } else if (puzzleRouteRe.test(req.url)) {
+        // Get req.url's pathname (without query params)
+        const fakeOrigin = "http://origin-unused";
+        const url = new URL(`${fakeOrigin}${req.url}`);
+        const pathname = url.pathname;
+
+        const redirect = () => {
+          const location = url.href.replace(fakeOrigin, "");
+          // console.log(`Redirecting ${req.url} to ${location}`);
+          res.statusCode = 308;
+          res.setHeader("Location", location);
+          res.end();
+        };
+
+        if (pathname.endsWith("/")) {
+          const indexFile = `${pathname}index.html`;
+          if (fileExists(indexFile)) {
+            // "Index routing": serve /foo/bar/index.html for /foo/bar/
+            // console.log(`Index route ${req.url} -> ${indexFile}`);
+            req.url = indexFile;
+          } else {
+            // "Strip trailing /"
+            const stripped = pathname.replace(/\/+$/, "");
+            if (stripped.length > 0) {
+              url.pathname = stripped;
+              return redirect();
+            }
+          }
+        } else if (pathname.endsWith(".html")) {
+          // "Clean url": strip .html (and index.html)
+          let cleaned = pathname.slice(0, -5);
+          if (cleaned.endsWith("/index")) {
+            cleaned = cleaned.slice(0, -5);
+          }
+          url.pathname = cleaned;
+          return redirect();
+        } else if (fileExists(`${pathname}.html`)) {
+          // "Clean url" part 2: serve /foo/bar.html for /foo/bar
+          // console.log(`Clean url ${req.url} -> ${pathname}.html`);
+          req.url = `${pathname}.html`;
+        } else if (puzzleRouteRe.test(pathname)) {
+          // MPA routing: serve /puzzle.html for /:puzzleId
+          // console.log(`Puzzle route ${req.url} -> ${base}puzzle.html`);
           req.url = `${base}puzzle.html`;
         }
       }
@@ -72,14 +128,14 @@ export const puzzlesMpaRouting = (): Plugin => {
         server.config.appType === "mpa",
         "puzzlesSpaRouting plugin requires appType 'mpa'",
       );
-      server.middlewares.use(createMiddleware(server.config.base));
+      server.middlewares.use(createMiddleware(server, { isDevServer: true }));
     },
     configurePreviewServer(server) {
       assert(
         server.config.appType === "mpa",
         "puzzlesSpaRouting plugin requires appType 'mpa'",
       );
-      server.middlewares.use(createMiddleware(server.config.base));
+      server.middlewares.use(createMiddleware(server, { isDevServer: false }));
     },
   };
 };
