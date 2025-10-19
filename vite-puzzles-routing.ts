@@ -22,6 +22,11 @@ function validateBase(base: string) {
   }
 }
 
+function isViteMagicUrl(url: URL) {
+  const viteMagicParams = ["import", "raw", "inline", "url", "v", "t"];
+  return viteMagicParams.some((param) => url.searchParams.has(param));
+}
+
 export { puzzleIds } from "./src/assets/puzzles/catalog.json";
 
 /**
@@ -99,7 +104,7 @@ export const puzzlesMpaRouting = (): Plugin => {
               return redirect();
             }
           }
-        } else if (pathname.endsWith(".html")) {
+        } else if (pathname.endsWith(".html") && !isViteMagicUrl(url)) {
           // "Clean url": strip .html (and index.html)
           let cleaned = pathname.slice(0, -5);
           if (cleaned.endsWith("/index")) {
