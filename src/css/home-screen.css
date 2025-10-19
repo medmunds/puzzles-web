@@ -50,7 +50,7 @@ header {
 
   .controls {
     grid-area: controls;
-    align-self: center;
+    align-self: start;
     display: flex;
     gap: 0; /* toolbar buttons all have lots of padding built in */
     /* Counteract wa-button padding and border */
