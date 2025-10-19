@@ -24,30 +24,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 
 import { installErrorHandlers } from "./utils/errors.ts";
 
-if (new URL(window.location.href).searchParams.has("console")) {
-  // Inject an in-document emulated console
-  // const src = "https://cdn.jsdelivr.net/npm/eruda@3.4.3"; // too heavy for mobile
-  const version = "51239dd85ea707bd06159024a8ad64028d0862f6"; // 2.0.7
-  const src = `https://cdn.jsdelivr.net/gh/c-kick/mobileConsole@${version}/hnl.mobileconsole.min.js`;
-  const script = Object.assign(document.createElement("script"), { src });
-  await new Promise((resolve) => {
-    script.onload = resolve;
-    document.head.appendChild(script);
-  });
-  if (src.indexOf("eruda") !== -1) {
-    // @ts-expect-error
-    window.eruda?.init();
-  } else {
-    // mobileConsole treats assert(assertion, ...) as a log level
-    console.assert = (assertion?: boolean, ...data: unknown[]) => {
-      if (!assertion) {
-        console.error("assert failed", ...data);
-      }
-    };
-  }
-} else {
-  installErrorHandlers();
-}
+installErrorHandlers();
 
 import { installWebAwesomeHacks } from "./utils/webawesomehacks.ts";
 
