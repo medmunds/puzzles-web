@@ -603,8 +603,11 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       :host {
         display: block;
         box-sizing: border-box;
-        width: 100%;
-        height: 100%;
+        /* Dynamic viewport units Baseline 2023 */
+        width: 100vw;
+        height: 100vh;
+        width: 100dvw;
+        height: 100dvh;
       }
       
       main {

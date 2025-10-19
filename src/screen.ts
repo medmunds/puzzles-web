@@ -145,6 +145,8 @@ export abstract class Screen extends LitElement {
 
   override connectedCallback() {
     super.connectedCallback();
+    // TODO: needs to be a resize observer on `this` to catch dvh/dvw changes
+    //   (for puzzle-screen, but not for home-screen)
     window.addEventListener("resize", this.handleResize);
     this.addEventListener("click", this.interceptHrefClicks);
 
