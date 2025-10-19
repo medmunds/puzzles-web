@@ -58,16 +58,15 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
 
   override connectedCallback() {
     super.connectedCallback();
-    // Activate virtual keys on pointerdown with touch/pen,
-    // for better responsiveness in rapid "typing"
-    this.addEventListener("pointerdown", this.handleButtonPress);
+    // Activate virtual keys on touchstart for better responsiveness in rapid "typing".
+    this.addEventListener("touchstart", this.handleButtonPress, { passive: false });
     // But also handle click for keyboard activation
     this.addEventListener("click", this.handleButtonPress);
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
-    this.removeEventListener("pointerdown", this.handleButtonPress);
+    this.removeEventListener("touchstart", this.handleButtonPress);
     this.removeEventListener("click", this.handleButtonPress);
   }
 
@@ -100,24 +99,20 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     `;
   };
 
-  private handleButtonPress = async (event: PointerEvent) => {
-    // Delegated listener for both click and pointerdown events.
-    // Handle pointerdown on touch/pen devices,
-    // and click on other devices (mouse, keyboard, etc.).
-    if (
-      (event.type === "pointerdown") ===
-      (event.pointerType === "touch" || event.pointerType === "pen")
-    ) {
-      const target = getDelegatedTarget(event)?.closest("[data-button]");
-      const dataButton = target?.getAttribute("data-button") ?? null;
-      if (dataButton !== null) {
-        event.preventDefault();
-        const button = Number.parseInt(dataButton, 10);
-        if (!Number.isNaN(button)) {
-          await this.puzzle?.processKey(button);
-        } else if (!import.meta.env.PROD) {
-          throw new Error(`Invalid data-button="${dataButton}"`);
-        }
+  private handleButtonPress = async (event: PointerEvent | TouchEvent) => {
+    // Delegated listener for both touchstart and click events.
+    // (On touch devices, preventDefault on touchstart will avoid a later click event.
+    // This must be installed on touchstart rather than pointerdown, because it's
+    // impossible on iOS Safari to prevent a pointerdown from generating a click.)
+    const target = getDelegatedTarget(event)?.closest("[data-button]");
+    const dataButton = target?.getAttribute("data-button") ?? null;
+    if (dataButton !== null) {
+      event.preventDefault();
+      const button = Number.parseInt(dataButton, 10);
+      if (!Number.isNaN(button)) {
+        await this.puzzle?.processKey(button);
+      } else if (!import.meta.env.PROD) {
+        throw new Error(`Invalid data-button="${dataButton}"`);
       }
     }
   };
