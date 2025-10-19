@@ -108,7 +108,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
       (event.type === "pointerdown") ===
       (event.pointerType === "touch" || event.pointerType === "pen")
     ) {
-      const target = getDelegatedTarget(event);
+      const target = getDelegatedTarget(event)?.closest("[data-button]");
       const dataButton = target?.getAttribute("data-button") ?? null;
       if (dataButton !== null) {
         event.preventDefault();
