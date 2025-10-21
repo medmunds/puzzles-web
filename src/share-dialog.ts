@@ -235,7 +235,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
       }
   
       wa-dialog::part(dialog) {
-        background-color: var(--wa-color-neutral-fill-quiet);
+        background-color: var(--wa-color-brand-fill-quiet);
       }
   
       wa-details[open]::part(header) {

@@ -744,8 +744,8 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       }
   
       wa-skeleton {
-        --color: var(--wa-color-neutral-fill-quiet);
-        --sheen-color: var(--wa-color-brand-fill-quiet);
+        --color: var(--wa-color-brand-fill-quiet);
+        --sheen-color: var(--wa-color-brand-fill-normal);
         &::part(indicator) {
           border-radius: 0;
         }
