@@ -308,6 +308,8 @@ export class AboutDialog extends SignalWatcher(LitElement) {
       }
       
       wa-details wa-details {
+        margin-block-start: var(--wa-space-m);
+        
         &::part(header) {
           padding: 0;
           font-weight: var(--wa-font-weight-semibold);
@@ -329,17 +331,6 @@ export class AboutDialog extends SignalWatcher(LitElement) {
   
         border: var(--wa-panel-border-width) var(--wa-color-surface-border) var(--wa-panel-border-style);
         border-radius: var(--wa-panel-border-radius);
-      }
-  
-      .panel,
-      wa-details::part(content) {
-        display: flex;
-        flex-direction: column;
-        gap: var(--wa-space-m);
-      }
-      
-      .nowrap {
-        white-space: nowrap;
       }
   
       h1, h2, h3 {

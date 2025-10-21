@@ -18,13 +18,36 @@ h2,
 h3,
 h4,
 h5,
-h6 {
+h6,
+p,
+ol,
+ul,
+dl {
   margin: 0;
   /* Safari gives precedence to its user-agent stylesheet margin-inline
    * and margin-block values (over margin shorthand) during CSS animations. */
   margin-inline: 0;
   margin-block: 0;
 
+  &:not(:first-child) {
+    margin-block-start: 1em;
+  }
+}
+
+dt,
+li,
+p + ul {
+  &:not(:first-child) {
+    margin-block-start: 0.5em;
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--wa-font-family-heading) sans-serif;
   color: var(--wa-color-text-normal);
   line-height: var(--wa-line-height-condensed);
@@ -42,20 +65,17 @@ h3 {
   font-weight: var(--wa-font-weight-semibold);
   font-size: var(--wa-font-size-m);
 }
-
 p {
-  margin: var(--wa-space-m) 0 0 0;
   font-size: var(--wa-font-size-m);
   font-weight: var(--wa-font-weight-normal);
 }
 
-ul {
-  margin: 0;
-}
-
 hr {
   border: none;
-  border-top: 1px solid var(--wa-color-neutral-border-normal);
+  height: var(--wa-border-width-s);
+  margin-block: var(--wa-space-m);
+  border-top: var(--wa-border-width-s) var(--wa-border-style)
+    var(--wa-color-neutral-border-normal);
 }
 
 small {
