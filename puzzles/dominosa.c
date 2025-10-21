@@ -2795,7 +2795,8 @@ static char *interpret_move(const game_state *state, game_ui *ui,
 
     /*
      * A left-click between two numbers toggles a domino covering
-     * them. A right-click toggles an edge.
+     * them. A right-click on a number toggles the highlight,
+     * and between numbers toggles an edge.
      */
     if (button == LEFT_BUTTON || button == RIGHT_BUTTON) {
         int tx = FROMCOORD(x), ty = FROMCOORD(y), t = ty*w+tx;
@@ -2811,6 +2812,21 @@ static char *interpret_move(const game_state *state, game_ui *ui,
          */
         dx = 2 * (x - COORD(tx)) - TILESIZE;
         dy = 2 * (y - COORD(ty)) - TILESIZE;
+
+        if (button == RIGHT_BUTTON && abs(dx) < TILESIZE*2/5 && abs(dy) < TILESIZE*2/5) {
+            /* right clicked on the number */
+            int num = state->numbers->numbers[t];
+            if (ui->highlight_1 == num) {
+                ui->highlight_1 = -1;
+            } else if (ui->highlight_2 == num) {
+                ui->highlight_2 = -1;
+            } else if (ui->highlight_1 == -1) {
+                ui->highlight_1 = num;
+            } else if (ui->highlight_2 == -1) {
+                ui->highlight_2 = num;
+            }
+            return MOVE_UI_UPDATE;
+        }
 
         if (abs(dx) > abs(dy) && dx < 0 && tx > 0)
             d1 = t - 1, d2 = t;        /* clicked in right side of domino */
