@@ -140,26 +140,37 @@ export class AboutDialog extends SignalWatcher(LitElement) {
   protected override render() {
     return html`
       <wa-dialog light-dismiss @wa-show=${this.handleDialogShow}>
-        <div slot="label">About <cite>${appName}</cite></div>
+        <div slot="label">About ${appName}</div>
         
         <div class="panel">
           <p>
             A web adaptation of
-            <cite>${this.renderOffsiteLink(
-              "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/",
-              html`<span class="nowrap">Simon Tatham’s</span> 
-                <span class="nowrap">Portable Puzzles Collection</span>`,
-            )}</cite>
-            <span class="nowrap">by Mike Edmunds</span>
+            <cite>Simon&nbsp;Tatham’s Portable&nbsp;Puzzles&nbsp;Collection</cite>
+            by&nbsp;Mike&nbsp;Edmunds
           </p>
           <p>
             Version <span class="version">${version}</span><br>
             ${this.renderUpdateInfo()}
           </p>
           <p>
-            Source code: 
+            Source code and more on GitHub:
             ${this.renderOffsiteLink("https://github.com/medmunds/puzzles")}
+            - ${this.renderOffsiteLink("https://github.com/medmunds/puzzles/discussions", html`discussion&nbsp;forums`)}
+            - ${this.renderOffsiteLink("https://github.com/medmunds/puzzles/issues", html`bug&nbsp;reports`)}
           </p>
+          <p>Credits and special thanks to:</p>
+          <ul>
+            <li>Simon Tatham and all the contributors to the original, official
+              ${this.renderOffsiteLink(
+                "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/",
+                html`Portable&nbsp;Puzzles&nbsp;Collection`,
+              )}</li>
+            <li>${this.renderOffsiteLink("https://lucide.dev/", "Lucide")} icons
+              and ${this.renderOffsiteLink("https://webawesome.com", "Web Awesome")}
+              UI components</li>
+            <li>All the other open source software that makes this app possible
+              (see the source code link above and the licenses section below)</li>
+          </ul>
         </div>
         
         <wa-details summary="Privacy">
@@ -170,6 +181,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
             summary="Copyright notices and licenses" 
             @wa-show=${this.loadDependencies}
         >
+          <p>This application is made available under the MIT License:</p>
           ${licenseTextToHTML(
             licenseText,
             html`<strong>${repoName /* NOT appName */}</strong><br>`,
