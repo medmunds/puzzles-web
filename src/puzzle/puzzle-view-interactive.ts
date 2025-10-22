@@ -114,58 +114,48 @@ export class PuzzleViewInteractive extends PuzzleView {
   // Keyboard events
   //
 
-  private handleKeyEvent = async (event: KeyboardEvent) => {
+  static puzzleKeyMap: { [key: KeyboardEvent["key"]]: PuzzleButton | number } = {
+    ArrowDown: PuzzleButton.CURSOR_DOWN,
+    ArrowUp: PuzzleButton.CURSOR_UP,
+    ArrowLeft: PuzzleButton.CURSOR_LEFT,
+    ArrowRight: PuzzleButton.CURSOR_RIGHT,
+    Accept: PuzzleButton.CURSOR_SELECT,
+    CrSel: PuzzleButton.CURSOR_SELECT,
+    Enter: PuzzleButton.CURSOR_SELECT,
+    Select: PuzzleButton.CURSOR_SELECT,
+    " ": PuzzleButton.CURSOR_SELECT2,
+    Backspace: 127,
+    Clear: 127,
+    Delete: 127,
+    Undo: PuzzleButton.UI_UNDO,
+    Redo: PuzzleButton.UI_REDO,
+    // Tab: Only Untangle uses it; intercepting would create a tab-order trap
+  } as const;
+
+  eventKeyToPuzzleKey(key: KeyboardEvent["key"]): number | undefined {
+    let button = PuzzleViewInteractive.puzzleKeyMap[key];
+    if (button === undefined && key.length === 1) {
+      const code = key.charCodeAt(0);
+      if (code <= 127) {
+        button = code;
+      }
+    }
+    return button;
+  }
+
+  handleKeyEvent = async (event: KeyboardEvent) => {
     if (!this.puzzle) {
       return;
     }
-    let button: number | undefined;
-    switch (event.key) {
-      case "ArrowDown":
-        button = PuzzleButton.CURSOR_DOWN;
-        break;
-      case "ArrowUp":
-        button = PuzzleButton.CURSOR_UP;
-        break;
-      case "ArrowLeft":
-        button = PuzzleButton.CURSOR_LEFT;
-        break;
-      case "ArrowRight":
-        button = PuzzleButton.CURSOR_RIGHT;
-        break;
-      case "Accept":
-      case "CrSel":
-      case "Enter":
-      case "Select":
-        button = PuzzleButton.CURSOR_SELECT;
-        break;
-      case " ":
-        button = PuzzleButton.CURSOR_SELECT2;
-        break;
-      case "Backspace":
-      case "Clear":
-      case "Delete":
-        button = 127;
-        break;
-      case "Tab":
-        // TODO: Untangle wants tab, but intercepting would create a tab-order trap
-        return;
-      case "Escape":
-        if (this.pointerTracking) {
-          event.preventDefault();
-          await this.cancelPointerTracking();
-        }
-        return;
-      // TODO: map "Cut", "Copy", "Paste", "Undo", "Redo" to special buttons
-      default:
-        // Convert ASCII (puzzle isn't interested in any other keys)
-        if (event.key.length === 1) {
-          button = event.key.charCodeAt(0);
-          if (button > 127) {
-            return; // not ASCII
-          }
-        }
-        break;
+    if (event.key === "Escape") {
+      if (this.pointerTracking) {
+        event.preventDefault();
+        await this.cancelPointerTracking();
+      }
+      return;
     }
+
+    const button = this.eventKeyToPuzzleKey(event.key);
     if (button === undefined) {
       return;
     }

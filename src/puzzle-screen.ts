@@ -16,7 +16,7 @@ import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { cssWATweaks } from "./utils/css.ts";
 import { notifyError } from "./utils/errors.ts";
-import { preventDoubleTapZoomOnButtons } from "./utils/events.ts";
+import { hasCtrlKey, preventDoubleTapZoomOnButtons } from "./utils/events.ts";
 import { debounced, sleep } from "./utils/timing.ts";
 
 // Register components
@@ -83,6 +83,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
 
   override connectedCallback() {
     super.connectedCallback();
+    window.addEventListener("keydown", this.handleBubbledKeyDown);
     const { puzzleAutoSaveFilename, puzzleAutoSavePuzzleId } =
       window.history.state ?? {};
     if (
@@ -91,6 +92,11 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     ) {
       this._autoSaveFilename = puzzleAutoSaveFilename;
     }
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener("keydown", this.handleBubbledKeyDown);
   }
 
   protected override async willUpdate(changedProperties: Map<string, unknown>) {
@@ -592,6 +598,26 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       }
     }
   }
+
+  private handleBubbledKeyDown = async (event: KeyboardEvent) => {
+    // If a key event arrives at the document when nothing else is focused,
+    // focus the puzzle and redirect the event to it.
+    if (event.key === "Tab" || hasCtrlKey(event)) {
+      // Don't redirect keyboard navigation
+      // or (possible) browser command shortcut keys
+      return;
+    }
+    const activeElement = document.activeElement;
+    if (activeElement === document.body || activeElement === document.documentElement) {
+      // Only redirect keys that are potentially handled by the puzzle.
+      // (Don't focus the puzzle on Shift or Alt or NextTrack or FnLock.)
+      const puzzleView = this.shadowRoot?.querySelector("puzzle-view-interactive");
+      if (puzzleView?.eventKeyToPuzzleKey(event.key) !== undefined) {
+        puzzleView.focus();
+        await puzzleView.handleKeyEvent(event);
+      }
+    }
+  };
 
   //
   // Styles
