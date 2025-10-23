@@ -125,9 +125,11 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     window.removeEventListener("focus", this.redrawWhenVisible);
   }
 
+  protected contentTabIndex: string | typeof nothing = nothing;
+
   protected override render() {
     return html`
-      <div part="content">
+      <div part="content" tabindex=${this.contentTabIndex}>
         ${this.renderPuzzle()}
         ${this.renderStatusbar()}
         ${this.renderLoadingIndicator()}

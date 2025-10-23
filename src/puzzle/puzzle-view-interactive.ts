@@ -67,6 +67,18 @@ export class PuzzleViewInteractive extends PuzzleView {
     this.removeEventListener("keydown", this.handleKeyEvent);
   }
 
+  // Safari will not render :focus-visible on a custom element itself, only on
+  // native elements within it. So (manually) delegate focus to the contentPart.
+  protected contentTabIndex = "0";
+
+  override focus(options?: FocusOptions) {
+    this.contentPart?.focus(options);
+  }
+
+  override blur() {
+    this.contentPart?.blur();
+  }
+
   protected override renderPuzzle() {
     // Wrap the canvas with a div that handles pointer events and adds some
     // padding around it, so pointer events slightly outside the puzzle are
@@ -403,12 +415,9 @@ export class PuzzleViewInteractive extends PuzzleView {
   static styles = [
     ...PuzzleView.styles,
     css`
-      :host(:focus-visible) {
-        outline: none;
-        & [part="content"] {
-          outline: var(--wa-focus-ring);
-          outline-offset: var(--wa-focus-ring-offset);
-        }
+      [part="content"]:focus-visible {
+        outline: var(--wa-focus-ring);
+        outline-offset: var(--wa-focus-ring-offset);
       }
 
       [part="puzzle"], 
