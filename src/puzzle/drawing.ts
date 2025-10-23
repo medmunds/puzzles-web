@@ -99,6 +99,9 @@ export class Drawing implements DrawingImpl<Blitter> {
    * DrawingImpl
    */
 
+  // cached text metrics
+  private mathematicalBaselineOffset: { [font: string]: number } = {};
+
   drawText(
     { x, y }: Point,
     { align, baseline, fontType, size }: DrawTextOptions,
@@ -119,19 +122,24 @@ export class Drawing implements DrawingImpl<Blitter> {
     if (baseline === "mathematical") {
       // CanvasRenderingContext2D.textBaseline doesn't support "mathematical".
       // (And "middle" centers on em height--including descenders--which is not
-      // what the puzzles want.) Approximate mathematical alignment from text
-      // metrics. (Relies on TextMetrics.actual* props that landed ~2018-2020.)
-      // TODO: should really measure full uppercase alphabet + digits
-      //   (and cache results) -- see js_canvas_find_font_midpoint in emcclib.js
+      // what the puzzles want.) Approximate mathematical alignment by centering
+      // digits. (Relies on TextMetrics.actual* props that landed ~2018-2020.)
       this.context.textBaseline = "alphabetic";
-      const { actualBoundingBoxAscent, actualBoundingBoxDescent } =
-        this.context.measureText(text);
-      y += (actualBoundingBoxAscent + actualBoundingBoxDescent) / 2;
+      let offset = this.mathematicalBaselineOffset[this.context.font];
+      if (offset === undefined) {
+        // Measure digits only: puzzles tend to center digits or digits+lowercase,
+        // not uppercase. (Compare js_canvas_find_font_midpoint in emcclib.js.)
+        const { actualBoundingBoxAscent, actualBoundingBoxDescent } =
+          this.context.measureText("0123456789");
+        offset = (actualBoundingBoxAscent + actualBoundingBoxDescent) / 2;
+        this.mathematicalBaselineOffset[this.context.font] = offset;
+      }
+      y += offset;
     } else {
       this.context.textBaseline = baseline;
     }
     this.setUpContext({ fillColor: colour });
-    this.context.fillText(text, x + 0.5, y + 0.5);
+    this.context.fillText(text, x, y);
   }
 
   drawRect({ x, y, w, h }: Rect, colour: number): void {
