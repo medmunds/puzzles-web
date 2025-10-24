@@ -11,6 +11,7 @@ const preflightChecks: {
   "Canvas.transferControlToOffscreen": // Baseline 2023
     () => "transferControlToOffscreen" in document.createElement("canvas"),
   "CustomStateSet un-prefixed states": checkCustomStateSetUnprefixedStates,
+  "TextMetrics.actualBoundingBox": checkTextMetricsActualBoundingBox,
 
   // CSS -- all Baseline 2023
   "CSS nested selectors": () => CSS.supports("selector(& .foo)"),
@@ -32,6 +33,8 @@ const asyncPreflightChecks: {
 
 function checkCustomStateSetUnprefixedStates() {
   // Baseline 2024?
+  // TODO: this is a Web Awesome bug: ElementInternals is meant to be optional
+  //   https://github.com/shoelace-style/webawesome/discussions/1633
   // Web Awesome seems to depend on un-prefixed custom states
   // (though tries to run with ElementInternals missing entirely).
   // Some earlier versions of Chrome *do* support CustomStateSet
@@ -49,6 +52,21 @@ function checkCustomStateSetUnprefixedStates() {
     console.error(error);
     return false;
   }
+}
+
+function checkTextMetricsActualBoundingBox() {
+  // Baseline 2020
+  // If this is a performance problem, could instead check prototype
+  // (works in all major browsers):
+  //   typeof TextMetrics !== "undefined"
+  //   && "actualBoundingBoxAscent" in TextMetrics.prototype
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return false;
+  }
+  const metrics = ctx.measureText("0");
+  return "actualBoundingBoxAscent" in metrics && "actualBoundingBoxDescent" in metrics;
 }
 
 /**
