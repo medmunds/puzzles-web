@@ -1756,6 +1756,11 @@ struct game_drawstate {
     bool hshow, hpencil; /* as for game_ui. */
     bool hflash;
     bool ascii;
+
+    int count_fontsize;
+    int count_w;
+    int count_gap;
+    int count_padding;
 };
 
 static bool is_clue(const game_state *state, int x, int y)
@@ -1791,6 +1796,54 @@ static int clue_index(const game_state *state, int x, int y)
 #else
 #define BORDER (TILESIZE/4)
 #endif
+
+/* Coordinates of monster counts at top */
+#define COUNT_MSIZE (2*TILESIZE/3) /* size of monster label */
+#define COUNT_GAP (TILESIZE/3) /* preferred space between blocks */
+#define COUNT_FONTSIZE (TILESIZE/2) /* preferred size */
+#define COUNT_PADDING (TILESIZE/10) /* space between label and count */
+#define COUNT_X(c) (BORDER + ((ds->w+2)*TILESIZE - ds->count_w) / 2 + ((c)-1) * (ds->count_gap + ds->count_w))
+#define COUNT_Y BORDER
+#define COUNT_W (ds->count_w)
+#define COUNT_H TILESIZE
+#define DIGIT_WIDTH 0.6f /* approximate digit width as a factor of fontsize */
+
+static void calculate_count_layout(game_drawstate *ds) {
+    char buf[MAX_DIGITS(int)];
+    int block_w, number_w, gap, padding, fontsize;
+    int total_w = (ds->w + 2) * TILESIZE; /* not including border */
+    int max_chars;
+
+    sprintf(buf, "%d", ds->w * ds->h); /* max possible count for a monster */
+    max_chars = (int)strlen(buf);
+
+    fontsize = COUNT_FONTSIZE;
+    padding = COUNT_PADDING;
+    number_w = (int)(max_chars * DIGIT_WIDTH * fontsize);
+    block_w = COUNT_MSIZE + padding + number_w;
+    gap = min(COUNT_GAP, (total_w - 3 * block_w) / 2);
+
+    if (gap < 0) {
+        /* Doesn't fit: try reducing padding then fontsize */
+        padding -= min(-gap/3, padding);
+        block_w = COUNT_MSIZE + padding + number_w;
+        gap = (total_w - 3 * block_w) / 2;
+        if (gap < 0) {
+            fontsize = (int)((total_w / 3.0f - COUNT_MSIZE - padding) / (max_chars * DIGIT_WIDTH));
+            fontsize = max(fontsize, TILESIZE/10); /* not too small */
+            number_w = (int)(max_chars * DIGIT_WIDTH * fontsize);
+            block_w = COUNT_MSIZE + padding + number_w;
+            gap = (total_w - 3 * block_w) / 2;
+        }
+        gap = max(gap, 0);
+    }
+
+    ds->count_fontsize = fontsize;
+    ds->count_w = block_w;
+    ds->count_gap = gap;
+    ds->count_padding = padding;
+}
+
 
 static char *interpret_move(const game_state *state, game_ui *ui,
                             const game_drawstate *ds,
@@ -2290,6 +2343,10 @@ static game_drawstate *game_new_drawstate(drawing *dr, const game_state *state)
     ds->hpencil = false;
     ds->hflash = false;
     ds->hx = ds->hy = 0;
+
+    // TODO: is this initialization necessary? (or should we call calculate_count_layout here?)
+    ds->count_w = ds->count_fontsize = ds->count_gap = ds->count_padding = 0;
+
     return ds;
 }
 
@@ -2471,17 +2528,23 @@ static void draw_monster(drawing *dr, game_drawstate *ds, int x, int y,
 
 static void draw_monster_count(drawing *dr, game_drawstate *ds,
                                const game_state *state, int c, bool hflash) {
-    int dx,dy;
-    char buf[MAX_DIGITS(int) + 1];
+    int dx,dy,dw,dh,msize,fontsize,gap,padding;
+    char buf[2 * MAX_DIGITS(int) + 2];
     char bufm[8];
-    
-    dy = TILESIZE/4;
-    dx = BORDER+(ds->w+2)*TILESIZE/2+TILESIZE/4;
+
+    dy = COUNT_Y;
+    dx = COUNT_X(c);
+    dw = COUNT_W;
+    dh = COUNT_H;
+    msize = COUNT_MSIZE;
+    fontsize = ds->count_fontsize;
+    gap = ds->count_gap;
+    padding = ds->count_padding;
+
     switch (c) {
       case 0: 
         sprintf(buf,"%d",state->common->num_ghosts);
         sprintf(bufm,"G");
-        dx -= 3*TILESIZE/2;
         break;
       case 1: 
         sprintf(buf,"%d",state->common->num_vampires); 
@@ -2490,25 +2553,24 @@ static void draw_monster_count(drawing *dr, game_drawstate *ds,
       case 2: 
         sprintf(buf,"%d",state->common->num_zombies); 
         sprintf(bufm,"Z");
-        dx += 3*TILESIZE/2;
         break;
     }
 
-    draw_rect(dr, dx-2*TILESIZE/3, dy, 3*TILESIZE/2, TILESIZE,
-              COL_BACKGROUND);
+    /* Clear to the next block in case an earlier count ran wide */
+    draw_rect(dr, dx, dy, dw+gap, dh, COL_BACKGROUND);
     if (!ds->ascii) { 
-        draw_monster(dr, ds, dx-TILESIZE/3, dy+TILESIZE/2,
-                     2*TILESIZE/3, hflash, 1<<c);
+        draw_monster(dr, ds, dx+msize/2, dy+dh/2,
+                     msize, hflash, 1<<c);
     } else {
-        draw_text(dr, dx-TILESIZE/3,dy+TILESIZE/2,FONT_VARIABLE,TILESIZE/2,
+        draw_text(dr, dx+msize/2,dy+dh/2,FONT_VARIABLE, COUNT_FONTSIZE,
                   ALIGN_HCENTRE|ALIGN_VCENTRE,
                   hflash ? COL_FLASH : COL_TEXT, bufm);
     }
-    draw_text(dr, dx, dy+TILESIZE/2, FONT_VARIABLE, TILESIZE/2,
+    draw_text(dr, dx+msize+padding, dy+dh/2, FONT_VARIABLE, fontsize,
               ALIGN_HLEFT|ALIGN_VCENTRE,
               (state->count_errors[c] ? COL_ERROR :
                hflash ? COL_FLASH : COL_TEXT), buf);
-    draw_update(dr, dx-2*TILESIZE/3, dy, 3*TILESIZE/2, TILESIZE);
+    draw_update(dr, dx, dy, dw+gap, dh);
 
     return;
 }
@@ -2698,6 +2760,10 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
         changed_ascii = false;
 
     /* Draw monster count hints */
+
+    if (!ds->started) {
+        calculate_count_layout(ds);
+    }
 
     for (i=0;i<3;i++) {
         stale = false;
