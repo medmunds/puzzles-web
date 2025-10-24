@@ -78,7 +78,8 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
           <wa-callout variant="danger">
             <wa-icon slot="icon" name="error"></wa-icon>
             <strong>Unable to use that id</strong>&hairsp;&mdash;&hairsp;are you 
-            sure it’s for <cite>${puzzleName}</cite>? (Error: ${this.error}.)
+            sure it’s for ${puzzleName}?<br>
+            (Error: ${this.error}.)
           </wa-callout>
         `
       : this.puzzle?.totalMoves
@@ -102,10 +103,10 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
             @keydown=${this.handleInputKeydown}
         >
           <div slot="label">
-            Enter a <cite>${puzzleName}</cite> game ID or random seed
+            Enter a ${puzzleName} game ID or random seed
           </div>
           <div slot="hint">
-            Copied from any compatible <cite>Portable Puzzles Collection</cite> app
+            Copied from any compatible portable puzzles collection app
           </div>
         </wa-input>
         

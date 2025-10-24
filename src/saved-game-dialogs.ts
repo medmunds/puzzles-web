@@ -109,7 +109,7 @@ export class LoadGameDialog extends GameFileDialog {
         <wa-popover for="help">
           <p>Pick a game you saved earlier to resume play.</p>
           <p>Or use <em>Import</em> to ${isRunningAsApp ? "load" : "upload"} a file saved 
-            from any compatible <cite>Portable Puzzles Collection</cite> app.</p>
+            from any compatible portable puzzles collection app.</p>
         </wa-popover>
 
         <saved-game-list
@@ -191,8 +191,7 @@ export class SaveGameDialog extends GameFileDialog {
             (Saved games are kept in ${isRunningAsApp ? "this app’s" : "your browser’s"} 
             local storage.)</p>
           <p>Or use <em>Export</em> to ${isRunningAsApp ? "create" : "download"} a file 
-            you can load into any compatible <cite>Portable Puzzles Collection</cite> 
-            app.</p>
+            you can load into any compatible portable puzzles collection app.</p>
         </wa-popover>
         
         <saved-game-list 

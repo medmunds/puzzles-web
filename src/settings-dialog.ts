@@ -63,7 +63,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     // (settings-dialog does not use OK/Cancel flow.)
     return html`
       <wa-details open>
-        <div slot="summary">Options for <cite>${puzzleName}</cite></div>
+        <div slot="summary">${puzzleName} preferences</div>
         <puzzle-preferences-form 
             autosubmit
             @puzzle-preferences-change=${this.handlePuzzlePreferencesChange}

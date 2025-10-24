@@ -88,7 +88,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
         <div slot="label">Share</div>
         
         <wa-details open name="share">
-          <div slot="summary">Link to <cite>${puzzleName}</cite></div>
+          <div slot="summary">Link to ${puzzleName}</div>
           ${this.renderCopyableInput({
             label: "This specific game",
             value: currentGameLink,
@@ -133,8 +133,8 @@ export class ShareDialog extends SignalWatcher(LitElement) {
             label: "Random seed",
             value: randomSeed,
           })}
-          <div class="hint">Enter into any compatible <cite>Portable Puzzle 
-            Collection</cite> app to play this same game</div>
+          <div class="hint">Enter into any compatible portable puzzle collection 
+            app to play this same game</div>
           
           ${
             sgtGameIdLink || sgtRandomSeedLink
