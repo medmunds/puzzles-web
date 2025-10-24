@@ -3270,7 +3270,8 @@ Undead has a similar control system to Solo, Unequal and Keen.
 To play Undead, click the mouse in any empty square and then type a
 letter or number on the keyboard indicating the type of monster:
 \q{G} or \q{1} for a ghost, \q{V} or \q{2} for a vampire,
-or \q{Z} or \q{3} for a zombie. If you make a
+or \q{Z} or \q{3} for a zombie. You can also click on a monster in the
+counts at the top to place it in the highlighted square. If you make a
 mistake, click the mouse in the incorrect square and press Space to
 clear it again (or use the Undo feature).
 

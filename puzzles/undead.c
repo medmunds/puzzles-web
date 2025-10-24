@@ -1893,10 +1893,21 @@ static char *interpret_move(const game_state *state, game_ui *ui,
 {
     int gx,gy;
     int g,xi;
-    char buf[80]; 
+    int cc;
+    char buf[80];
 
     gx = ((x-BORDER-1) / TILESIZE );
     gy = ((y-BORDER-2) / TILESIZE ) - 1;
+
+    cc = -1;
+    if (button == LEFT_BUTTON && y >= COUNT_Y && y < COUNT_Y + COUNT_H) {
+        for (int c = 0; c < 3; c++) {
+            if (x >= COUNT_X(c) && x < COUNT_X(c) + COUNT_W) {
+                cc = c;
+                break;
+            }
+        }
+    }
 
     if (button == 'a' || button == 'A') {
         ui->ascii = !ui->ascii;
@@ -1917,21 +1928,24 @@ static char *interpret_move(const game_state *state, game_ui *ui,
     if (ui->hshow && !ui->hpencil) {
         xi = state->common->xinfo[ui->hx + ui->hy*(state->common->params.w+2)];
         if (xi >= 0 && !state->common->fixed[xi]) {
-            if (button == 'g' || button == 'G' || button == '1') {
+            if (cc >= 0 && state->guess[xi] == 1 << cc) {
+                cc = 127; /* clicked monster already in cell: delete it */
+            }
+            if (button == 'g' || button == 'G' || button == '1' || cc == 0) {
                 if (!ui->hcursor) ui->hshow = false;
                 if (state->guess[xi] == 1)
                     return ui->hcursor ? NULL : MOVE_UI_UPDATE;
                 sprintf(buf,"G%d",xi);
                 return dupstr(buf);
             }
-            if (button == 'v' || button == 'V' || button == '2') {
+            if (button == 'v' || button == 'V' || button == '2' || cc == 1) {
                 if (!ui->hcursor) ui->hshow = false;
                 if (state->guess[xi] == 2)
                     return ui->hcursor ? NULL : MOVE_UI_UPDATE;
                 sprintf(buf,"V%d",xi);
                 return dupstr(buf);
             }
-            if (button == 'z' || button == 'Z' || button == '3') {
+            if (button == 'z' || button == 'Z' || button == '3' || cc == 2) {
                 if (!ui->hcursor) ui->hshow = false;
                 if (state->guess[xi] == 4)
                     return ui->hcursor ? NULL : MOVE_UI_UPDATE;
@@ -1939,7 +1953,7 @@ static char *interpret_move(const game_state *state, game_ui *ui,
                 return dupstr(buf);
             }
             if (button == 'e' || button == 'E' || button == CURSOR_SELECT2 ||
-                button == '0' || button == '\b' ) {
+                button == '0' || button == '\b' || cc == 127) {
                 if (!ui->hcursor) ui->hshow = false;
                 if (state->guess[xi] == 7 && state->pencils[xi] == 0)
                     return ui->hcursor ? NULL : MOVE_UI_UPDATE;
@@ -1975,11 +1989,11 @@ static char *interpret_move(const game_state *state, game_ui *ui,
         if (xi >= 0 && !state->common->fixed[xi]) {
             buf[0] = '\0';
 
-            if (button == 'g' || button == 'G' || button == '1') {
+            if (button == 'g' || button == 'G' || button == '1' || cc == 0) {
                 sprintf(buf,"g%d",xi);
-            } else if (button == 'v' || button == 'V' || button == '2') {
+            } else if (button == 'v' || button == 'V' || button == '2' || cc == 1) {
                 sprintf(buf,"v%d",xi);
-            } else if (button == 'z' || button == 'Z' || button == '3') {
+            } else if (button == 'z' || button == 'Z' || button == '3' || cc == 2) {
                 sprintf(buf,"z%d",xi);
             } else if (button == 'e' || button == 'E' ||
                        button == CURSOR_SELECT2 || button == '0' ||
