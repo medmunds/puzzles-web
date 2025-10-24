@@ -52,6 +52,9 @@ export class HomeScreen extends SignalWatcher(Screen) {
       <footer slot="footer">
         <div>Credits, privacy info, copyright notices and licenses are in the
           <a href="#about">about box</a>.</div>
+        <div><small>In some countries, names of similar/related puzzles may be
+          trademarks belonging to others. Use here does not imply affiliation
+          or endorsement by their owners.</small></div>
       </footer>
 
       <dynamic-content></dynamic-content>
