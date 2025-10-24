@@ -233,6 +233,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
       this.error = result;
     } else {
       // Success
+      this.error = undefined;
       if (this.puzzle) {
         this.dispatchEvent(
           new CustomEvent<PuzzleConfigChangeDetail>(this.submitEventType, {
