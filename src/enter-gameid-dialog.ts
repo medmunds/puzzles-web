@@ -106,7 +106,7 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
             Enter a ${puzzleName} game ID or random seed
           </div>
           <div slot="hint">
-            Copied from any compatible portable puzzles collection app
+            Copied from any compatible portable puzzle collection app
           </div>
         </wa-input>
         

@@ -145,7 +145,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
         <div class="panel">
           <p>
             A web adaptation of
-            <cite>Simon&nbsp;Tatham’s Portable&nbsp;Puzzles&nbsp;Collection</cite>
+            <cite>Simon&nbsp;Tatham’s Portable&nbsp;Puzzle&nbsp;Collection</cite>
             by&nbsp;Mike&nbsp;Edmunds
           </p>
           <p>
@@ -163,7 +163,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
             <li>Simon Tatham and all the contributors to the original, official
               ${this.renderOffsiteLink(
                 "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/",
-                html`Portable&nbsp;Puzzles&nbsp;Collection`,
+                html`Portable&nbsp;Puzzle&nbsp;Collection`,
               )}</li>
             <li>${this.renderOffsiteLink("https://lucide.dev/", "Lucide")} icons
               and ${this.renderOffsiteLink("https://webawesome.com", "Web Awesome")}
@@ -196,7 +196,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
           </div>
           
           <wa-details appearance="plain" icon-placement="start">
-            <div slot="summary">Simon Tatham’s Portable Puzzles Collection</div>
+            <div slot="summary">Simon Tatham’s Portable Puzzle Collection</div>
             ${licenseTextToHTML(sgtPuzzlesLicenseText)}
           </wa-details>
 
