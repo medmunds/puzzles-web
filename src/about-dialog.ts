@@ -33,6 +33,16 @@ const repoName = "Puzzles web app";
 const appName = import.meta.env.VITE_APP_NAME || repoName;
 const appVersion = import.meta.env.VITE_APP_VERSION || "(development build)";
 
+const sgtPuzzlesLink = "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/";
+const androidAppLink =
+  "https://play.google.com/store/apps/details?id=name.boyle.chris.sgtpuzzles";
+const iOSAppLink = "https://apps.apple.com/in/app/puzzles-reloaded/id6504365885";
+// const iOSOldAppLink = "https://apps.apple.com/us/app/simon-tathams-puzzles/id622220631";
+
+const repoLink = "https://github.com/medmunds/puzzles";
+const forumLink = "https://github.com/medmunds/puzzles/discussions";
+const issuesLink = "https://github.com/medmunds/puzzles/issues";
+
 // Form of dependencies.json
 interface DependencyInfo {
   dependencies: {
@@ -151,30 +161,35 @@ export class AboutDialog extends SignalWatcher(LitElement) {
           </p>
           <p>
             Version <span class="version">${appVersion}</span><br>
-            Compatible with portable puzzle collection 
+            Compatible with Portable Puzzle Collection 
             version&nbsp;<span class="version">${puzzlesVersion}</span><br>
             ${this.renderUpdateInfo()}
           </p>
           <p>
-            Source code and more on GitHub:
-            ${this.renderOffsiteLink("https://github.com/medmunds/puzzles")}
-            - ${this.renderOffsiteLink("https://github.com/medmunds/puzzles/discussions", html`discussion&nbsp;forums`)}
-            - ${this.renderOffsiteLink("https://github.com/medmunds/puzzles/issues", html`bug&nbsp;reports`)}
+            This is open source software. Source code and more on GitHub:
+            ${this.renderOffsiteLink(repoLink)}
+            - ${this.renderOffsiteLink(forumLink, html`discussion&nbsp;forums`)}
+            - ${this.renderOffsiteLink(issuesLink, html`bug&nbsp;reports`)}
           </p>
-          <p>Credits and special thanks to:</p>
-          <ul>
-            <li>Simon Tatham and all the contributors to the original, official
-              ${this.renderOffsiteLink(
-                "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/",
-                html`Portable&nbsp;Puzzle&nbsp;Collection`,
-              )}</li>
+        </div>
+        
+        <wa-details summary="Credits" open>
+          <p>Special thanks to&hellip;</p>
+          <ul role="list">
+            <li>Simon Tatham and all the contributors to the official
+              ${this.renderOffsiteLink(sgtPuzzlesLink, "Portable Puzzle Collection")}, 
+              for over 20 years of fascinating puzzle solving</li>
+            <li>Chris Boyle, Greg Hewgill and Kyle Swarner for their fantastic
+              ${this.renderOffsiteLink(androidAppLink, "Android")} and
+              ${this.renderOffsiteLink(iOSAppLink, "iOS")} apps, 
+              from which I’ve freely borrowed several clever ideas</li>
             <li>${this.renderOffsiteLink("https://lucide.dev/", "Lucide")} icons
               and ${this.renderOffsiteLink("https://webawesome.com", "Web Awesome")}
               UI components</li>
             <li>All the other open source software that makes this app possible
               (see the source code link above and the licenses section below)</li>
           </ul>
-        </div>
+        </wa-details>
         
         <wa-details summary="Privacy">
           ${unsafeHTML(privacyHtml)}
@@ -184,7 +199,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
             summary="Copyright notices and licenses" 
             @wa-show=${this.loadDependencies}
         >
-          <p>This application is made available under the MIT License:</p>
+          <p>This software is released under the MIT License:</p>
           ${licenseTextToHTML(
             appLicenseText,
             html`<strong>${repoName /* NOT appName */}</strong><br>`,
@@ -194,8 +209,8 @@ export class AboutDialog extends SignalWatcher(LitElement) {
           
           <div>
             <h2>Additional licensed software</h2>
-            <p>This application incorporates the following software<br>
-              (expand each item to view its copyright and license terms)</p>
+            <p>This software includes portions of the following
+              (expand each item for copyright and license terms):</p>
           </div>
           
           <wa-details appearance="plain" icon-placement="start">
@@ -350,6 +365,10 @@ export class AboutDialog extends SignalWatcher(LitElement) {
   
       h1, h2, h3 {
         font-size: inherit;
+      }
+      
+      ul {
+        padding-inline-start: 1.25em;
       }
       
       strong {
