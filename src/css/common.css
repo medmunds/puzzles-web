@@ -1,3 +1,12 @@
+/*@import url("/node_modules/@awesome.me/webawesome/dist/styles/webawesome.css");*/
+@layer wa-native,
+  wa-utilities,
+  wa-color-palette,
+  wa-color-variant,
+  wa-theme,
+  wa-theme-dimension,
+  wa-theme-overrides;
+@import url("/node_modules/@awesome.me/webawesome/dist/styles/utilities/scroll-lock.css");
 @import url("/node_modules/@awesome.me/webawesome/dist/styles/themes/default.css");
 @import url("native.css");
 
