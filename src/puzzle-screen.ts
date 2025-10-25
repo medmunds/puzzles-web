@@ -227,6 +227,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   private renderGameMenu(): TemplateResult {
     const iconName = this.puzzleData?.unfinished ? "unfinished" : "game";
     const label = this.puzzleData?.name ?? "Game";
+    const enableDeveloperCommands = false;
     return html`
       <wa-dropdown
           placement=${this.orientation === "vertical" ? "bottom" : "right"}
@@ -265,11 +266,11 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
               `
             : nothing
         }
-        <wa-divider></wa-divider>
         <wa-dropdown-item value="share">
           <wa-icon slot="icon" name="share"></wa-icon>
           Share…
         </wa-dropdown-item>
+        <wa-divider></wa-divider>
         <wa-dropdown-item value="load">
           <wa-icon slot="icon" name="load-game"></wa-icon>
           Load…
@@ -287,17 +288,23 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           <wa-icon slot="icon" name="settings"></wa-icon>
           Preferences…
         </wa-dropdown-item>
-        <wa-divider></wa-divider>
-        <wa-dropdown-item value="catalog">
-          <wa-icon slot="icon" name="back-to-catalog"></wa-icon>
-          Other puzzles
-        </wa-dropdown-item>
         <wa-dropdown-item value="about">
           <wa-icon slot="icon" name="info"></wa-icon>
           About
         </wa-dropdown-item>
         <wa-divider></wa-divider>
-        <wa-dropdown-item value="redraw">Redraw puzzle</wa-dropdown-item>
+        <wa-dropdown-item value="catalog">
+          <wa-icon slot="icon" name="back-to-catalog"></wa-icon>
+          Other puzzles
+        </wa-dropdown-item>
+        ${
+          enableDeveloperCommands
+            ? html`
+              <wa-divider></wa-divider>
+              <wa-dropdown-item value="redraw">Redraw puzzle</wa-dropdown-item>
+            `
+            : nothing
+        }
       </wa-dropdown>
     `;
   }
