@@ -1,8 +1,17 @@
+import * as child from "node:child_process";
 import * as path from "node:path";
 import license from "rollup-plugin-license";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { puzzleIds, puzzlesMpaRouting } from "./vite-puzzles-routing";
+
+function defaultAppVersion(): string {
+  const dateStr = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+  const gitSha = process.env.VITE_GIT_SHA
+    ? process.env.VITE_GIT_SHA.slice(0, 7)
+    : child.execSync("git rev-parse --short HEAD").toString().trim();
+  return `${dateStr}.${gitSha || "unknown"}`;
+}
 
 export default defineConfig({
   appType: "mpa",
@@ -24,6 +33,9 @@ export default defineConfig({
     ),
     "import.meta.env.VITE_CANONICAL_BASE_URL": JSON.stringify(
       process.env.VITE_CANONICAL_BASE_URL ?? "",
+    ),
+    "import.meta.env.VITE_APP_VERSION": JSON.stringify(
+      process.env.VITE_APP_VERSION ?? defaultAppVersion(),
     ),
   },
   plugins: [

@@ -75,6 +75,7 @@ jobs:
 
       - name: Compute VCSID
         id: vcsid
+        # Get the last merged (upstream) sha of the puzzles subtree
         run: |
           UPSTREAM_SHA=$( \
             git log --all --grep="^git-subtree-split:" --pretty=format:"%H %b" \
@@ -82,10 +83,9 @@ jobs:
             | head -n 1 \
             | sed -E 's/^.*git-subtree-split: ([0-9a-f]+).*/\1/' \
           )
-          UPSTREAM_SHORT_SHA=$(git rev-parse --short "${UPSTREAM_SHA}" || echo "unknown")
-          GITHUB_SHORT_SHA=$(git rev-parse --short "${GITHUB_SHA}")
-          echo "vcsid=${UPSTREAM_SHORT_SHA}+${GITHUB_SHORT_SHA}" >> "${GITHUB_OUTPUT}"
-          echo "vcsid=${UPSTREAM_SHORT_SHA}+${GITHUB_SHORT_SHA}"
+          VCSID=$(git rev-parse --short "${UPSTREAM_SHA}" || echo "unknown")
+          echo "vcsid=${VCSID}" >> "${GITHUB_OUTPUT}"
+          echo "vcsid=${VCSID}"
 
       - name: Run emcc build
         # TODO: split this into two passes:

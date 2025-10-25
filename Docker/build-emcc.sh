@@ -42,7 +42,7 @@ fi
 # --- Build process ---
 echo "[INFO] Building wasm puzzles and docs..."
 BINARY_VERSION="1,${BUILDDATE:0:4},${BUILDDATE:4:2},${BUILDDATE:6:2}"
-VERSION="${BUILDDATE}.${VCSID}"
+VERSION="${VCSID}"
 VER="Version ${VERSION}"
 
 CMAKE_ARGS=(

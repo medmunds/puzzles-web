@@ -10,7 +10,7 @@ import {
 import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { version } from "./puzzle/catalog.ts";
+import { version as puzzlesVersion } from "./puzzle/catalog.ts";
 import { cssNative, cssWATweaks } from "./utils/css.ts";
 import { pwaManager, UpdateStatus } from "./utils/pwa.ts";
 
@@ -23,14 +23,15 @@ import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
 
 // Raw content
-import licenseText from "../LICENSE?raw";
-import sgtPuzzlesLicenseText from "../puzzles/LICENCE?raw";
+import appLicenseText from "../LICENSE?raw";
+import puzzlesLicenseText from "../puzzles/LICENCE?raw";
 import privacyHtml from "./assets/privacy.html?raw";
 
 // The name of this repo's project (which is covered by its LICENSE)
 const repoName = "Puzzles web app";
 // The (potentially branded) name of the PWA built from this repo
 const appName = import.meta.env.VITE_APP_NAME || repoName;
+const appVersion = import.meta.env.VITE_APP_VERSION || "(development build)";
 
 // Form of dependencies.json
 interface DependencyInfo {
@@ -149,7 +150,9 @@ export class AboutDialog extends SignalWatcher(LitElement) {
             by&nbsp;Mike&nbsp;Edmunds
           </p>
           <p>
-            Version <span class="version">${version}</span><br>
+            Version <span class="version">${appVersion}</span><br>
+            Compatible with portable puzzle collection 
+            version&nbsp;<span class="version">${puzzlesVersion}</span><br>
             ${this.renderUpdateInfo()}
           </p>
           <p>
@@ -183,7 +186,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
         >
           <p>This application is made available under the MIT License:</p>
           ${licenseTextToHTML(
-            licenseText,
+            appLicenseText,
             html`<strong>${repoName /* NOT appName */}</strong><br>`,
           )}
 
@@ -197,7 +200,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
           
           <wa-details appearance="plain" icon-placement="start">
             <div slot="summary">Simon Tatham’s Portable Puzzle Collection</div>
-            ${licenseTextToHTML(sgtPuzzlesLicenseText)}
+            ${licenseTextToHTML(puzzlesLicenseText)}
           </wa-details>
 
           ${this.dependencies?.map(
