@@ -25,6 +25,7 @@ export enum UpdateStatus {
   Checking,
   Available,
   Installing,
+  Installed, // pending activation
   Error,
 }
 
@@ -47,9 +48,11 @@ class PWAManager {
   }
 
   async makeAvailableOffline() {
-    settings.allowOfflineUse = true;
     if (!this.wb) {
       await this.registerSW();
+    }
+    if (this.updateStatus !== UpdateStatus.Error) {
+      settings.allowOfflineUse = true;
     }
   }
 
@@ -131,6 +134,7 @@ class PWAManager {
     // (Additional cleanup occurs during "activate", but offline is ready when installed.)
     console.log("App is ready for offline use");
     this._offlineReady.set(true);
+    this._updateStatus.set(UpdateStatus.Installed);
   };
 
   private handleSWControlling = (event: WorkboxLifecycleEvent) => {
@@ -237,6 +241,7 @@ class PWAManager {
     } catch (error) {
       console.error("Failed to unregister service worker:", error);
       Sentry.captureException(error);
+      this._updateStatus.set(UpdateStatus.Error);
       return false;
     }
   }

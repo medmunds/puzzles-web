@@ -11,9 +11,9 @@ import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { audioClick } from "./utils/audio.ts";
 import { autoBind } from "./utils/autobind.ts";
-import { cssWATweaks } from "./utils/css.ts";
+import { cssNative, cssWATweaks } from "./utils/css.ts";
 import { clamp } from "./utils/math.ts";
-import { isRunningAsApp, pwaManager } from "./utils/pwa.ts";
+import { isRunningAsApp, pwaManager, UpdateStatus } from "./utils/pwa.ts";
 import { sleep } from "./utils/timing.ts";
 
 // Register components
@@ -25,6 +25,7 @@ import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/slider/slider.js";
+import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
 
 const MAX_SCALE_MIN = 0.25;
 const MAX_SCALE_MAX = 2.75; // stand-in for "infinity" in maxScale slider
@@ -223,8 +224,94 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             hint="Experimental puzzles in development (may have lots of bugs!)"
             ?checked=${autoBind(settings, "showUnfinishedPuzzles")}
           >Show unfinished puzzles</wa-checkbox>
+        <wa-checkbox 
+            ?checked=${autoBind(settings, "allowOfflineUse")}
+            @change=${this.handleAllowOfflineChange}
+        >
+          Allow offline use
+          <div slot="hint">
+            ${
+              isRunningAsApp
+                ? html`
+                  Offline use is always enabled when running as an app.<br>
+                  Clearing will remove and reinstall all offline assets.`
+                : html`
+                  Downloads everything needed to run offline into your browser.<br>
+                  Only recommended if you can’t <a href="/help/install">install as an app</a>. `
+            }
+          </div>
+        </wa-checkbox>
+        <div>
+          Offline assets: ${this.renderOfflineStatus()}
+        </div>
       </wa-details>
     `;
+  }
+
+  @state()
+  private hasCheckedForUpdates = false;
+
+  private renderOfflineStatus() {
+    switch (pwaManager.updateStatus) {
+      case UpdateStatus.Unknown:
+        if (pwaManager.offlineReady) {
+          // Shouldn't really occur (certainly not for long)
+          return html`<wa-spinner></wa-spinner> Initializing&hellip;`;
+        }
+        return html`Not downloaded`;
+      case UpdateStatus.UpToDate:
+        return html`
+          Up to date
+          (<a href="#" @click=${this.handleCheckForUpdate}>${
+            !this.hasCheckedForUpdates ? "check for updates" : "check again"
+          }</a>)
+        `;
+      case UpdateStatus.Checking:
+        return html`<wa-spinner></wa-spinner> Checking for update&hellip;`;
+      case UpdateStatus.Available:
+        return html`
+          Update available: 
+          <a href="#" @click=${this.handleInstallUpdate}>install now</a>
+        `;
+      case UpdateStatus.Installing:
+        return html`<wa-spinner></wa-spinner> Installing&hellip;`;
+      case UpdateStatus.Installed:
+        return html`
+          Installed: 
+          <a href="#" @click=${this.handleReloadApp}>reload app</a> to activate
+        `;
+      case UpdateStatus.Error:
+        return html`
+          Installation error
+          (<a href="#" @click=${this.handleReloadApp}>reload app</a>)
+        `;
+    }
+  }
+
+  private async handleCheckForUpdate(event: UIEvent) {
+    event.preventDefault();
+    this.hasCheckedForUpdates = true;
+    await pwaManager.checkForUpdate();
+  }
+
+  private handleInstallUpdate(event: UIEvent) {
+    event.preventDefault();
+    pwaManager.installUpdate();
+  }
+
+  private handleReloadApp(event: UIEvent) {
+    event.preventDefault();
+    window.location.reload();
+  }
+
+  private async handleAllowOfflineChange(event: UIEvent) {
+    event.preventDefault();
+    const checked = (event.target as HTMLInputElement).checked;
+    if (checked) {
+      await pwaManager.makeAvailableOffline();
+    } else {
+      await pwaManager.unregisterSW();
+    }
   }
 
   // private async handleDataCommand(event: HTMLElementEventMap["wa-select"]) {
@@ -345,6 +432,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
 
   static styles = [
     cssWATweaks,
+    cssNative, // for links
     css`
       :host {
         display: contents;
@@ -396,8 +484,13 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         line-height: var(--wa-form-control-hint-line-height);
       }
         
+      wa-button + .hint,
       wa-dropdown + .hint {
         margin-block-start: var(--wa-space-xs);
+      }
+
+      wa-spinner {
+        vertical-align: -2px; /* visual text-middle alignment*/
       }
     `,
   ];

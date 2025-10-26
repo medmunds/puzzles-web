@@ -1,4 +1,3 @@
-import { SignalWatcher } from "@lit-labs/signals";
 import {
   css,
   type HTMLTemplateResult,
@@ -12,7 +11,6 @@ import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { version as puzzlesVersion } from "./puzzle/catalog.ts";
 import { cssNative, cssWATweaks } from "./utils/css.ts";
-import { pwaManager, UpdateStatus } from "./utils/pwa.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -20,7 +18,6 @@ import "@awesome.me/webawesome/dist/components/details/details.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
 
 // Raw content
 import appLicenseText from "../LICENSE?raw";
@@ -99,7 +96,7 @@ function licenseTextToHTML(
 }
 
 @customElement("about-dialog")
-export class AboutDialog extends SignalWatcher(LitElement) {
+export class AboutDialog extends LitElement {
   @query("wa-dialog", true)
   protected dialog?: HTMLElementTagNameMap["wa-dialog"];
 
@@ -111,9 +108,6 @@ export class AboutDialog extends SignalWatcher(LitElement) {
       this.dialog.open = value;
     }
   }
-
-  @state()
-  private hasCheckedForUpdates = false;
 
   @state()
   private dependencies?: DependencyInfo["dependencies"];
@@ -150,7 +144,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
 
   protected override render() {
     return html`
-      <wa-dialog light-dismiss @wa-show=${this.handleDialogShow}>
+      <wa-dialog light-dismiss>
         <div slot="label">About ${appName}</div>
         
         <div class="panel">
@@ -162,8 +156,7 @@ export class AboutDialog extends SignalWatcher(LitElement) {
           <p>
             Version <span class="version">${appVersion}</span><br>
             Compatible with Portable Puzzle Collection 
-            version&nbsp;<span class="version">${puzzlesVersion}</span><br>
-            ${this.renderUpdateInfo()}
+            version&nbsp;<span class="version">${puzzlesVersion}</span>
           </p>
           <p>
             This is open source software. Source code and more on GitHub:
@@ -236,78 +229,6 @@ export class AboutDialog extends SignalWatcher(LitElement) {
     return html`<a href=${link} target="_blank">${text ?? link}</a>`;
   }
 
-  private renderUpdateInfo() {
-    // Reactive updateStatus
-    switch (pwaManager.updateStatus) {
-      case UpdateStatus.Unknown:
-        if (pwaManager.offlineReady) {
-          // Shouldn't really occur (certainly not for long)
-          return html`<wa-spinner></wa-spinner> Initializing&hellip;`;
-        }
-        // UpdateStatus.Unknown + !offlineReady means not installed for offline use
-        return html`<a href="#" @click=${this.handleInstallOffline}>Make available offline</a>`;
-      case UpdateStatus.UpToDate:
-        return html`
-          Offline ready, up to date
-          (<a href="#" @click=${this.handleCheckForUpdate}>${
-            !this.hasCheckedForUpdates ? "check for updates" : "check again"
-          }</a>)
-        `;
-      case UpdateStatus.Checking:
-        return html`<wa-spinner></wa-spinner> Checking for update&hellip;`;
-      case UpdateStatus.Available:
-        return html`
-          Update available: 
-          <a href="#" @click=${this.handleInstallUpdate}>install now</a>
-        `;
-      case UpdateStatus.Installing:
-        return html`<wa-spinner></wa-spinner> Installing&hellip;`;
-      case UpdateStatus.Error:
-        return html`
-          <wa-icon name="error"></wa-icon> Installation error
-          (<a href="#" @click=${this.handleReloadApp}>reload app</a>)
-        `;
-    }
-  }
-
-  private async handleDialogShow(event: Event) {
-    // Check for updates when the dialog is shown.
-    // (The wa-details elements also emit wa-show, and we don't want to check
-    // for updates when those are expanded.)
-    if (event.target instanceof HTMLElement && event.target.localName === "wa-dialog") {
-      const status = pwaManager.updateStatus;
-      if (
-        status !== UpdateStatus.Unknown &&
-        status !== UpdateStatus.Available &&
-        status !== UpdateStatus.Installing &&
-        status !== UpdateStatus.Checking
-      ) {
-        await pwaManager.checkForUpdate();
-      }
-    }
-  }
-
-  private async handleCheckForUpdate(event: UIEvent) {
-    event.preventDefault();
-    this.hasCheckedForUpdates = true;
-    await pwaManager.checkForUpdate();
-  }
-
-  private handleInstallUpdate(event: UIEvent) {
-    event.preventDefault();
-    pwaManager.installUpdate();
-  }
-
-  private handleReloadApp(event: UIEvent) {
-    event.preventDefault();
-    window.location.reload();
-  }
-
-  private async handleInstallOffline(event: UIEvent) {
-    event.preventDefault();
-    await pwaManager.makeAvailableOffline();
-  }
-
   static styles = [
     cssNative,
     cssWATweaks,
@@ -373,10 +294,6 @@ export class AboutDialog extends SignalWatcher(LitElement) {
       
       strong {
         font-weight: var(--wa-font-weight-semibold);
-      }
-      
-      wa-spinner {
-        vertical-align: -2px; /* visual text-middle alignment*/
       }
       
       .version {
