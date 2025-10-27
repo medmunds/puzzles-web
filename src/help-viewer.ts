@@ -2,7 +2,6 @@ import type WaDrawer from "@awesome.me/webawesome/dist/components/drawer/drawer.
 import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
-import { when } from "lit/directives/when.js";
 import { cssNative, cssWATweaks } from "./utils/css.ts";
 
 // Components
@@ -45,6 +44,9 @@ export class HelpViewer extends LitElement {
   @state()
   private history: URL[] = [];
 
+  @state()
+  private error?: number;
+
   override connectedCallback() {
     super.connectedCallback();
     this.shadowRoot?.addEventListener("click", this.handleDocumentClick);
@@ -71,25 +73,32 @@ export class HelpViewer extends LitElement {
     return html`
       <wa-drawer id="help" label=${title}>
         ${this.renderHistoryButtons()}
-        ${when(
-          this.showPopout,
-          () => html`
-            <wa-button 
-                slot="header-actions"
-                href=${currentSrc}
-                target="_blank"
-                appearance="plain"
-            >
-              <wa-icon label="Open in new tab" name="offsite-link"></wa-icon>
-            </wa-button>
-          `,
-        )}
-        <wa-include 
-            src=${currentSrc}
-            mode="same-origin"
-            @wa-error=${this.handleDocumentError}
-            @wa-load=${this.handleDocumentLoad}
-        ></wa-include>
+        ${
+          this.showPopout
+            ? html`
+              <wa-button 
+                  slot="header-actions"
+                  href=${currentSrc}
+                  target="_blank"
+                  appearance="plain"
+              >
+                <wa-icon label="Open in new tab" name="offsite-link"></wa-icon>
+              </wa-button>
+            `
+            : nothing
+        }
+        ${
+          this.error !== undefined
+            ? html`<div class="error">Error ${this.error} loading ${this.src}</div>`
+            : html`
+              <wa-include
+                  src=${currentSrc}
+                  mode="same-origin"
+                  @wa-include-error=${this.handleDocumentError}
+                  @wa-load=${this.handleDocumentLoad}
+              ></wa-include>
+            `
+        }
       </wa-drawer>
     `;
   }
@@ -135,6 +144,7 @@ export class HelpViewer extends LitElement {
     this.basePath = this.baseUrl.pathname.replace(/\/[^/]*$/, "");
     this.history = [this.baseUrl];
     this.historyIndex = 0;
+    this.error = undefined;
   }
 
   private isOffsite(url: URL): boolean {
@@ -144,8 +154,8 @@ export class HelpViewer extends LitElement {
   }
 
   private handleDocumentError(event: CustomEvent<{ status: number }>) {
-    // TODO: render some error visible to the user, too
     console.error(`help-viewer error ${event.detail.status} loading src=${this.src}`);
+    this.error = event.detail.status;
   }
 
   private handleDocumentLoad() {
@@ -214,6 +224,7 @@ export class HelpViewer extends LitElement {
     } else {
       this.history = [...this.history.slice(0, this.historyIndex + 1), url];
       this.historyIndex++;
+      this.error = undefined;
     }
   };
 
@@ -235,17 +246,20 @@ export class HelpViewer extends LitElement {
 
   goHome() {
     this.historyIndex = 0;
+    this.error = undefined;
   }
 
   goBack() {
     if (this.historyIndex > 0) {
       this.historyIndex--;
+      this.error = undefined;
     }
   }
 
   goForward() {
     if (this.historyIndex < this.history.length - 1) {
       this.historyIndex++;
+      this.error = undefined;
     }
   }
 
