@@ -124,8 +124,12 @@ export abstract class Screen extends LitElement {
         ></help-viewer>
       `,
     });
-    // TODO: if already visible, navigate help-viewer to href?
-    helpViewer?.show();
+    if (helpViewer) {
+      if (href) {
+        helpViewer.src = href;
+      }
+      helpViewer.show();
+    }
   }
 
   protected async showSettingsDialog() {
