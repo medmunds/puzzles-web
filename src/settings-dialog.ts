@@ -24,6 +24,7 @@ import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
+import "@awesome.me/webawesome/dist/components/progress-ring/progress-ring.js";
 import "@awesome.me/webawesome/dist/components/slider/slider.js";
 import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
 
@@ -268,14 +269,22 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
           (<button @click=${this.handleCheckForUpdate}>check for updates</a>)
         `;
       case "downloading":
-        return html`<wa-spinner></wa-spinner> downloading&hellip;`;
+      case "update-downloading": {
+        const statusLabel =
+          pwaManager.status === "downloading" ? "downloading" : "downloading update";
+        const progress = pwaManager.downloadProgress;
+        const spinner =
+          progress === undefined
+            ? html`<wa-spinner></wa-spinner>`
+            : html`<wa-progress-ring value=${progress}></wa-progress-ring>`;
+        const progressLabel = progress === undefined ? nothing : ` ${progress}%`;
+        return html`${spinner} ${statusLabel}${progressLabel}&hellip;`;
+      }
       case "download-ready":
         return html`
           downloaded
           (<button @click=${this.handleReloadApp}>reload</button> to activate)
         `;
-      case "update-downloading":
-        return html`<wa-spinner></wa-spinner> downloading update&hellip;`;
       case "update-ready":
         return html`
           update downloaded
@@ -496,8 +505,14 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         margin-block-start: var(--wa-space-xs);
       }
 
+      wa-progress-ring,
       wa-spinner {
         vertical-align: -2px; /* visual text-middle alignment*/
+      }
+      wa-progress-ring {
+        /* match spinner size and track width */
+        --size: calc(1em - 1px);
+        --track-width: 2px;
       }
       
       .offline-status button {
@@ -525,6 +540,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
           }
         }
       }
+      
     `,
   ];
 }

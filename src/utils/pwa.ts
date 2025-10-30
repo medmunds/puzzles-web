@@ -1,7 +1,11 @@
 // Progressive Web App utils
 import { computed, signal } from "@lit-labs/signals";
 import * as Sentry from "@sentry/browser";
-import { Workbox, type WorkboxLifecycleEvent } from "workbox-window";
+import {
+  Workbox,
+  type WorkboxLifecycleEvent,
+  type WorkboxMessageEvent,
+} from "workbox-window";
 import { settings } from "../store/settings.ts";
 import { sleep } from "./timing.ts";
 
@@ -94,6 +98,7 @@ class PWAManager {
   private _allowOfflineUse = computed(() => settings.allowOfflineUse ?? isRunningAsApp);
   private _autoUpdate = computed(() => settings.autoUpdate ?? this.allowOfflineUse);
   private _status = signal<PWAManagerStatus>("uninitialized");
+  private _downloadProgress = signal<number | undefined>(undefined);
 
   private wb?: Workbox;
 
@@ -155,6 +160,10 @@ class PWAManager {
    */
   get status(): PWAManagerStatus {
     return this._status.get();
+  }
+
+  get downloadProgress(): number | undefined {
+    return this._downloadProgress.get();
   }
 
   /**
@@ -223,6 +232,9 @@ class PWAManager {
     // Listen only for "controlling", which is necessary to coordinate
     // cross-tab activation of updated service workers.
     this.wb.addEventListener("controlling", this.handleSWControlling);
+
+    // Get download progress events
+    this.wb.addEventListener("message", this.handleSWMessage);
 
     // Register the service worker
     try {
@@ -322,6 +334,20 @@ class PWAManager {
     }
     console.log("New service worker ready, reloading page");
     this.reloadApp();
+  };
+
+  private handleSWMessage = (event: WorkboxMessageEvent) => {
+    switch (event.data?.type) {
+      case "PRECACHE_PROGRESS": {
+        const { count, total } = event.data;
+        const progress = total > 0 ? Math.round((count / total) * 100) : 50;
+        this._downloadProgress.set(progress);
+        break;
+      }
+      case "PRECACHE_COMPLETE":
+        this._downloadProgress.set(undefined);
+        break;
+    }
   };
 
   /**
