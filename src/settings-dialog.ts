@@ -248,7 +248,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         >
           Auto-update offline content (recommended)
         </wa-checkbox>
-        <div class="offline-status">
+        <div class="offline-status" role="status" aria-atomic="true">
           Offline content: ${this.renderOfflineStatus()}
         </div>
       </wa-details>
