@@ -46,10 +46,6 @@ import { installErrorHandlers } from "./utils/errors.ts";
 
 installErrorHandlers();
 
-import { installWebAwesomeHacks } from "./utils/webawesomehacks.ts";
-
-installWebAwesomeHacks();
-
 // Install our icon library
 import "./icons";
 

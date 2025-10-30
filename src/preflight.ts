@@ -10,7 +10,7 @@ const preflightChecks: {
   ResizeObserver: () => typeof "ResizeObserver" !== "undefined", // Baseline 2020
   "Canvas.transferControlToOffscreen": // Baseline 2023
     () => "transferControlToOffscreen" in document.createElement("canvas"),
-  "CustomStateSet un-prefixed states": checkCustomStateSetUnprefixedStates,
+  "Custom elements": () => "customElements" in window,
   "TextMetrics.actualBoundingBox": checkTextMetricsActualBoundingBox,
   "Object.assign": () => typeof Object.assign === "function", // es2015
   "Object.hasOwn": () => typeof Object.hasOwn === "function", // es2022
@@ -32,29 +32,6 @@ const asyncPreflightChecks: {
   //   Only real way to know is fire up a worker (with an async check).
   //   Is there any main thread functionality that likely released together?
 } as const;
-
-function checkCustomStateSetUnprefixedStates() {
-  // Baseline 2024?
-  // TODO: this is a Web Awesome bug: ElementInternals is meant to be optional
-  //   https://github.com/shoelace-style/webawesome/discussions/1633
-  // Web Awesome seems to depend on un-prefixed custom states
-  // (though tries to run with ElementInternals missing entirely).
-  // Some earlier versions of Chrome *do* support CustomStateSet
-  // but throw errors on custom states that aren't --prefixed.
-  try {
-    class TestElement extends HTMLElement {
-      internals = this.attachInternals();
-    }
-    window.customElements.define("test-element", TestElement);
-
-    const element = document.createElement("test-element") as TestElement;
-    element.internals.states.add("unprefixed-token");
-    return element.internals.states.has("unprefixed-token");
-  } catch (error) {
-    console.error(error);
-    return false;
-  }
-}
 
 function checkTextMetricsActualBoundingBox() {
   // Baseline 2020

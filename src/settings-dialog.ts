@@ -205,7 +205,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
           <wa-dropdown>
             <wa-button 
                 slot="trigger" 
-                appearance="filled outlined" 
+                appearance="filled-outlined" 
                 variant="danger" 
                 with-caret
             >Clear data&hellip;</wa-button>
