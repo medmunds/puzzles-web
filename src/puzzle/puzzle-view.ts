@@ -34,10 +34,10 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   maxScale: number = Number.POSITIVE_INFINITY;
 
   /**
-   * Whether to show the status bar.
+   * Where (and whether) to show the status bar (for puzzles that have one).
    */
-  @property({ attribute: "hide-statusbar", type: Boolean })
-  hideStatusbar = false;
+  @property({ attribute: "statusbar-placement", type: String, reflect: true })
+  statusbarPlacement: "start" | "end" | "hidden" = "start";
 
   @consume({ context: puzzleContext, subscribe: true })
   @state()
@@ -130,8 +130,9 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   protected override render() {
     return html`
       <div part="content" tabindex=${this.contentTabIndex}>
+        ${this.statusbarPlacement === "start" ? this.renderStatusbar() : nothing}
         ${this.renderPuzzle()}
-        ${this.renderStatusbar()}
+        ${this.statusbarPlacement === "end" ? this.renderStatusbar() : nothing}
         ${this.renderLoadingIndicator()}
       </div>
     `;
@@ -148,11 +149,13 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   }
 
   protected renderStatusbar() {
-    if (this.hideStatusbar || !this.puzzle?.wantsStatusbar) {
+    if (!this.puzzle?.wantsStatusbar) {
       return nothing;
     }
     const style = this.canvasSize ? `max-width: ${this.canvasSize?.w}px` : nothing;
-    return html`<div part="statusbar" style=${style}>${this.puzzle?.statusbarText}</div>`;
+    return html`
+      <div part="statusbar" role="status" style=${style}>${this.puzzle?.statusbarText}</div>
+    `;
   }
 
   protected renderLoadingIndicator() {
@@ -463,8 +466,14 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       [part="statusbar"] {
         text-align: center;
         
-        /* (Top spacing is redundant with [part="puzzle"] bottom) */
-        padding: 0 var(--spacing) var(--spacing);
+        /* (Top or bottom spacing is redundant with [part="puzzle"]) */
+        padding: var(--spacing);
+        :host([statusbar-placement="start"]) & {
+          padding-block-end: 0;
+        }
+        :host([statusbar-placement="end"]) & {
+          padding-block-start: 0;
+        }
 
         /* Don't collapse when no content (e.g., Rectangles) */
         min-height: 1em;

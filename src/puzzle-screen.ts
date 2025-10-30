@@ -164,7 +164,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           <puzzle-view-interactive 
               role="figure"
               aria-label="interactive puzzle displayed as an image"
-              ?hide-statusbar=${!settings.showStatusbar}
+              statusbar-placement=${settings.statusbarPlacement}
               ?longPress=${settings.rightButtonLongPress}
               ?twoFingerTap=${settings.rightButtonTwoFingerTap}
               secondaryButtonAudioVolume=${settings.rightButtonAudioVolume}

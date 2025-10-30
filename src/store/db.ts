@@ -28,7 +28,7 @@ export interface CommonSettings {
   // Appearance
   showEndNotification?: boolean;
   showPuzzleKeyboard?: boolean;
-  showStatusbar?: boolean;
+  statusbarPlacement?: "start" | "end" | "hidden";
   maxScale?: number | null; // null in DB/json === Infinity in exposed value
 }
 

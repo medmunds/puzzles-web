@@ -25,6 +25,8 @@ import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/progress-ring/progress-ring.js";
+import "@awesome.me/webawesome/dist/components/radio/radio.js";
+import "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
 import "@awesome.me/webawesome/dist/components/slider/slider.js";
 import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
 
@@ -85,10 +87,16 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             ?checked=${autoBind(settings, "showPuzzleKeyboard")}
             hint="On-screen buttons for puzzles that need keyboard input"
           >Show virtual keyboard</wa-checkbox>
-        <wa-checkbox
-            ?checked=${autoBind(settings, "showStatusbar")}
-            hint="Text below some puzzles (you might need it to solve them)"
-          >Show status bar</wa-checkbox>
+        <wa-radio-group
+            label="Status bar"
+            orientation="horizontal"
+            .value=${autoBind(settings, "statusbarPlacement")}
+            hint="Extra info in some puzzles (you might need it to solve them)"
+        >
+          <wa-radio appearance="button" value="start">Above puzzle</wa-radio>
+          <wa-radio appearance="button" value="end">Below puzzle</wa-radio>
+          <wa-radio appearance="button" value="hidden">Hidden</wa-radio>
+        </wa-radio-group>
         <wa-slider
             label="Maximum puzzle scale"
             hint="How far to stretch smaller puzzles to fill the screen"

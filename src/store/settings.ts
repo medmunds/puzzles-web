@@ -37,7 +37,7 @@ const defaultSettings = {
   rightButtonDragThreshold: 8,
   showEndNotification: true,
   showPuzzleKeyboard: true,
-  showStatusbar: true,
+  statusbarPlacement: "start",
   maxScale: Number.POSITIVE_INFINITY,
 } as const;
 
@@ -68,7 +68,9 @@ class Settings {
   );
   private _showEndNotification = signal<boolean>(defaultSettings.showEndNotification);
   private _showPuzzleKeyboard = signal<boolean>(defaultSettings.showPuzzleKeyboard);
-  private _showStatusbar = signal<boolean>(defaultSettings.showStatusbar);
+  private _statusbarPlacement = signal<CommonSettings["statusbarPlacement"]>(
+    defaultSettings.statusbarPlacement,
+  );
   private _maxScale = signal<number>(defaultSettings.maxScale);
 
   private constructor() {
@@ -111,7 +113,7 @@ class Settings {
       update(this._rightButtonDragThreshold, commonSettings.rightButtonDragThreshold);
       update(this._showEndNotification, commonSettings.showEndNotification);
       update(this._showPuzzleKeyboard, commonSettings.showPuzzleKeyboard);
-      update(this._showStatusbar, commonSettings.showStatusbar);
+      update(this._statusbarPlacement, commonSettings.statusbarPlacement);
       update(this._maxScale, commonSettings.maxScale ?? Number.POSITIVE_INFINITY);
     }
   }
@@ -231,12 +233,12 @@ class Settings {
     this.saveCommonSettingOrLogError("showPuzzleKeyboard", value);
   }
 
-  get showStatusbar(): boolean {
-    return this._showStatusbar.get();
+  get statusbarPlacement(): CommonSettings["statusbarPlacement"] {
+    return this._statusbarPlacement.get();
   }
-  set showStatusbar(value: boolean) {
-    this._showStatusbar.set(value);
-    this.saveCommonSettingOrLogError("showStatusbar", value);
+  set statusbarPlacement(value: CommonSettings["statusbarPlacement"]) {
+    this._statusbarPlacement.set(value);
+    this.saveCommonSettingOrLogError("statusbarPlacement", value);
   }
 
   get maxScale(): number {
