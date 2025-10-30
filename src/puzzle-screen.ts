@@ -5,12 +5,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { type PuzzleData, puzzleDataMap } from "./puzzle/catalog.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
-import {
-  canonicalPuzzlePageUrl,
-  helpUrl,
-  homePageUrl,
-  navigateToHomePage,
-} from "./routing.ts";
+import { canonicalPuzzlePageUrl, helpUrl, homePageUrl } from "./routing.ts";
 import { Screen } from "./screen.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
@@ -83,6 +78,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
 
   override connectedCallback() {
     super.connectedCallback();
+    document.addEventListener("click", preventDoubleTapZoomOnButtons);
     window.addEventListener("keydown", this.handleBubbledKeyDown);
     const { puzzleAutoSaveFilename, puzzleAutoSavePuzzleId } =
       window.history.state ?? {};
@@ -96,6 +92,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
 
   override disconnectedCallback() {
     super.disconnectedCallback();
+    document.removeEventListener("click", preventDoubleTapZoomOnButtons);
     window.removeEventListener("keydown", this.handleBubbledKeyDown);
   }
 
@@ -124,7 +121,6 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     return html`
       <puzzle-context 
           puzzleid=${this.puzzleId}
-          @click=${preventDoubleTapZoomOnButtons}
           @puzzle-loaded=${this.handlePuzzleLoaded}
           @puzzle-params-change=${this.handlePuzzleParamsChange}
           @puzzle-game-state-change=${this.handlePuzzleGameStateChange}
@@ -201,14 +197,14 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       <puzzle-end-notification>
         <wa-button
             slot="extra-actions-solved"
-            @click=${this.showShareDialog}
+            data-command="share"
         >
           <wa-icon slot="start" name="share"></wa-icon>
           Share
         </wa-button>
         <wa-button
             slot="extra-actions-solved"
-            @click=${this.handleChangeType}
+            data-command="change-type"
         >
           <wa-icon slot="start" name="puzzle-type"></wa-icon>
           Change type
@@ -231,7 +227,6 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     return html`
       <wa-dropdown
           placement=${this.orientation === "vertical" ? "bottom" : "right"}
-          @wa-select=${this.handleGameMenuCommand}
       >
         <wa-button 
             slot="trigger" 
@@ -248,52 +243,52 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
                 ${label}
               `
         }</wa-button>
-        <wa-dropdown-item value="new">
+        <wa-dropdown-item data-command="new-game">
           <wa-icon slot="icon" name="new-game"></wa-icon>
           New game
         </wa-dropdown-item>
-        <wa-dropdown-item value="restart">
+        <wa-dropdown-item data-command="restart-game">
           <wa-icon slot="icon" name="restart-game"></wa-icon>
           Restart game
         </wa-dropdown-item>
         ${
           this.puzzle?.canSolve
             ? html`
-              <wa-dropdown-item value="solve" ?disabled=${this.puzzle?.status === "solved"}>
+              <wa-dropdown-item data-command="solve" ?disabled=${this.puzzle?.status === "solved"}>
                 <wa-icon slot="icon" name="show-solution"></wa-icon>
                 Solve
               </wa-dropdown-item>
               `
             : nothing
         }
-        <wa-dropdown-item value="share">
+        <wa-dropdown-item data-command="share">
           <wa-icon slot="icon" name="share"></wa-icon>
           Share…
         </wa-dropdown-item>
         <wa-divider></wa-divider>
-        <wa-dropdown-item value="load">
+        <wa-dropdown-item data-command="load-game">
           <wa-icon slot="icon" name="load-game"></wa-icon>
           Load…
         </wa-dropdown-item>
-        <wa-dropdown-item value="save">
+        <wa-dropdown-item data-command="save-game">
           <wa-icon slot="icon" name="save-game"></wa-icon>
           Save…
         </wa-dropdown-item>
-        <wa-dropdown-item value="gameid">
+        <wa-dropdown-item data-command="enter-gameid">
           <wa-icon slot="icon" name="gameid"></wa-icon>
           Enter ID&hairsp;/&hairsp;seed…
         </wa-dropdown-item>
         <wa-divider></wa-divider>
-        <wa-dropdown-item value="preferences">
+        <wa-dropdown-item data-command="settings">
           <wa-icon slot="icon" name="settings"></wa-icon>
           Preferences…
         </wa-dropdown-item>
-        <wa-dropdown-item value="about">
+        <wa-dropdown-item data-command="about">
           <wa-icon slot="icon" name="info"></wa-icon>
           About
         </wa-dropdown-item>
         <wa-divider></wa-divider>
-        <wa-dropdown-item value="catalog">
+        <wa-dropdown-item data-command="home">
           <wa-icon slot="icon" name="back-to-catalog"></wa-icon>
           Other puzzles
         </wa-dropdown-item>
@@ -301,7 +296,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           enableDeveloperCommands
             ? html`
               <wa-divider></wa-divider>
-              <wa-dropdown-item value="redraw">Redraw puzzle</wa-dropdown-item>
+              <wa-dropdown-item data-command="redraw">Redraw puzzle</wa-dropdown-item>
             `
             : nothing
         }
@@ -309,49 +304,23 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     `;
   }
 
-  private async handleGameMenuCommand(event: CustomEvent<{ item: { value: string } }>) {
-    const value = event.detail.item.value;
-    switch (value) {
-      case "new":
-        await this.puzzle?.newGame();
-        break;
-      case "restart":
-        await this.puzzle?.restartGame();
-        break;
-      case "solve":
-        await this.puzzle?.solve();
-        break;
-      case "share":
-        await this.showShareDialog();
-        break;
-      case "load":
-        await this.showLoadGameDialog();
-        break;
-      case "save":
-        await this.showSaveGameDialog();
-        break;
-      case "gameid":
-        await this.showEnterGameIDDialog();
-        break;
-      case "about":
-        await this.showAboutDialog();
-        break;
-      case "catalog":
-        navigateToHomePage();
-        break;
-      case "preferences":
-        await this.showSettingsDialog();
-        break;
-      case "redraw":
-        // TODO: Remove the "redraw" command (added for debugging Safari)
-        this.shadowRoot?.querySelector("puzzle-view-interactive")?.redraw();
-        break;
-      default:
-        if (!import.meta.env.PROD) {
-          throw new Error(`Unknown game menu command: ${value}`);
-        }
-        break;
-    }
+  //
+  // Commands
+  //
+
+  protected override registerCommandHandlers() {
+    super.registerCommandHandlers();
+    Object.assign(this.commandMap, {
+      "change-type": this.showTypeMenu,
+      "enter-gameid": this.showEnterGameIDDialog,
+      "load-game": this.showLoadGameDialog,
+      "new-game": () => this.puzzle?.newGame(),
+      redraw: () => this.shadowRoot?.querySelector("puzzle-view-interactive")?.redraw(),
+      "restart-game": () => this.puzzle?.restartGame(),
+      "save-game": this.showSaveGameDialog,
+      share: this.showShareDialog,
+      solve: () => this.puzzle?.solve(),
+    });
   }
 
   private async showShareDialog() {
@@ -498,8 +467,8 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     }
   };
 
-  private async handleChangeType() {
-    // Show the Type menu, from the button in the puzzle-end-notification
+  private async showTypeMenu() {
+    // (from the button in the puzzle-end-notification)
     await this.shadowRoot?.querySelector("puzzle-end-notification")?.hide();
     this.shadowRoot?.querySelector("puzzle-preset-menu")?.show();
   }

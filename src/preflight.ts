@@ -12,6 +12,8 @@ const preflightChecks: {
     () => "transferControlToOffscreen" in document.createElement("canvas"),
   "CustomStateSet un-prefixed states": checkCustomStateSetUnprefixedStates,
   "TextMetrics.actualBoundingBox": checkTextMetricsActualBoundingBox,
+  "Object.assign": () => typeof Object.assign === "function", // es2015
+  "Object.hasOwn": () => typeof Object.hasOwn === "function", // es2022
 
   // CSS -- all Baseline 2023
   "CSS nested selectors": () => CSS.supports("selector(& .foo)"),
