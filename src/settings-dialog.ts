@@ -13,7 +13,7 @@ import { audioClick } from "./utils/audio.ts";
 import { autoBind } from "./utils/autobind.ts";
 import { cssNative, cssWATweaks } from "./utils/css.ts";
 import { clamp } from "./utils/math.ts";
-import { isRunningAsApp, pwaManager, UpdateStatus } from "./utils/pwa.ts";
+import { isRunningAsApp, pwaManager } from "./utils/pwa.ts";
 import { sleep } from "./utils/timing.ts";
 
 // Register components
@@ -225,72 +225,87 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
             ?checked=${autoBind(settings, "showUnfinishedPuzzles")}
           >Show unfinished puzzles</wa-checkbox>
         <wa-checkbox 
-            ?checked=${autoBind(settings, "allowOfflineUse")}
+            ?checked=${pwaManager.allowOfflineUse}
             @change=${this.handleAllowOfflineChange}
         >
           Allow offline use
           <div slot="hint">
             ${
               isRunningAsApp
-                ? html`
-                  Offline use is always enabled when running as an app.<br>
-                  Clearing will remove and reinstall all offline assets.`
+                ? "(Keep this checked when installed as an app)"
                 : html`
-                  Downloads everything needed to run offline into your browser.<br>
-                  Only recommended if you can’t <a href="/help/install">install as an app</a>. `
+                  Downloads everything needed to run offline into your browser<br>
+                  (it’s better to <a href="/help/install">install as an app</a> if possible)`
             }
           </div>
         </wa-checkbox>
+        <wa-checkbox
+          hint="Only applies when offline use is enabled"
+          ?checked=${pwaManager.autoUpdate}
+          ?disabled=${!pwaManager.allowOfflineUse}
+          @change=${this.handleAutoUpdateChange}
+        >
+          Auto-update offline content (recommended)
+        </wa-checkbox>
         <div>
-          Offline assets: ${this.renderOfflineStatus()}
+          Offline content: ${this.renderOfflineStatus()}
         </div>
       </wa-details>
     `;
   }
 
-  @state()
-  private hasCheckedForUpdates = false;
-
   private renderOfflineStatus() {
-    switch (pwaManager.updateStatus) {
-      case UpdateStatus.Unknown:
-        if (pwaManager.offlineReady) {
-          // Shouldn't really occur (certainly not for long)
-          return html`<wa-spinner></wa-spinner> Initializing&hellip;`;
-        }
-        return html`Not downloaded`;
-      case UpdateStatus.UpToDate:
+    // TODO: replace <a href="#"> with <button> rendered in link style
+    //   (and get rid of preventDefault in handlers)
+    switch (pwaManager.status) {
+      case "uninitialized":
+        return html`<wa-spinner></wa-spinner> initializing&hellip;`;
+      case "registering":
+        return html`<wa-spinner></wa-spinner> registering&hellip;`;
+      case "unregistered":
+        return "not downloaded";
+      case "registered":
         return html`
-          Up to date
-          (<a href="#" @click=${this.handleCheckForUpdate}>${
-            !this.hasCheckedForUpdates ? "check for updates" : "check again"
-          }</a>)
+          up to date
+          (<a href="#" @click=${this.handleCheckForUpdate}>check for updates</a>)
         `;
-      case UpdateStatus.Checking:
-        return html`<wa-spinner></wa-spinner> Checking for update&hellip;`;
-      case UpdateStatus.Available:
+      case "downloading":
+        return html`<wa-spinner></wa-spinner> downloading&hellip;`;
+      case "download-ready":
         return html`
-          Update available: 
-          <a href="#" @click=${this.handleInstallUpdate}>install now</a>
+          downloaded
+          (<a href="#" @click=${this.handleReloadApp}>reload</a> to activate)
         `;
-      case UpdateStatus.Installing:
-        return html`<wa-spinner></wa-spinner> Installing&hellip;`;
-      case UpdateStatus.Installed:
+      case "update-downloading":
+        return html`<wa-spinner></wa-spinner> downloading update&hellip;`;
+      case "update-ready":
         return html`
-          Installed: 
-          <a href="#" @click=${this.handleReloadApp}>reload app</a> to activate
+          update downloaded
+          (<a href="#" @click=${this.handleInstallUpdate}>install now</a>)
         `;
-      case UpdateStatus.Error:
+      case "installing":
+        return html`<wa-spinner></wa-spinner> installing&hellip;`;
+      case "reloading":
+        return html`<wa-spinner></wa-spinner> reloading&hellip;`;
+      case "deleting":
+        return html`<wa-spinner></wa-spinner> removing&hellip;`;
+      case "deleted":
         return html`
-          Installation error
+          removed
+          (<a href="#" @click=${this.handleReloadApp}>reload</a> to finish)
+        `;
+      case "error":
+        return html`
+          installation error
           (<a href="#" @click=${this.handleReloadApp}>reload app</a>)
         `;
+      default:
+        return `unknown (${pwaManager.status})`;
     }
   }
 
   private async handleCheckForUpdate(event: UIEvent) {
     event.preventDefault();
-    this.hasCheckedForUpdates = true;
     await pwaManager.checkForUpdate();
   }
 
@@ -301,17 +316,15 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
 
   private handleReloadApp(event: UIEvent) {
     event.preventDefault();
-    window.location.reload();
+    pwaManager.reloadApp();
   }
 
   private async handleAllowOfflineChange(event: UIEvent) {
-    event.preventDefault();
-    const checked = (event.target as HTMLInputElement).checked;
-    if (checked) {
-      await pwaManager.makeAvailableOffline();
-    } else {
-      await pwaManager.unregisterSW();
-    }
+    pwaManager.allowOfflineUse = (event.target as HTMLInputElement).checked;
+  }
+
+  private async handleAutoUpdateChange(event: UIEvent) {
+    pwaManager.autoUpdate = (event.target as HTMLInputElement).checked;
   }
 
   // private async handleDataCommand(event: HTMLElementEventMap["wa-select"]) {
@@ -325,8 +338,8 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         // offline as part of clearing settings)
         const wasAvailableOffline = settings.allowOfflineUse;
         await settings.clearAllSettings();
-        if (wasAvailableOffline) {
-          settings.allowOfflineUse = true;
+        if (wasAvailableOffline !== null) {
+          pwaManager.allowOfflineUse = wasAvailableOffline;
         }
         break;
       }
@@ -338,9 +351,8 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         break;
       case "clear-all":
         await Promise.all([
-          settings.clearAllSettings(),
+          settings.clearAllSettings().then(() => pwaManager.reinitialize()),
           savedGames.removeAll(),
-          settings.allowOfflineUse ? pwaManager.unregisterSW() : null,
         ]);
         break;
       case "settings-backup":

@@ -26,6 +26,7 @@ export const isSerializedSettings = (obj: unknown): obj is SerializedSettings =>
 
 const defaultSettings = {
   allowOfflineUse: null,
+  autoUpdate: null,
   favoritePuzzles: new Set<PuzzleId>(),
   showIntro: true,
   showUnfinishedPuzzles: false,
@@ -45,6 +46,7 @@ const COMMON_SETTINGS_ID = "puzzle-common";
 class Settings {
   // Reactive signals for individual settings
   private _allowOfflineUse = signal<boolean | null>(defaultSettings.allowOfflineUse);
+  private _autoUpdate = signal<boolean | null>(defaultSettings.autoUpdate);
   private _favoritePuzzles = signal<ReadonlySet<PuzzleId>>(
     defaultSettings.favoritePuzzles,
   );
@@ -95,6 +97,7 @@ class Settings {
     const commonSettings = await this.getCommonSettings();
     if (commonSettings) {
       update(this._allowOfflineUse, commonSettings.allowOfflineUse);
+      update(this._autoUpdate, commonSettings.autoUpdate);
       const favoritePuzzles = new Set(commonSettings.favoritePuzzles);
       if (!equalSet(favoritePuzzles, this._favoritePuzzles.get())) {
         this._favoritePuzzles.set(favoritePuzzles);
@@ -113,7 +116,7 @@ class Settings {
     }
   }
 
-  // Accessors for reactive signals
+  // For PWAManager use only (use pwaManager.allowOfflineUse instead)
   get allowOfflineUse(): boolean | null {
     return this._allowOfflineUse.get();
   }
@@ -122,6 +125,16 @@ class Settings {
     this.saveCommonSettingOrLogError("allowOfflineUse", value);
   }
 
+  // For PWAManager use only (use pwaManager.autoUpdate instead)
+  get autoUpdate(): boolean | null {
+    return this._autoUpdate.get();
+  }
+  set autoUpdate(value: boolean) {
+    this._autoUpdate.set(value);
+    this.saveCommonSettingOrLogError("autoUpdate", value);
+  }
+
+  // Accessors for reactive signals
   get favoritePuzzles(): ReadonlySet<PuzzleId> {
     return this._favoritePuzzles.get();
   }

@@ -8,6 +8,7 @@ export type EncodedParams = string;
 export interface CommonSettings {
   // App level settings
   allowOfflineUse?: boolean;
+  autoUpdate?: boolean;
 
   // Catalog-level settings
   favoritePuzzles?: PuzzleId[];
