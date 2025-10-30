@@ -219,9 +219,6 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     return html`
       <wa-details summary="Advanced">
         <wa-checkbox
-            ?checked=${autoBind(settings, "showIntro")}
-          >Show intro message</wa-checkbox>
-        <wa-checkbox
             hint="Experimental puzzles in development (may have lots of bugs!)"
             ?checked=${autoBind(settings, "showUnfinishedPuzzles")}
           >Show unfinished puzzles</wa-checkbox>

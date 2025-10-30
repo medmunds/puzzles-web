@@ -14,7 +14,6 @@ import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import "@awesome.me/webawesome/dist/components/tooltip/tooltip.js";
 import "./catalog-list.ts";
 import "./dynamic-content.ts";
 import "./head-matter.ts";
@@ -119,12 +118,19 @@ export class HomeScreen extends SignalWatcher(Screen) {
   private renderOptionsMenuContent() {
     // TODO: add view options here
     return html`
-      <wa-dropdown-item data-command="#settings" value="new">
+      <wa-dropdown-item
+          data-command="toggle-intro"
+          type="checkbox"
+          ?checked=${settings.showIntro}
+      >
+        Show intro message
+      </wa-dropdown-item>
+      <wa-divider></wa-divider>
+      <wa-dropdown-item data-command="settings">
         <wa-icon slot="icon" name="settings"></wa-icon>
         Preferences
       </wa-dropdown-item>
-      <wa-divider></wa-divider>
-      <wa-dropdown-item data-command="#about">
+      <wa-dropdown-item data-command="about">
         <wa-icon slot="icon" name="info"></wa-icon>
         About
       </wa-dropdown-item>
@@ -134,22 +140,24 @@ export class HomeScreen extends SignalWatcher(Screen) {
   private renderIntro() {
     return html`
       <div part="intro">
-        <wa-button 
-            id="dismiss-intro" 
-            appearance="outlined" 
-            size="small"
-            @click=${this.dismissIntro}
-        >
-          <wa-icon library="system" name="xmark" variant="solid" label="Hide intro"></wa-icon>
-        </wa-button>
-        <wa-tooltip for="dismiss-intro">Hide intro</wa-tooltip>
         <slot name="intro"></slot>
       </div>
     `;
   }
 
-  private dismissIntro() {
-    settings.showIntro = false;
+  //
+  // Command handling
+  //
+
+  protected override registerCommandHandlers() {
+    super.registerCommandHandlers();
+    Object.assign(this.commandMap, {
+      "toggle-intro": this.toggleIntro,
+    });
+  }
+
+  private toggleIntro() {
+    settings.showIntro = !settings.showIntro;
   }
 
   //
@@ -176,23 +184,6 @@ export class HomeScreen extends SignalWatcher(Screen) {
             var(--wa-form-control-padding-inline) +
             var(--wa-border-width-s))
         );
-      }
-      
-      [part="intro"] {
-        display: block;
-        max-width: 55ch;
-
-        &::slotted(section) {
-          display: contents;
-        }
-        
-        wa-button {
-          float: inline-end;
-          margin-block-start: var(--app-padding);
-          margin-block-end: var(--wa-space-s);
-          margin-inline-start: var(--wa-space-s);
-          margin-inline-end: var(--app-padding);
-        }
       }
     `,
   ];
