@@ -247,7 +247,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         >
           Auto-update offline content (recommended)
         </wa-checkbox>
-        <div>
+        <div class="offline-status">
           Offline content: ${this.renderOfflineStatus()}
         </div>
       </wa-details>
@@ -255,8 +255,6 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
   }
 
   private renderOfflineStatus() {
-    // TODO: replace <a href="#"> with <button> rendered in link style
-    //   (and get rid of preventDefault in handlers)
     switch (pwaManager.status) {
       case "uninitialized":
         return html`<wa-spinner></wa-spinner> initializing&hellip;`;
@@ -267,21 +265,21 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       case "registered":
         return html`
           up to date
-          (<a href="#" @click=${this.handleCheckForUpdate}>check for updates</a>)
+          (<button @click=${this.handleCheckForUpdate}>check for updates</a>)
         `;
       case "downloading":
         return html`<wa-spinner></wa-spinner> downloading&hellip;`;
       case "download-ready":
         return html`
           downloaded
-          (<a href="#" @click=${this.handleReloadApp}>reload</a> to activate)
+          (<button @click=${this.handleReloadApp}>reload</button> to activate)
         `;
       case "update-downloading":
         return html`<wa-spinner></wa-spinner> downloading update&hellip;`;
       case "update-ready":
         return html`
           update downloaded
-          (<a href="#" @click=${this.handleInstallUpdate}>install now</a>)
+          (<button @click=${this.handleInstallUpdate}>install now</button>)
         `;
       case "installing":
         return html`<wa-spinner></wa-spinner> installing&hellip;`;
@@ -292,30 +290,27 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
       case "deleted":
         return html`
           removed
-          (<a href="#" @click=${this.handleReloadApp}>reload</a> to finish)
+          (<button @click=${this.handleReloadApp}>reload</button> to finish)
         `;
       case "error":
         return html`
           installation error
-          (<a href="#" @click=${this.handleReloadApp}>reload app</a>)
+          (<button @click=${this.handleReloadApp}>reload app</button>)
         `;
       default:
         return `unknown (${pwaManager.status})`;
     }
   }
 
-  private async handleCheckForUpdate(event: UIEvent) {
-    event.preventDefault();
+  private async handleCheckForUpdate() {
     await pwaManager.checkForUpdate();
   }
 
-  private handleInstallUpdate(event: UIEvent) {
-    event.preventDefault();
+  private handleInstallUpdate() {
     pwaManager.installUpdate();
   }
 
-  private handleReloadApp(event: UIEvent) {
-    event.preventDefault();
+  private handleReloadApp() {
     pwaManager.reloadApp();
   }
 
@@ -503,6 +498,32 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
 
       wa-spinner {
         vertical-align: -2px; /* visual text-middle alignment*/
+      }
+      
+      .offline-status button {
+        /* Format offline-status buttons as links */
+        display: inline-block;
+        vertical-align: baseline;
+        background: inherit;
+        font-weight: inherit;
+        font-size: inherit;
+        padding: 0;
+        margin: 0;
+        border: none;
+        
+        color: var(--wa-color-text-link);
+        text-decoration: var(--wa-link-decoration-default);
+        -webkit-text-decoration: var(--wa-link-decoration-default); /* Safari */
+        text-decoration-thickness: 0.09375em;
+        text-underline-offset: 0.125em;
+
+        @media (hover: hover)  {
+          &:hover {
+            color: color-mix(in oklab, var(--wa-color-text-link), var(--wa-color-mix-hover));
+            text-decoration: var(--wa-link-decoration-hover);
+            -webkit-text-decoration: var(--wa-link-decoration-hover); /* Safari */
+          }
+        }
       }
     `,
   ];
