@@ -2,6 +2,7 @@ import {
   getIconLibrary,
   registerIconLibrary,
 } from "@awesome.me/webawesome/dist/components/icon/library.js";
+import installDesktopIcon from "@material-design-icons/svg/outlined/install_desktop.svg";
 import arrowLeftIcon from "lucide-static/icons/arrow-left.svg";
 import arrowLeftToLineIcon from "lucide-static/icons/arrow-left-to-line.svg";
 import arrowRightIcon from "lucide-static/icons/arrow-right.svg";
@@ -37,6 +38,7 @@ import share2Icon from "lucide-static/icons/share-2.svg";
 import shieldCheckIcon from "lucide-static/icons/shield-check.svg";
 import sparklesIcon from "lucide-static/icons/sparkles.svg";
 import squareArrowOutUpRightIcon from "lucide-static/icons/square-arrow-out-up-right.svg";
+import squareDashedMousePointer from "lucide-static/icons/square-dashed-mouse-pointer.svg";
 import squareMenuIcon from "lucide-static/icons/square-menu.svg";
 import squarePenIcon from "lucide-static/icons/square-pen.svg";
 import swatchBookIcon from "lucide-static/icons/swatch-book.svg";
@@ -60,6 +62,8 @@ type IconMap = Readonly<Record<string, string>>;
  */
 // biome-ignore format: leave all keys as strings
 const defaultIcons: IconMap = {
+  // IMPORTANT: Sync changes to logicalIconNames in vite-extra-pages.ts
+  //            (only necessary for icons used in help docs).
   // general
   "back-to-catalog": boxesIcon,
   "checkpoint-add": shieldCheckIcon,
@@ -73,6 +77,7 @@ const defaultIcons: IconMap = {
   "history": historyIcon,
   "history-checkpoint": circleCheckIcon,
   "history-current-move": playIcon,
+  "install-offline": installDesktopIcon, // adds license info for icon used in docs
   "new-game": plusIcon,
   "options": squareMenuIcon,
   "puzzle-type": swatchBookIcon,
@@ -93,6 +98,7 @@ const defaultIcons: IconMap = {
   "history-back": arrowLeftIcon,
   "history-back-to-start": arrowLeftToLineIcon,
   "history-forward": arrowRightIcon,
+  "command-link": squareDashedMousePointer,
   "offsite-link": squareArrowOutUpRightIcon,
   // puzzle-keys
   "key-clear": deleteIcon,

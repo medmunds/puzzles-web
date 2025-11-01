@@ -1,0 +1,19 @@
+<!-- Freely adapted from Lucide share icon -->
+<!-- @license lucide-static v0.548.0 - ISC -->
+<svg
+    class="lucide firefox-web-apps"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+>
+  <path d="M12 2v10" />
+  <path d="m15 11-3 3-3-3" />
+  <path d="M9 4h-5a2 2 0 0 0 -2 2v13a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-13a2 2 0 0 0 -2-2h-5" />
+  <path d="m2 18h20" />
+</svg>

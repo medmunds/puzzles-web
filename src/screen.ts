@@ -77,6 +77,11 @@ export class Screen extends LitElement {
 
   private alreadyHandledCommandTarget?: Element;
 
+  hasCommand(command: string) {
+    const [name] = command.split(":", 1);
+    return Object.hasOwn(this.commandMap, name);
+  }
+
   protected interceptCommandAndHrefClicks = async (event: MouseEvent) => {
     if (event.defaultPrevented) {
       // Don't intercept clicks that have already been handled

@@ -30,8 +30,8 @@ SRC_DIR=/app/puzzles
 # Generated build files:
 BUILD_DIR=/app/build
 # Deliverables output:
-DIST_DIR_HELP=/app/public/help
-DIST_DIR_WASM=/app/assets/puzzles
+DIST_DIR=/app/assets/puzzles
+DIST_DIR_MANUAL="${DIST_DIR}/manual"
 
 if [ ! -d "${SRC_DIR}" ]; then
   echo "Puzzles source must be mounted on /app/puzzles (can be read-only)"
@@ -109,48 +109,40 @@ jq --arg version "$VERSION" -R -s '
 # --- Deliverables ---
 echo "[INFO] Delivering..."
 
+mkdir -p "${DIST_DIR}"
+rm -rf "${DIST_DIR}"/*
+
 # Public deliverables
-mkdir -p "${DIST_DIR_HELP}"
-rm -rf "${DIST_DIR_HELP}"/*
-cp "${BUILD_DIR}"/help/en/*.html "${DIST_DIR_HELP}" || echo "[WARN] No HTML docs files found."
-for file in "${SRC_DIR}"/html/*.html; do
-  puzzle=$(basename "$file" .html)
-  overview="${DIST_DIR_HELP}/${puzzle}-overview.html"
-  # Omit the first line (it's the puzzle name)
-  tail -n +2 "$file" > "${overview}"
-  # Add a link to the manual
-  echo "<p><a href=\"${puzzle}.html#${puzzle}\">Full instructions</a></p>" >> "${overview}"
-done
+mkdir -p "${DIST_DIR_MANUAL}"
+cp "${BUILD_DIR}"/help/en/*.html "${DIST_DIR_MANUAL}" || echo "[WARN] No HTML docs files found."
 
 # Assets deliverables
-mkdir -p "${DIST_DIR_WASM}"
-rm -rf "${DIST_DIR_WASM}"/*
 # The emcc runtime wrapper is the same for all puzzles (differing only in the name
 # of the imported wasm file). Pick an arbitrary one to use as a shared runtime.
 # (See loadPuzzleModule() in src/puzzle.)
-cp "${BUILD_DIR}"/nullgame.js "${DIST_DIR_WASM}/emcc-runtime.js" \
+cp "${BUILD_DIR}"/nullgame.js "${DIST_DIR}/emcc-runtime.js" \
   || echo "[WARN] nullgame.js not found in puzzles/build-webapp."
 # Clean up EmbindString in emit-tsd output. (Yes, any embind-wrapped function that
 # accepts a string can also take an ArrayBuffer, etc., but return values and
 # value object fields are always standard JS strings.)
 sed -e '/type EmbindString/d' -e 's/EmbindString/string/g' \
-  "${BUILD_DIR}"/nullgame.d.ts > "${DIST_DIR_WASM}/emcc-runtime.d.ts" \
+  "${BUILD_DIR}"/nullgame.d.ts > "${DIST_DIR}/emcc-runtime.d.ts" \
   || echo "[WARN] nullgame.d.ts found in puzzles/build-webapp."
 
 # Then deliver all of the puzzle-specific wasm files (and related sourcemaps).
 shopt -s nullglob  # (release builds don't generate .map files)
-cp "${BUILD_DIR}"/*.{wasm,map} "${DIST_DIR_WASM}/" \
+cp "${BUILD_DIR}"/*.{wasm,map} "${DIST_DIR}/" \
   || echo "[WARN] No .wasm files found in puzzles/build-webapp."
 if [[ -d "${BUILD_DIR}/unfinished" ]]; then
-  cp "${BUILD_DIR}"/unfinished/*.{wasm,map} "${DIST_DIR_WASM}/" \
+  cp "${BUILD_DIR}"/unfinished/*.{wasm,map} "${DIST_DIR}/" \
     || echo "[WARN] No unfinished .wasm files found."
 fi
 shopt -u nullglob
 
-cp "${BUILD_DIR}/catalog.json" "${DIST_DIR_WASM}/" || echo "[WARN] No catalog.json found."
+cp "${BUILD_DIR}/catalog.json" "${DIST_DIR}/" || echo "[WARN] No catalog.json found."
 if [[ -f "${BUILD_DIR}/source-file-list.txt" ]]; then
-  cp "${BUILD_DIR}/source-file-list.txt" "${DIST_DIR_WASM}/"
+  cp "${BUILD_DIR}/source-file-list.txt" "${DIST_DIR}/"
 fi
 if [[ -f "${BUILD_DIR}/dependencies.json" ]]; then
-  cp "${BUILD_DIR}/dependencies.json" "${DIST_DIR_WASM}/"
+  cp "${BUILD_DIR}/dependencies.json" "${DIST_DIR}/"
 fi

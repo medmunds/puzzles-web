@@ -42,6 +42,12 @@ p + ul {
   }
 }
 
+/* "expanded list" */
+li:has(p),
+li:has(p):not(:first-child) {
+  margin-block-start: 1em;
+}
+
 h1,
 h2,
 h3,

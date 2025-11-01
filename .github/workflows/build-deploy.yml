@@ -104,12 +104,6 @@ jobs:
             -e VCSID='${{ steps.vcsid.outputs.vcsid }}' \
             build-emcc:latest
 
-      - name: Upload help artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: help
-          path: build/public/help
-
       - name: Upload puzzles artifact
         uses: actions/upload-artifact@v4
         with:
@@ -157,12 +151,6 @@ jobs:
         with:
           name: icons
           path: src/assets/icons
-
-      - name: Download help artifact
-        uses: actions/download-artifact@v5
-        with:
-          name: help
-          path: public/help
 
       - name: Download puzzles artifact
         uses: actions/download-artifact@v5

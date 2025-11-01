@@ -32,7 +32,7 @@ export const puzzlePageUrl = ({
 };
 
 export const helpUrl = (puzzleId?: string) =>
-  new URL(puzzleId ? `help/${puzzleId}-overview.html` : "help/", baseUrl);
+  new URL(puzzleId ? `help/${puzzleId}` : "help/", baseUrl);
 
 export const isHelpUrl = (href: string | URL): boolean =>
   relativePathname(href)?.startsWith("help") ?? false;

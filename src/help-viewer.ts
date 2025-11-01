@@ -1,7 +1,8 @@
 import type WaDrawer from "@awesome.me/webawesome/dist/components/drawer/drawer.js";
-import { css, html, LitElement, nothing } from "lit";
+import { css, html, LitElement, nothing, unsafeCSS } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
+import cssHelpRaw from "./css/help.css?inline";
 import { cssNative, cssWATweaks } from "./utils/css.ts";
 
 // Components
@@ -9,6 +10,7 @@ import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/drawer/drawer.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/include/include.js";
+import "./command-link"; // may appear in included help docs
 
 /**
  * Essentially a miniature browser in an wa-drawer, constrained to subpaths
@@ -141,6 +143,8 @@ export class HelpViewer extends LitElement {
 
   private updateSrc() {
     this.baseUrl = new URL(this.src, window.location.href);
+    // TODO: basePath calculation is incorrect if starting on a nested page (/help/manual/common)
+    //   Should just be an attribute base="/help"
     this.basePath = this.baseUrl.pathname.replace(/\/[^/]*$/, "");
     this.history = [this.baseUrl];
     this.historyIndex = 0;
@@ -166,6 +170,9 @@ export class HelpViewer extends LitElement {
     if (!doc) {
       return;
     }
+
+    // TODO: use base tag (if present) for relative url resolution
+    // const base = doc.querySelector("base")?.innerText;
 
     const currentUrl = this.history[this.historyIndex];
     const anchors = doc.querySelectorAll<HTMLAnchorElement>("a[href]") ?? [];
@@ -194,8 +201,39 @@ export class HelpViewer extends LitElement {
       }
     }
 
+    // Same thing for src
+    // TODO: other attributes? (srcset? href on non-anchor?)
+    for (const element of doc.querySelectorAll("[src]")) {
+      const src = element.getAttribute("src");
+      if (!src || !("src" in element)) {
+        continue;
+      }
+      let resolved: URL;
+      try {
+        resolved = new URL(src, currentUrl);
+      } catch {
+        continue; // skip malformed src
+      }
+      element.src = resolved.href;
+    }
+
+    // wa-select injects entire content into dom, which flattens head elements
+    // alongside body elements (but loses the head and body tags).
+    // Strip the head content to avoid breaking :first-child layout in the body.
+    // (Need to keep title tag, but we move it to the end. See below.)
+    // Also strip class="standalone-only" content (from our templates).
+    for (const element of doc.querySelectorAll(
+      "base,link,meta,noscript,script,style,.standalone-only",
+    )) {
+      element.remove();
+    }
+
     // Use the title tag if available
-    this.currentTitle = doc.querySelector("title")?.innerText;
+    const titleEl = doc.querySelector("title");
+    if (titleEl) {
+      this.currentTitle = titleEl.innerText;
+      doc.appendChild(titleEl); // move to end to avoid breaking layout
+    }
 
     // Scroll to the hash, or to the top
     // TODO: when navigating back, restore scroll position
@@ -292,36 +330,17 @@ export class HelpViewer extends LitElement {
         border-bottom: 1px solid var(--wa-color-neutral-border-normal);
       }
       
-      /* TODO: share the base page styles somehow */
       wa-include {
-        /* try to avoid horizontal scrolling on small screens */
-        overflow-wrap: break-word;
-  
-        a > code {
-          /* urls are all formatted as code; we'd prefer to skip the monoface font */
-          font-family: inherit;
-        }
-        
-        /* Restore some margin removed by cssNative */
-        h1 {
-          margin-block-start: var(--wa-space-xl);
-        }
-        h2 {
-          margin-block-start: var(--wa-space-l);
-        }
-        h3, h4, h5, h6 {
-          margin-block-start: var(--wa-space-m);
-        }
-        
-        pre {
-          /* try to avoid horizontal scrolling on small screens */
-          white-space: pre-wrap;
-        }
-        
         wa-icon.offsite {
           margin-inline-start: 0.1em;
           vertical-align: -2px; /* visual baseline alignment*/
         }
+        
+        .standalone-only {
+          display: none;
+        }
+        
+        ${unsafeCSS(cssHelpRaw)}
       }
     `,
   ];

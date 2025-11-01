@@ -18,6 +18,7 @@ import "@awesome.me/webawesome/dist/components/details/details.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
+import "./command-link"; // may appear in embedded text (e.g., privacy.html)
 
 // Raw content
 import appLicenseText from "../LICENSE?raw";

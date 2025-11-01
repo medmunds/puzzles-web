@@ -15,6 +15,7 @@ import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "./catalog-list.ts";
+import "./command-link";
 import "./dynamic-content.ts";
 import "./head-matter.ts";
 
@@ -50,7 +51,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
 
       <footer slot="footer">
         <div>Credits, privacy info, copyright notices and licenses are in the
-          <a href="#about">about box</a>.</div>
+          <command-link command="about" hide-icon>about box</command-link>.</div>
         <div><small>In some countries, names of similar/related puzzles may be
           trademarks belonging to others. Use here does not imply affiliation
           or endorsement by their owners.</small></div>

@@ -22,7 +22,7 @@ function validateBase(base: string) {
   }
 }
 
-function isViteMagicUrl(url: URL) {
+export function isViteMagicUrl(url: URL) {
   const viteMagicParams = ["import", "raw", "inline", "url", "v", "t"];
   return viteMagicParams.some((param) => url.searchParams.has(param));
 }
@@ -91,18 +91,12 @@ export const puzzlesMpaRouting = (): Plugin => {
         };
 
         if (pathname.endsWith("/")) {
+          // TODO: doesn't vite already do this?
           const indexFile = `${pathname}index.html`;
           if (fileExists(indexFile)) {
             // "Index routing": serve /foo/bar/index.html for /foo/bar/
             // console.log(`Index route ${req.url} -> ${indexFile}`);
             req.url = indexFile;
-          } else {
-            // "Strip trailing /"
-            const stripped = pathname.replace(/\/+$/, "");
-            if (stripped.length > 0) {
-              url.pathname = stripped;
-              return redirect();
-            }
           }
         } else if (pathname.endsWith(".html") && !isViteMagicUrl(url)) {
           // "Clean url": strip .html (and index.html)
