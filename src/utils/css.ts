@@ -31,7 +31,7 @@ export function getNumericProperty(
   if (valueStr) {
     const value = Number.parseFloat(valueStr);
     if (Number.isNaN(value)) {
-      throw new Error(`Invalid value for ${property}: ${value}`);
+      throw new Error(`Unparseable numeric value for ${property}: '${valueStr}'`);
     }
     return value;
   }
