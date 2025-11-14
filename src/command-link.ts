@@ -83,6 +83,13 @@ export class CommandLink extends LitElement {
           }
         }
       }
+
+      slot {
+        /* Avoid Safari bug where default slotted content within a dialog disappears 
+         * when some other dialog is closed. Symptom: all command-link text vanishes 
+         * from help-viewer after opening and closing any dialog over it. */
+        display: inline;
+      }
   
       wa-icon {
         margin-inline-end: 0.1em;
