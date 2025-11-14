@@ -32,6 +32,10 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
   @state()
   private puzzle?: Puzzle;
 
+  // Delay between puzzle's own flash and our animation (msec)
+  @property({ type: Number })
+  delay = 100;
+
   @property({ type: Boolean, reflect: true })
   get open(): boolean {
     return this.dialog?.open ?? false;
@@ -152,6 +156,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     // Wait for any game animations/flashes to finish before showing dialog
     await sleep(10); // ensure timer start notification arrives from worker
     await Promise.all([this.updateComplete, this.puzzle?.timerComplete]);
+    await sleep(this.delay); // brief break between animations
     if (this.isConnected && this.dialog && !this.wantsOpen) {
       await this.show();
     }
