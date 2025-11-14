@@ -20,6 +20,7 @@ import circleXIcon from "lucide-static/icons/circle-x.svg";
 import crownIcon from "lucide-static/icons/crown.svg";
 import deleteIcon from "lucide-static/icons/delete.svg";
 import downloadIcon from "lucide-static/icons/download.svg";
+import externalLinkIcon from "lucide-static/icons/external-link.svg";
 import frownIcon from "lucide-static/icons/frown.svg";
 import gemIcon from "lucide-static/icons/gem.svg";
 import hashIcon from "lucide-static/icons/hash.svg";
@@ -37,7 +38,6 @@ import settingsIcon from "lucide-static/icons/settings.svg";
 import share2Icon from "lucide-static/icons/share-2.svg";
 import shieldCheckIcon from "lucide-static/icons/shield-check.svg";
 import sparklesIcon from "lucide-static/icons/sparkles.svg";
-import squareArrowOutUpRightIcon from "lucide-static/icons/square-arrow-out-up-right.svg";
 import squareDashedMousePointer from "lucide-static/icons/square-dashed-mouse-pointer.svg";
 import squareMenuIcon from "lucide-static/icons/square-menu.svg";
 import squarePenIcon from "lucide-static/icons/square-pen.svg";
@@ -99,7 +99,7 @@ const defaultIcons: IconMap = {
   "history-back-to-start": arrowLeftToLineIcon,
   "history-forward": arrowRightIcon,
   "command-link": squareDashedMousePointer,
-  "offsite-link": squareArrowOutUpRightIcon,
+  "offsite-link": externalLinkIcon,
   // puzzle-keys
   "key-clear": deleteIcon,
   "key-marks": squarePenIcon, // or maybe rectangle-ellipsis?
