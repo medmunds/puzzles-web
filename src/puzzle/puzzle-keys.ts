@@ -81,10 +81,12 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
         ? Math.floor(this.keyLabels.length / 2)
         : this.keyLabels.length;
     const keyGroups = [this.keyLabels.slice(0, split), this.keyLabels.slice(split)];
-    return keyGroups.map(
-      (keys) => html`
+    return html`
+      <div part="base">${keyGroups.map(
+        (keys) => html`
           <div part="group">${keys.map(this.renderVirtualKey)}</div>`,
-    );
+      )}</div>
+    `;
   }
 
   private renderVirtualKey = (key: KeyLabel) => {
@@ -121,8 +123,12 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     cssWATweaks,
     css`
       :host {
-        --gap: var(--wa-space-s); 
-  
+        display: contents;
+      }
+      
+      [part~="base"] {
+        --gap: var(--wa-space-s);
+
         display: flex;
         flex-wrap: wrap;
         gap: var(--gap);
