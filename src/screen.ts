@@ -183,7 +183,7 @@ export class Screen extends LitElement {
   @query("dynamic-content")
   protected dynamicContent?: HTMLElementTagNameMap["dynamic-content"];
 
-  protected async showAboutDialog() {
+  protected async showAboutDialog(panel?: string) {
     await import("./about-dialog.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "about-dialog",
@@ -191,6 +191,10 @@ export class Screen extends LitElement {
     });
     if (dialog && !dialog.open) {
       dialog.open = true;
+    }
+    if (dialog && panel) {
+      await dialog.updateComplete;
+      await dialog.showPanel(panel);
     }
   }
 
@@ -216,7 +220,7 @@ export class Screen extends LitElement {
     }
   }
 
-  protected async showSettingsDialog() {
+  protected async showSettingsDialog(panel?: string) {
     await import("./settings-dialog.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "settings-dialog",
@@ -224,6 +228,10 @@ export class Screen extends LitElement {
     });
     if (dialog && !dialog.open) {
       await dialog.show();
+    }
+    if (dialog && panel) {
+      await dialog.updateComplete;
+      await dialog.showPanel(panel);
     }
   }
 

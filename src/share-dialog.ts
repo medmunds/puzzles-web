@@ -50,6 +50,17 @@ export class ShareDialog extends SignalWatcher(LitElement) {
     this.formattedText = await this.puzzle?.formatAsText();
   }
 
+  async showPanel(panelId: string) {
+    const panel = this.shadowRoot?.querySelector<HTMLElementTagNameMap["wa-details"]>(
+      `wa-details#${panelId}`,
+    );
+    if (panel) {
+      panel.open = true;
+      await panel.updateComplete;
+      panel.scrollIntoView({});
+    }
+  }
+
   protected override render() {
     const puzzleName = this.puzzle?.displayName ?? "Unknown puzzle";
     const puzzleParams = this.puzzle?.currentParams;
@@ -87,7 +98,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
       >
         <div slot="label">Share</div>
         
-        <wa-details open name="share">
+        <wa-details open id="link" name="share">
           <div slot="summary">Link to ${puzzleName}</div>
           ${this.renderCopyableInput({
             label: "This specific game",
@@ -104,7 +115,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
         ${
           this.formattedText
             ? html`
-              <wa-details name="share">
+              <wa-details id="text" name="share">
                 <div slot="summary" id="text-label">Copy as text</div>
                 <wa-textarea 
                     id="formatted-text"
@@ -122,7 +133,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
             : nothing
         }
         
-        <wa-details name="share" class="tight">
+        <wa-details id="other" name="share" class="tight">
           <div slot="summary">Game ID and more</div>
           
           ${this.renderCopyableInput({

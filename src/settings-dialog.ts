@@ -66,7 +66,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     // Use autosubmit on the puzzle-preferences-form to apply changes immediately.
     // (settings-dialog does not use OK/Cancel flow.)
     return html`
-      <wa-details open>
+      <wa-details open id="puzzle" name="panel">
         <div slot="summary">${puzzleName} preferences</div>
         <puzzle-preferences-form 
             autosubmit
@@ -78,7 +78,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
 
   private renderAppearanceSection() {
     return html`
-      <wa-details summary="Appearance">
+      <wa-details id="appearance" name="panel" summary="Appearance">
         <wa-checkbox
             ?checked=${autoBind(settings, "showEndNotification")}
             hint="Victory message with “New game” button"
@@ -128,7 +128,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     // to work around a bug where changes to the value attr aren't rendered.
     // https://github.com/shoelace-style/webawesome/issues/1273
     return html`
-      <wa-details summary="Mouse buttons">
+      <wa-details id="mouse" name="panel" summary="Mouse buttons">
         <div class="hint">
           Options for emulating the right mouse button on touch devices
         </div>
@@ -185,7 +185,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
 
   private renderDataSection() {
     return html`
-      <wa-details summary="Data" @wa-select=${this.handleDataCommand}>
+      <wa-details id="data" name="panel" summary="Data" @wa-select=${this.handleDataCommand}>
         <div class="hint">
           Saved games, preferences and other puzzle data are kept in
           ${isRunningAsApp ? "this app’s" : "your browser’s"} local storage
@@ -225,7 +225,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
 
   private renderAdvancedSection() {
     return html`
-      <wa-details summary="Advanced">
+      <wa-details id="advanced" name="panel" summary="Advanced">
         <wa-checkbox
             hint="Experimental puzzles in development (may have lots of bugs!)"
             ?checked=${autoBind(settings, "showUnfinishedPuzzles")}
@@ -442,6 +442,17 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     }
     if (this.dialog) {
       this.dialog.open = true;
+    }
+  }
+
+  async showPanel(panelId: string) {
+    const panel = this.shadowRoot?.querySelector<HTMLElementTagNameMap["wa-details"]>(
+      `wa-details#${panelId}`,
+    );
+    if (panel) {
+      panel.open = true;
+      await panel.updateComplete;
+      panel.scrollIntoView({});
     }
   }
 

@@ -323,7 +323,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     });
   }
 
-  private async showShareDialog() {
+  private async showShareDialog(panel?: string) {
     await import("./share-dialog.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "share-dialog",
@@ -332,6 +332,10 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     if (dialog && !dialog.open) {
       await dialog.reset();
       dialog.open = true;
+    }
+    if (dialog && panel) {
+      await dialog.updateComplete;
+      await dialog.showPanel(panel);
     }
   }
 

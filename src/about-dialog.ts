@@ -110,6 +110,17 @@ export class AboutDialog extends LitElement {
     }
   }
 
+  async showPanel(panelId: string) {
+    const panel = this.shadowRoot?.querySelector<HTMLElementTagNameMap["wa-details"]>(
+      `wa-details#${panelId}`,
+    );
+    if (panel) {
+      panel.open = true;
+      await panel.updateComplete;
+      panel.scrollIntoView({});
+    }
+  }
+
   @state()
   private dependencies?: DependencyInfo["dependencies"];
 
@@ -167,7 +178,7 @@ export class AboutDialog extends LitElement {
           </p>
         </div>
         
-        <wa-details summary="Credits" open>
+        <wa-details id="credits" name="panel" summary="Credits" open>
           <p>Special thanks to&hellip;</p>
           <ul role="list">
             <li>Simon Tatham and all the contributors to the official
@@ -185,11 +196,12 @@ export class AboutDialog extends LitElement {
           </ul>
         </wa-details>
         
-        <wa-details summary="Privacy">
+        <wa-details id="privacy" name="panel" summary="Privacy">
           ${unsafeHTML(privacyHtml)}
         </wa-details>
 
-        <wa-details 
+        <wa-details
+            id="license" name="panel"
             summary="Copyright notices and licenses" 
             @wa-show=${this.loadDependencies}
         >
