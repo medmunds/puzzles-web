@@ -60,7 +60,7 @@ export class Screen extends LitElement {
   //
 
   // Clicking an element with `data-command="command-name:arg1:arg2..."`
-  // or `href="#command-name:arg1:arg2..."` will invoke the registered
+  // or `href="#!command-name:arg1:arg2..."` will invoke the registered
   // handler for command-name. (Clicks are intercepted even into shadow dom.
   // Arguments, if any, are always strings, which allows links like
   // "#settings:data" to open the settings dialog to the data panel.)
@@ -123,7 +123,7 @@ export class Screen extends LitElement {
             await this.showHelpViewer(href);
           }
         } else {
-          const handled = this.handleCommand(command ?? href?.replace(/^#/, "") ?? "");
+          const handled = this.handleCommand(command ?? href?.replace(/^#!/, "") ?? "");
           if (handled) {
             event.preventDefault();
           } else if (!import.meta.env.PROD && command) {
