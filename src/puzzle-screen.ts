@@ -20,6 +20,8 @@ import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
+import "@awesome.me/webawesome/dist/components/radio/radio.js";
+import "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
 import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
 import "./dynamic-content.ts";
 import "./head-matter.ts";
@@ -49,6 +51,9 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
 
   @state()
   private puzzleLoaded = false;
+
+  @state()
+  swapMouseButtons = false; // MouseButtonToggle current value
 
   @query("puzzle-context")
   private puzzleContext?: HTMLElementTagNameMap["puzzle-context"];
@@ -166,6 +171,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
               aria-label="interactive puzzle displayed as an image"
               statusbar-placement=${settings.statusbarPlacement}
               ?longPress=${settings.rightButtonLongPress}
+              ?swapMouseButtons=${this.swapMouseButtons}
               ?twoFingerTap=${settings.rightButtonTwoFingerTap}
               secondaryButtonAudioVolume=${settings.rightButtonAudioVolume}
               secondaryButtonHoldTime=${settings.rightButtonHoldTime}
@@ -181,6 +187,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
                 ? html`<puzzle-keys tabindex="-1"></puzzle-keys>`
                 : nothing
             }
+            ${this.renderMouseButtonToggle()}
             <puzzle-history></puzzle-history>
           </footer>
         </main>
@@ -301,6 +308,27 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
             : nothing
         }
       </wa-dropdown>
+    `;
+  }
+
+  private renderMouseButtonToggle() {
+    if (!settings.showMouseButtonToggle) {
+      return nothing;
+    }
+    return html`
+      <wa-radio-group
+          id="mouse-button-toggle"
+          appearance="button" 
+          orientation="horizontal" 
+          aria-label="Tap on puzzle means"
+          .value=${this.swapMouseButtons ? "right" : "left"}
+          @change=${() => {
+            this.swapMouseButtons = !this.swapMouseButtons;
+          }}
+      >
+        <wa-radio appearance="button" value="left"><wa-icon name="mouse-left-button" label="left click"></wa-radio>
+        <wa-radio appearance="button" value="right"><wa-icon name="mouse-right-button" label="right click"></wa-radio>
+      </wa-radio-group>
     `;
   }
 
@@ -759,6 +787,16 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       @media (prefers-reduced-motion: no-preference) {
         .game-menu-trigger {
           transition: font-size var(--wa-transition-fast) var(--wa-transition-easing);
+        }
+      }
+      
+      #mouse-button-toggle {
+        flex: 0 0 auto;
+        wa-radio {
+          /* Make it square with icon-only label (1em wide) */
+          padding-inline: calc(
+              (var(--wa-form-control-height) - 1em) / 2 
+              - var(--wa-form-control-border-width));
         }
       }
     `,

@@ -25,7 +25,7 @@ screen, you have a few options when the manual says to "right-click":
 
 * **Tap multiple times.** In many puzzles, this will cycle through the left-click
   state on first tap, the right-click state on second tap, and back to the 
-  "neutral" state (for puzzles that have that) on the third tap. 
+  "neutral" state (for puzzles that have that) on the third tap.
 
 * **Long press** (hold) is treated as a right-click. To right-drag, continue 
   to hold your finger down and move it in the desired direction.
@@ -40,9 +40,19 @@ screen, you have a few options when the manual says to "right-click":
   To right-drag, keep the first finger down and move it after lifting the other 
   finger. 
 
-You can disable the latter two options in the 
+* **::mouse-left-button|left-click::/::mouse-right-button|right-click:: toggle.**
+  You can show a button below the puzzle that lets you change whether tapping
+  on the puzzle means left-click or right-click. The mouse button toggle starts 
+  out hidden; turn it on in the 
+  <command-link command="settings:mouse">preferences</command-link>.
+
+  (This also works with a single-button mouse or touch pad, and to swap the left 
+  and right buttons on any mouse when clicking on the puzzle.)
+
+Tapping multiple times is always available (for puzzles that support it). 
+The other options can be configured in the 
 <command-link command="settings:mouse">preferences</command-link>,
-and also adjust the detection time and audio feedback.
+where you can also adjust the detection time and audio feedback.
 
 ## Right drag with a mouse {#right-drag}
 

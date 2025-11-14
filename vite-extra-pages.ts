@@ -462,6 +462,8 @@ export const renderMarkdown = (
     "game-in-progress": "play",
     "generic-puzzle": "box",
     history: "history",
+    "mouse-left-button": "/src/assets/mouse-left-button.svg",
+    "mouse-right-button": "/src/assets/mouse-right-button.svg",
     "puzzle-type": "swatch-book",
     redo: "redo-2",
     "save-game": "download",

@@ -19,6 +19,7 @@ export interface CommonSettings {
   puzzlePreferences?: ConfigValues;
 
   // Secondary button emulation
+  showMouseButtonToggle?: boolean;
   rightButtonLongPress?: boolean;
   rightButtonTwoFingerTap?: boolean;
   rightButtonAudioVolume?: number; // 0-100; 0 disables

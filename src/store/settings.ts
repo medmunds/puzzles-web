@@ -30,6 +30,7 @@ const defaultSettings = {
   favoritePuzzles: new Set<PuzzleId>(),
   showIntro: true,
   showUnfinishedPuzzles: false,
+  showMouseButtonToggle: false,
   rightButtonLongPress: true,
   rightButtonTwoFingerTap: true,
   rightButtonAudioVolume: 40,
@@ -55,6 +56,9 @@ class Settings {
     defaultSettings.showUnfinishedPuzzles,
   );
 
+  private _showMouseButtonToggle = signal<boolean>(
+    defaultSettings.showMouseButtonToggle,
+  );
   private _rightButtonLongPress = signal<boolean>(defaultSettings.rightButtonLongPress);
   private _rightButtonTwoFingerTap = signal<boolean>(
     defaultSettings.rightButtonTwoFingerTap,
@@ -106,6 +110,7 @@ class Settings {
       }
       update(this._showIntro, commonSettings.showIntro);
       update(this._showUnfinishedPuzzles, commonSettings.showUnfinishedPuzzles);
+      update(this._showMouseButtonToggle, commonSettings.showMouseButtonToggle);
       update(this._rightButtonLongPress, commonSettings.rightButtonLongPress);
       update(this._rightButtonTwoFingerTap, commonSettings.rightButtonTwoFingerTap);
       update(this._rightButtonAudioVolume, commonSettings.rightButtonAudioVolume);
@@ -175,6 +180,14 @@ class Settings {
   set showUnfinishedPuzzles(value: boolean) {
     this._showUnfinishedPuzzles.set(value);
     this.saveCommonSettingOrLogError("showUnfinishedPuzzles", value);
+  }
+
+  get showMouseButtonToggle(): boolean {
+    return this._showMouseButtonToggle.get();
+  }
+  set showMouseButtonToggle(value: boolean) {
+    this._showMouseButtonToggle.set(value);
+    this.saveCommonSettingOrLogError("showMouseButtonToggle", value);
   }
 
   get rightButtonLongPress(): boolean {

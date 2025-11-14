@@ -134,6 +134,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         </div>
         <wa-checkbox
             hint="Swaps left and right mouse buttons (allows tap for right click)"
+            ?checked=${autoBind(settings, "showMouseButtonToggle")}
           >Show <wa-icon name="mouse-left-button" label="left button"></wa-icon>
             ⁄ <wa-icon name="mouse-right-button" label="right button"></wa-icon>
             toggle</wa-checkbox>
