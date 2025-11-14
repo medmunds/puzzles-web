@@ -217,7 +217,7 @@ export class HelpViewer extends LitElement {
       element.src = resolved.href;
     }
 
-    // wa-select injects entire content into dom, which flattens head elements
+    // wa-include injects entire content into dom, which flattens head elements
     // alongside body elements (but loses the head and body tags).
     // Strip the head content to avoid breaking :first-child layout in the body.
     // (Need to keep title tag, but we move it to the end. See below.)
@@ -237,10 +237,11 @@ export class HelpViewer extends LitElement {
 
     // Scroll to the hash, or to the top
     // TODO: when navigating back, restore scroll position
+    // TODO: use smooth scroll when navigating within current page
     let scrollTo: Element | null = null;
     if (currentUrl.hash) {
       const anchor = currentUrl.hash.slice(1);
-      scrollTo = doc.querySelector(`[name="${anchor}"]`);
+      scrollTo = doc.querySelector(`[name="${anchor}"],[id="${anchor}"]`);
     }
     if (scrollTo) {
       scrollTo.scrollIntoView({});
