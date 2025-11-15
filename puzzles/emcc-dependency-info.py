@@ -135,7 +135,7 @@ def extract_license_from_source(source_path: Path) -> LicenseInfo | None:
                     line = source_file.readline()
                     if not line.startswith(prefix):
                         break
-                    if comment == "*" and line.startswith(leader + "*/"):
+                    if comment == " *" and line.startswith(leader + " */"):
                         break
                     content = line[len(prefix) :]
                     if notice.strip() and re_separator.match(content):
