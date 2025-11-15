@@ -72,8 +72,11 @@ export class HelpViewer extends LitElement {
     const currentSrc = this.history[this.historyIndex] ?? "";
     const title = this.currentTitle ?? this.label;
     // TODO: the new tab button (at least) needs a tooltip
+    // Must use <div slot=label> rather than <wa-drawer label=...> to avoid
+    // Safari bug where slotted content disappears when some other dialog is closed.
     return html`
-      <wa-drawer id="help" label=${title}>
+      <wa-drawer id="help">
+        <div slot="label" id="drawer-label">${title}</div>
         ${this.renderHistoryButtons()}
         ${
           this.showPopout
@@ -319,8 +322,12 @@ export class HelpViewer extends LitElement {
       }
       wa-drawer::part(title) {
         overflow: hidden;
+      }
+      #drawer-label {
+        overflow: hidden;
         text-overflow: ellipsis;
         text-wrap: nowrap;
+        max-width: 100%;
       }
       wa-drawer::part(header-actions) {
         padding-inline-start: 0;

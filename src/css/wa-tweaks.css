@@ -40,3 +40,12 @@ wa-button::part(caret),
 wa-details::part(icon) {
   width: 1em;
 }
+
+/* Avoid Safari bug where slotted content within a dialog disappears
+ * when some other dialog is closed. (There are probably other cases with the
+ * same problem: anything where Web Awesome renders slots with the default
+ * UA stylesheet `display: contents`.) */
+wa-details::part(summary) {
+  /* <slot name="summary" part="summary"> */
+  display: inline;
+}
