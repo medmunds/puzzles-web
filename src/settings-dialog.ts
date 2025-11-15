@@ -21,6 +21,7 @@ import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
 import "@awesome.me/webawesome/dist/components/details/details.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
+import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
@@ -227,10 +228,6 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
   private renderAdvancedSection() {
     return html`
       <wa-details id="advanced" name="panel" summary="Advanced">
-        <wa-checkbox
-            hint="Experimental puzzles in development (may have lots of bugs!)"
-            ?checked=${autoBind(settings, "showUnfinishedPuzzles")}
-          >Show unfinished puzzles</wa-checkbox>
         <wa-checkbox 
             ?checked=${pwaManager.allowOfflineUse}
             @change=${this.handleAllowOfflineChange}
@@ -257,6 +254,11 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         <div class="offline-status" role="status" aria-atomic="true">
           Offline content: ${this.renderOfflineStatus()}
         </div>
+        <wa-divider></wa-divider>
+        <wa-checkbox
+            hint="Experimental puzzles in development (may have lots of bugs!)"
+            ?checked=${autoBind(settings, "showUnfinishedPuzzles")}
+        >Show unfinished puzzles</wa-checkbox>
       </wa-details>
     `;
   }
