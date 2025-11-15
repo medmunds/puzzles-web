@@ -182,11 +182,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           </puzzle-view-interactive>
 
           <footer>
-            ${
-              settings.showPuzzleKeyboard
-                ? html`<puzzle-keys tabindex="-1"></puzzle-keys>`
-                : nothing
-            }
+            ${settings.showPuzzleKeyboard ? html`<puzzle-keys></puzzle-keys>` : nothing}
             ${this.renderMouseButtonToggle()}
             <puzzle-history></puzzle-history>
           </footer>

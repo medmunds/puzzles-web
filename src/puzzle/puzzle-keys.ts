@@ -1,10 +1,9 @@
 import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, eventOptions, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { cssWATweaks } from "../utils/css.ts";
-import { getDelegatedTarget } from "../utils/events.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { KeyLabel } from "./types.ts";
@@ -56,20 +55,6 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     this.keyLabels = (await this.puzzle?.requestKeys()) ?? [];
   }
 
-  override connectedCallback() {
-    super.connectedCallback();
-    // Activate virtual keys on touchstart for better responsiveness in rapid "typing".
-    this.addEventListener("touchstart", this.handleButtonPress, { passive: false });
-    // But also handle click for keyboard activation
-    this.addEventListener("click", this.handleButtonPress);
-  }
-
-  override disconnectedCallback() {
-    super.disconnectedCallback();
-    this.removeEventListener("touchstart", this.handleButtonPress);
-    this.removeEventListener("click", this.handleButtonPress);
-  }
-
   protected override render() {
     if (!this.keyLabels || this.keyLabels.length === 0) {
       return nothing;
@@ -81,11 +66,19 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
         ? Math.floor(this.keyLabels.length / 2)
         : this.keyLabels.length;
     const keyGroups = [this.keyLabels.slice(0, split), this.keyLabels.slice(split)];
-    return html`
-      <div part="base">${keyGroups.map(
-        (keys) => html`
+    const groups = keyGroups.map(
+      (keys) => html`
           <div part="group">${keys.map(this.renderVirtualKey)}</div>`,
-      )}</div>
+    );
+
+    // Activate virtual keys on touchstart for better responsiveness in rapid "typing".
+    // But also handle click for keyboard activation (if a virtual key somehow gets focus).
+    return html`
+      <div
+          part="base"
+          @click=${this.handleButtonPress}
+          @touchstart=${this.handleButtonPress}
+        >${groups}</div>
     `;
   }
 
@@ -96,17 +89,27 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     const content = icon
       ? html`<wa-icon name=${icon} label=${label}></wa-icon>`
       : label;
+    // Exclude virtual keys from keyboard navigation
+    // (they're not helpful for a keyboard user).
     return html`
-      <wa-button class=${classes} data-button=${key.button}>${content}</wa-button>
+      <wa-button 
+          class=${classes} 
+          data-button=${key.button} 
+          tabindex="-1"
+        >${content}</wa-button>
     `;
   };
 
-  private handleButtonPress = async (event: PointerEvent | TouchEvent) => {
+  @eventOptions({ passive: false })
+  private async handleButtonPress(event: PointerEvent | TouchEvent) {
     // Delegated listener for both touchstart and click events.
     // (On touch devices, preventDefault on touchstart will avoid a later click event.
     // This must be installed on touchstart rather than pointerdown, because it's
     // impossible on iOS Safari to prevent a pointerdown from generating a click.)
-    const target = getDelegatedTarget(event)?.closest("[data-button]");
+    if (!(event.target instanceof HTMLElement)) {
+      return;
+    }
+    const target = event.target.closest("[data-button]");
     const dataButton = target?.getAttribute("data-button") ?? null;
     if (dataButton !== null) {
       event.preventDefault();
@@ -117,7 +120,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
         throw new Error(`Invalid data-button="${dataButton}"`);
       }
     }
-  };
+  }
 
   static styles = [
     cssWATweaks,
