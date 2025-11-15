@@ -17,6 +17,11 @@
       "notice": "\n\n\nThis should be last (verifies package sort order ignores punctuation).\n\n\n\n\nAlso only two <p> tags & no html injection."
     },
     {
+      "name": "An Apache licensed package",
+      "license": "Apache-2.0",
+      "notice": "Copyright [yyyy] [name of copyright owner]\n\n   … You may obtain a copy of the License at\n\n       http://www.apache.org/licenses/LICENSE-2.0\n\n   (and that should be a live link)\n"
+    },
+    {
       "name": "missing-license-text",
       "version": "3.0",
       "license": "MIT",

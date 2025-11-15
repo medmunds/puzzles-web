@@ -78,7 +78,15 @@ function licenseTextToHTML(
     const lines = paragraph
       .replace(/[-=]{5,}/g, "")
       .split("\r")
-      .filter((line) => line.trim() !== "")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) =>
+        // Linkify the Apache license url. (Could try to implement general
+        // linkfication, but this is simpler and all we really need for now.)
+        line === "http://www.apache.org/licenses/LICENSE-2.0"
+          ? html`<a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">${line}</a>`
+          : line,
+      )
       .map((line, i) => (i > 0 ? html`<br>${line}` : line));
     if (lines.length > 0) {
       result.push(html`<p>${firstParagraph ? label : nothing}${lines}</p>`);
