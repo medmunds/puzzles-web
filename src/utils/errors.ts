@@ -1,6 +1,6 @@
 // Last-resort error handling.
 
-import { showAlert } from "../alert-dialog.ts";
+import { reportError } from "../crash-dialog.ts";
 import {
   type WorkerUnhandledErrorMessage,
   workerUnhandledErrorMessageType,
@@ -23,11 +23,7 @@ export function installErrorHandlers() {
       const errorMessage = `${message}${
         filename ? ` at ${filename}:${lineno}:${colno}` : ""
       }`;
-      void showAlert({
-        label: "Unexpected error",
-        message: errorMessage,
-        type: "error",
-      });
+      reportError(errorMessage);
     } catch (error) {
       console.error("Error in onerror handler", error);
     }
@@ -42,11 +38,7 @@ export function installErrorHandlers() {
           : event.reason,
       );
       const errorMessage = `Unhandled Promise Rejection: ${description}`;
-      void showAlert({
-        label: "Unexpected error",
-        message: errorMessage,
-        type: "error",
-      });
+      reportError(errorMessage);
     } catch (error) {
       console.error("Error in onunhandledrejection handler", error);
     }
@@ -68,11 +60,7 @@ const isWorkerUnhandledErrorMessage = (
 const handleWorkerMessage = (event: MessageEvent<unknown>) => {
   if (isWorkerUnhandledErrorMessage(event)) {
     console.error(event.data.message, event.data.error);
-    void showAlert({
-      label: "Unexpected error",
-      message: event.data.message,
-      type: "error",
-    });
+    reportError(event.data.message);
   }
 };
 
