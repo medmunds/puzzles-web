@@ -1,55 +1,14 @@
 // Last-resort error handling.
 
+import { showAlert } from "../alert-dialog.ts";
 import {
   type WorkerUnhandledErrorMessage,
   workerUnhandledErrorMessageType,
 } from "./errors-shared.ts";
-import { escapeHtml } from "./html.ts";
-
-// Register components
-import "@awesome.me/webawesome/dist/components/callout/callout.js";
-import "@awesome.me/webawesome/dist/components/icon/icon.js";
-
-/**
- * Display a wa-callout toast with an error message.
- * Returned promise resolves when alert is dismissed.
- */
-export async function notifyError(message: string): Promise<void> {
-  // WebAwesome doesn't yet have toasts. Hack up a toast stack using wa-callout.
-  let toastStack = document.getElementById("toasts");
-  if (!toastStack) {
-    toastStack = Object.assign(document.createElement("div"), {
-      id: "toasts",
-      style:
-        "position: absolute; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 1rem; padding: 1rem;",
-    });
-    document.body.append(toastStack);
-  }
-
-  return new Promise((resolve) => {
-    const alert = Object.assign(document.createElement("wa-callout"), {
-      variant: "danger",
-      closable: true,
-      innerHTML: `
-        <wa-icon name="error" slot="icon"></wa-icon>
-        ${escapeHtml(message).replace("\n", "<br>")}
-      `,
-    });
-    alert.addEventListener(
-      "click",
-      () => {
-        alert.remove();
-        resolve();
-      },
-      { once: true },
-    );
-    toastStack.append(alert);
-  });
-}
 
 /**
  * Install last-resort error handlers on the main thread.
- * These will report unhandled exceptions and promise rejections via wa-callout notifications.
+ * These will report unhandled exceptions and promise rejections.
  */
 export function installErrorHandlers() {
   if (typeof window === "undefined") {
@@ -64,7 +23,11 @@ export function installErrorHandlers() {
       const errorMessage = `${message}${
         filename ? ` at ${filename}:${lineno}:${colno}` : ""
       }`;
-      void notifyError(errorMessage);
+      void showAlert({
+        label: "Unexpected error",
+        message: errorMessage,
+        type: "error",
+      });
     } catch (error) {
       console.error("Error in onerror handler", error);
     }
@@ -79,7 +42,11 @@ export function installErrorHandlers() {
           : event.reason,
       );
       const errorMessage = `Unhandled Promise Rejection: ${description}`;
-      void notifyError(errorMessage);
+      void showAlert({
+        label: "Unexpected error",
+        message: errorMessage,
+        type: "error",
+      });
     } catch (error) {
       console.error("Error in onunhandledrejection handler", error);
     }
@@ -101,7 +68,11 @@ const isWorkerUnhandledErrorMessage = (
 const handleWorkerMessage = (event: MessageEvent<unknown>) => {
   if (isWorkerUnhandledErrorMessage(event)) {
     console.error(event.data.message, event.data.error);
-    void notifyError(String(event.data.message));
+    void showAlert({
+      label: "Unexpected error",
+      message: event.data.message,
+      type: "error",
+    });
   }
 };
 

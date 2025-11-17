@@ -4,6 +4,7 @@ import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
+import { showAlert } from "./alert-dialog.ts";
 import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleConfigChangeEvent } from "./puzzle/puzzle-config.ts";
@@ -343,6 +344,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
   private async handleDataCommand(event: WaSelectEvent) {
     const item = event.detail.item as HTMLElementTagNameMap["wa-dropdown-item"];
     const command = item.value;
+    // TODO: show status inline in dialog
     switch (command) {
       case "clear-settings": {
         // Ugh: need to preserve service worker status
@@ -402,15 +404,23 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     input.onchange = async (event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
       if (file) {
+        // TODO: show status inline in dialog
         try {
           const text = await file.text();
           const backup = JSON.parse(text);
           await settings.deserialize(backup);
           await this.reload();
-          // TODO: Show success toast
+          void showAlert({
+            label: "Success",
+            message: "Preferences were imported",
+            type: "success",
+          });
         } catch (error) {
-          // TODO: Show error toast
-          console.error("Failed to restore settings:", error);
+          void showAlert({
+            label: "Unable to import preferences",
+            message: String(error),
+            type: "error",
+          });
         }
       }
     };

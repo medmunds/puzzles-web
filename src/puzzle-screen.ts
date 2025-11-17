@@ -2,6 +2,7 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
+import { showAlert } from "./alert-dialog.ts";
 import { type PuzzleData, puzzleDataMap } from "./puzzle/catalog.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
@@ -10,7 +11,6 @@ import { Screen } from "./screen.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { cssWATweaks } from "./utils/css.ts";
-import { notifyError } from "./utils/errors.ts";
 import { hasCtrlKey, preventDoubleTapZoomOnButtons } from "./utils/events.ts";
 import { debounced, sleep } from "./utils/timing.ts";
 
@@ -423,7 +423,11 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       const { error, gameId } = await savedGames.loadGame(puzzle, filename);
       if (error !== undefined) {
         // TODO: display error in dialog (like enter-gameid-dialog does)
-        await notifyError(error);
+        await showAlert({
+          label: "Unable to load game",
+          message: error,
+          type: "error",
+        });
       } else if (gameId) {
         this.savedGameId = gameId;
         this.savedFilename = filename;
@@ -462,12 +466,20 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
             const data = new Uint8Array(await file.arrayBuffer());
             const errorMessage = await puzzle.loadGame(data);
             if (errorMessage) {
-              await notifyError(errorMessage);
+              await showAlert({
+                label: "Unable to import game",
+                message: `${file.name}: ${errorMessage}`,
+                type: "error",
+              });
             }
           }
         },
         onerror: async (error: unknown) => {
-          await notifyError(String(error));
+          await showAlert({
+            label: "Unable to import game",
+            message: String(error),
+            type: "error",
+          });
         },
       });
       input.click();
@@ -529,7 +541,11 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           // Don't try those again
           await settings.setParams(puzzle.puzzleId, undefined);
         } else {
-          void notifyError(`Ignoring invalid type= in URL (${error})`);
+          void showAlert({
+            label: `Ignoring invalid type in URL`,
+            message: `type=${params}: ${error}`,
+            type: "warning",
+          });
         }
       }
     }
@@ -548,7 +564,11 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         hasGame = true;
         this.autoSaveFilename = savedGames.makeAutoSaveFilename();
       } else {
-        void notifyError(`Ignoring invalid id= in URL (${error})`).then();
+        void showAlert({
+          label: `Ignoring invalid id in URL`,
+          message: `id=${this.gameId}: ${error}`,
+          type: "warning",
+        });
       }
     }
 

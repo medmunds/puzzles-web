@@ -92,6 +92,7 @@ const defaultIcons: IconMap = {
   "unfinished": trafficConeIcon,
   // generic notifications
   "info": infoIcon,
+  "success": checkIcon,
   "warning": triangleAlertIcon,
   "error": octagonAlertIcon,
   // help-viewer
