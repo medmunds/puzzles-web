@@ -57,10 +57,6 @@ const preflightChecks: {
   // CSS -- mostly Baseline 2023
   "CSS nested selectors": () => CSS.supports("selector(& .foo)"),
   "CSS container queries": () => CSS.supports("container-type", "size"),
-  // @property syntax - baseline 2024 - can't yet test with CSS.supports:
-  //   "CSS @property syntax": () => CSS.supports("at-rule(@property)"),
-  // Look for registerProperty added at same time:
-  "CSS @property syntax": () => typeof CSS.registerProperty === "function",
 } as const;
 
 const asyncPreflightChecks: {

@@ -27,13 +27,18 @@ export function getNumericProperty(
   property: string,
   defaultValue?: number,
 ): number {
-  const valueStr = window.getComputedStyle(element).getPropertyValue(property);
-  if (valueStr) {
-    const value = Number.parseFloat(valueStr);
-    if (Number.isNaN(value)) {
-      throw new Error(`Unparseable numeric value for ${property}: '${valueStr}'`);
+  // CSS @property to declare numeric type is Baseline 2024 (Firefox 128).
+  // Checking `CSS.supports("at-rule(@property)")` is itself not yet supported,
+  // so look for CSS.registerProperty added at the same time.
+  if (typeof CSS.registerProperty === "function") {
+    const valueStr = window.getComputedStyle(element).getPropertyValue(property);
+    if (valueStr) {
+      const value = Number.parseFloat(valueStr);
+      if (Number.isNaN(value)) {
+        throw new Error(`Unparseable numeric value for ${property}: '${valueStr}'`);
+      }
+      return value;
     }
-    return value;
   }
   if (defaultValue) {
     return defaultValue;
