@@ -1,17 +1,3 @@
-import { runPreflightChecksOrRedirect } from "./preflight.ts";
-
-// @ts-expect-error:TS6133 (usage commented out below)
-let _preflightChecksPassed = false;
-runPreflightChecksOrRedirect(true)
-  .then((result) => {
-    _preflightChecksPassed = result;
-  })
-  .catch((error) => {
-    // Preflight checks should handle all their own errors
-    Sentry.captureException(error);
-    _preflightChecksPassed = false;
-  });
-
 import * as Sentry from "@sentry/browser";
 import { wasmIntegration } from "@sentry/wasm";
 
@@ -33,12 +19,6 @@ if (import.meta.env.VITE_SENTRY_DSN) {
       }
       return breadcrumb;
     },
-    // Not applying this filtering yet:
-    // it can prevent startup error reporting in supported browsers, too
-    // beforeSend(event) {
-    //   // Don't report errors from unsupported browsers
-    //   return _preflightChecksPassed ? event : null;
-    // },
   });
 }
 
