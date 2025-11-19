@@ -1,9 +1,13 @@
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, nothing, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
+import { repeat } from "lit/directives/repeat.js";
+import type { FavoriteChangeEvent } from "./catalog-card.ts";
 import rawHomeScreenCSS from "./css/home-screen.css?inline";
-import { canonicalBaseUrl } from "./routing.ts";
+import { puzzleDataMap, puzzleIds } from "./puzzle/catalog.ts";
+import { canonicalBaseUrl, puzzlePageUrl } from "./routing.ts";
 import { Screen } from "./screen.ts";
+import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { cssNative, cssWATweaks } from "./utils/css.ts";
 import { ScrollAnimationController } from "./utils/scroll-animation-controller.ts";
@@ -14,7 +18,7 @@ import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import "./catalog-list.ts";
+import "./catalog-card.ts";
 import "./command-link";
 import "./dynamic-content.ts";
 import "./head-matter.ts";
@@ -43,12 +47,12 @@ export class HomeScreen extends SignalWatcher(Screen) {
         this.size === "large" ? this.renderWideHeader() : this.renderCompactHeader()
       }</header>
 
-      ${settings.showIntro ? this.renderIntro() : nothing}
+      <main @favorite-change=${this.handleFavoriteChange}>
+        ${settings.showIntro ? this.renderIntro() : nothing}
+        ${this.renderFavorites()}
+        ${this.renderCatalog()}
+      </main>
       
-      <catalog-list></catalog-list>
-      
-      <slot name="after"></slot>
-
       <footer slot="footer">
         <div>Credits, privacy info, copyright notices and licenses are in the
           <command-link command="about" hide-icon>about box</command-link>.</div>
@@ -146,6 +150,57 @@ export class HomeScreen extends SignalWatcher(Screen) {
     `;
   }
 
+  private renderFavorites() {
+    if (settings.favoritePuzzles.size < 1) {
+      return nothing;
+    }
+    const favoriteIds = [...settings.favoritePuzzles].sort();
+    return this.renderPuzzleGrid(favoriteIds, "Favorites");
+  }
+
+  private renderCatalog() {
+    const catalogIds = settings.showUnfinishedPuzzles
+      ? puzzleIds
+      : puzzleIds.filter((puzzleId) => !puzzleDataMap[puzzleId].unfinished);
+    return this.renderPuzzleGrid(
+      catalogIds,
+      settings.favoritePuzzles.size > 0 ? "All puzzles" : undefined,
+    );
+  }
+
+  private renderPuzzleGrid(puzzleIds: string[], heading?: string) {
+    return html`
+      <div part="puzzle-section">
+        ${heading ? html`<h2>${heading}</h2>` : nothing}
+        <div part="puzzle-grid">
+          ${repeat(
+            puzzleIds,
+            (puzzleId) => puzzleId,
+            (puzzleId) => this.renderCatalogCard(puzzleId),
+          )}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderCatalogCard(puzzleId: string) {
+    const { name, description, objective, unfinished } = puzzleDataMap[puzzleId];
+    const isFavorite = settings.favoritePuzzles.has(puzzleId);
+    const href = puzzlePageUrl({ puzzleId });
+    return html`
+      <catalog-card
+        puzzleid=${puzzleId}
+        href=${href}
+        name=${name}
+        description=${description}
+        objective=${objective}
+        ?game-in-progress=${savedGames.autoSavedPuzzles.has(puzzleId)}
+        ?favorite=${isFavorite}
+        ?unfinished=${unfinished}
+      ></catalog-card>                    
+    `;
+  }
+
   //
   // Command handling
   //
@@ -159,6 +214,11 @@ export class HomeScreen extends SignalWatcher(Screen) {
 
   private toggleIntro() {
     settings.showIntro = !settings.showIntro;
+  }
+
+  private async handleFavoriteChange(event: FavoriteChangeEvent) {
+    const { puzzleId, isFavorite } = event.detail;
+    await settings.setFavoritePuzzle(puzzleId, isFavorite);
   }
 
   //
@@ -186,6 +246,49 @@ export class HomeScreen extends SignalWatcher(Screen) {
             var(--wa-border-width-s))
         );
       }
+
+      main {
+        box-sizing: border-box;
+        max-width: 75rem;
+        margin: 0 auto;
+
+        display: flex;
+        flex-direction: column;
+        gap: var(--app-spacing);
+
+        @media (prefers-reduced-motion: no-preference) {
+          transition: gap var(--wa-transition-fast) var(--wa-transition-easing);
+        }
+      }
+
+      h2 {
+        margin-block-end: var(--wa-space-m);
+        color: var(--wa-color-text-normal);
+        font-weight: var(--wa-font-weight-semibold);
+        font-size: var(--wa-font-size-l);
+      }
+      
+      [part="puzzle-section"] {
+        padding-inline: var(--app-padding);
+        @media (prefers-reduced-motion: no-preference) {
+          transition: padding var(--wa-transition-fast) var(--wa-transition-easing);
+        }
+      }
+
+      [part="puzzle-grid"] {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+        gap: var(--app-spacing);
+        align-items: stretch;
+
+        touch-action: manipulation;
+
+        @media (prefers-reduced-motion: no-preference) {
+          transition:
+              gap var(--wa-transition-fast)  var(--wa-transition-easing);
+        }
+      }
+
     `,
   ];
 }
