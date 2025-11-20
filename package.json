@@ -26,10 +26,10 @@
     "comlink": "^4.4.2",
     "dexie": "^4.2.1",
     "lit": "^3.3.1",
-    "lucide-static": "^0.548.0"
+    "lucide-static": "^0.554.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.2",
+    "@biomejs/biome": "2.3.5",
     "@mdit/plugin-attrs": "^0.23.3",
     "@mdit/plugin-icon": "^0.22.2",
     "@types/markdown-it": "^14.1.2",
