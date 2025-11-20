@@ -1226,6 +1226,9 @@ Removing a region causes the rest of the grid to shuffle up:
 blocks that are suspended will fall down (first), and then empty
 columns are filled from the right. 
 
+This type of puzzle was invented by Kuniaki Moribe in 1985,
+under the name \q{Chain Shot}.
+
 Same Game was contributed to this collection by James Harvey.
 
 \H{samegame-controls} \i{Same Game controls}
