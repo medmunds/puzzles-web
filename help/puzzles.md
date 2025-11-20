@@ -11,7 +11,7 @@ The puzzles in this collection are listed below. (Click the name to play.)
 | [Bridges](../bridges)    | [help](bridges)  - [manual](manual/bridges)  | Hashiwokakero (橋をかけろ)                                                           |
 | [Cube](../cube)          | [help](cube)     - [manual](manual/cube)     |                                                                                 |
 | [Dominosa](../dominosa)  | [help](dominosa) - [manual](manual/dominosa) |                                                                                 |
-| [Fifteen](../fifteen)    | [help](fifteen)  - [manual](manual/fifteen)  |                                                                                 |
+| [Fifteen](../fifteen)    | [help](fifteen)  - [manual](manual/fifteen)  | (classic sliding tile puzzle)                                                   |
 | [Filling](../filling)    | [help](filling)  - [manual](manual/filling)  | Fillomino                                                                       |
 | [Flip](../flip)          | [help](flip)     - [manual](manual/flip)     |                                                                                 |
 | [Flood](../flood)        | [help](flood)    - [manual](manual/flood)    |                                                                                 |
@@ -28,12 +28,12 @@ The puzzles in this collection are listed below. (Click the name to play.)
 | [Net](../net)            | [help](net)      - [manual](manual/net)      | NetWalk                                                                         |
 | [Netslide](../netslide)  | [help](netslide) - [manual](manual/netslide) |                                                                                 |
 | [Palisade](../palisade)  | [help](palisade) - [manual](manual/palisade) | Five Cells                                                                      |
-| [Pattern](../pattern)    | [help](pattern)  - [manual](manual/pattern)  | Nonograms                                                                       |
+| [Pattern](../pattern)    | [help](pattern)  - [manual](manual/pattern)  | Nonograms, Picross®                                                             |
 | [Pearl](../pearl)        | [help](pearl)    - [manual](manual/pearl)    | Masyu                                                                           |
-| [Pegs](../pegs)          | [help](pegs)     - [manual](manual/pegs)     | Peg Solitaire (marble jumping puzzle)                                           |
+| [Pegs](../pegs)          | [help](pegs)     - [manual](manual/pegs)     | Peg Solitaire (classic marble jumping puzzle)                                   |
 | [Range](../range)        | [help](range)    - [manual](manual/range)    | Kurodoko (黒どこ), Kuromasu                                                        |
 | [Rectangles](../rect)    | [help](rect)     - [manual](manual/rect)     | Shikaku                                                                         |
-| [Same Game](../samegame) | [help](samegame) - [manual](manual/samegame) |                                                                                 |
+| [Same Game](../samegame) | [help](samegame) - [manual](manual/samegame) | Chain Shot, Clickomania, Mahki                                                  |
 | [Signpost](../signpost)  | [help](signpost) - [manual](manual/signpost) | Pfeilpfad                                                                       |
 | [Singles](../singles)    | [help](singles)  - [manual](manual/singles)  | Hitori (一人)                                                                     |
 | [Sixteen](../sixteen)    | [help](sixteen)  - [manual](manual/sixteen)  |                                                                                 |
@@ -49,10 +49,12 @@ The puzzles in this collection are listed below. (Click the name to play.)
 | [Untangle](../untangle)  | [help](untangle) - [manual](manual/untangle) | Planarity                                                                       |
 
 
-<small>* In some countries, names of similar/related puzzles may be trademarks 
-belonging to others. In the USA (where this site originates),
-KENKEN® is a registered trademark of KENKEN PUZZLE LLC,
-MASTERMIND® is a registered trademark of HASBRO, INC.,
-and SUDOKU X® is a registered trademark of Happy Hippos Developments LLC.
-In all cases (and every country), use of a trademarked name here does not
+<small>* In some regions, names of similar/related puzzles may be trademarks 
+belonging to others. Use of a trademarked name here does not
 imply affiliation or endorsement by its owner.</small> {#tm}
+
+<small>In the United States (where this site originates),
+KENKEN® is a registered trademark of KENKEN PUZZLE LLC;
+MASTERMIND® is a registered trademark of HASBRO, INC.;
+PICROSS® is a registered trademark of Nintendo of America Inc.; 
+and SUDOKU X® is a registered trademark of Happy Hippos Developments LLC.</small>
