@@ -47,11 +47,11 @@ export class HomeScreen extends SignalWatcher(Screen) {
         this.size === "large" ? this.renderWideHeader() : this.renderCompactHeader()
       }</header>
 
-      <main @favorite-change=${this.handleFavoriteChange}>
+      <div @favorite-change=${this.handleFavoriteChange}>
         ${settings.showIntro ? this.renderIntro() : nothing}
         ${this.renderFavorites()}
         ${this.renderCatalog()}
-      </main>
+      </div>
       
       <footer slot="footer">
         <div>Credits, privacy info, copyright notices and licenses are in the
@@ -170,7 +170,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
 
   private renderPuzzleGrid(puzzleIds: string[], heading?: string) {
     return html`
-      <div part="puzzle-section">
+      <section part="puzzle-section">
         ${heading ? html`<h2>${heading}</h2>` : nothing}
         <div part="puzzle-grid">
           ${repeat(
@@ -179,7 +179,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
             (puzzleId) => this.renderCatalogCard(puzzleId),
           )}
         </div>
-      </div>
+      </section>
     `;
   }
 
@@ -247,31 +247,14 @@ export class HomeScreen extends SignalWatcher(Screen) {
         );
       }
 
-      main {
-        box-sizing: border-box;
-        max-width: 75rem;
-        margin: 0 auto;
-
-        display: flex;
-        flex-direction: column;
-        gap: var(--app-spacing);
-
-        @media (prefers-reduced-motion: no-preference) {
-          transition: gap var(--wa-transition-fast) var(--wa-transition-easing);
-        }
-      }
-
-      h2 {
-        margin-block-end: var(--wa-space-m);
-        color: var(--wa-color-text-normal);
-        font-weight: var(--wa-font-weight-semibold);
-        font-size: var(--wa-font-size-l);
-      }
-      
       [part="puzzle-section"] {
-        padding-inline: var(--app-padding);
-        @media (prefers-reduced-motion: no-preference) {
-          transition: padding var(--wa-transition-fast) var(--wa-transition-easing);
+        max-width: 75rem;
+
+        h2 {
+          margin-block-end: var(--wa-space-m);
+          color: var(--wa-color-text-normal);
+          font-weight: var(--wa-font-weight-semibold);
+          font-size: var(--wa-font-size-l);
         }
       }
 
