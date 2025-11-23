@@ -54,11 +54,6 @@ CMAKE_ARGS=(
   -DPUZZLES_ENABLE_UNFINISHED="${BUILD_UNFINISHED}"
 )
 
-if [[ "${GENERATE_SOURCE_MAPS}" == "ON" ]]; then
-  CMAKE_ARGS+=(-DGENERATE_SOURCE_MAPS=ON)
-  echo "[INFO] Source maps will be generated for license extraction"
-fi
-
 emcmake cmake "${CMAKE_ARGS[@]}"
 (
   cd "${BUILD_DIR}"
@@ -74,6 +69,8 @@ if ls "${BUILD_DIR}"/*.map 1> /dev/null 2>&1; then
     | grep -v "/puzzles" \
     | sort -u \
     > "${BUILD_DIR}/source-file-list.txt"
+else
+  echo "[WARN] Missing source maps; cannot generate dependencies.json"
 fi
 
 if [[ -f "${BUILD_DIR}/source-file-list.txt" ]]; then

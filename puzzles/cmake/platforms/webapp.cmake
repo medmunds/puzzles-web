@@ -39,7 +39,7 @@ set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} \
 -lexports.js \
 -sALLOW_MEMORY_GROWTH=1 \
 -sALLOW_TABLE_GROWTH=1 \
--sENVIRONMENT=worker \
+-sENVIRONMENT=web,worker \
 -sEXPORT_BINDINGS=1 \
 -sEXPORT_ES6=1 \
 -sMODULARIZE=1 \
@@ -61,16 +61,19 @@ function(set_platform_gui_target_properties TARGET)
 endfunction()
 
 function(set_platform_puzzle_target_properties NAME TARGET)
+    # Always build with source maps to allow extracting dependency licenses.
+    # As of emsdk 4.0.15, -gsource-map alone does not disable optimizations,
+    # so does not (significantly) increase the size of the generated wasm.
     target_compile_options(${TARGET} PRIVATE
-        $<$<BOOL:${GENERATE_SOURCE_MAPS}>:-gsource-map>
+        -gsource-map
     )
     target_link_options(${TARGET} PRIVATE
         # Generate TypeScript .d.ts files for emcc exports
         "--emit-tsd" "${NAME}.d.ts"
-        # Generate source maps for Debug builds
+        # Generate DWARF source maps for Debug builds
         $<$<CONFIG:Debug>:-gseparate-dwarf>
         $<$<CONFIG:Debug>:-gsource-map=inline>
-        $<$<BOOL:${GENERATE_SOURCE_MAPS}>:-gsource-map>
+        -gsource-map
     )
 endfunction()
 

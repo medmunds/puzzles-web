@@ -88,10 +88,6 @@ jobs:
           echo "vcsid=${VCSID}"
 
       - name: Run emcc build
-        # TODO: split this into two passes:
-        #   1. Build with GENERATE_SOURCE_MAPS=ON to create dependencies.json
-        #   2. Rebuild without source maps for maximum optimization
-        #      (and copy in dependencies.json from step 1)
         run: |
           mkdir -p ./build/assets
           mkdir -p ./build/public
@@ -100,7 +96,6 @@ jobs:
             -v '${{ github.workspace }}/build/assets:/app/assets' \
             -v '${{ github.workspace }}/build/public:/app/public' \
             -e BUILD_UNFINISHED='group;slide;sokoban' \
-            -e GENERATE_SOURCE_MAPS=ON \
             -e VCSID='${{ steps.vcsid.outputs.vcsid }}' \
             build-emcc:latest
 
