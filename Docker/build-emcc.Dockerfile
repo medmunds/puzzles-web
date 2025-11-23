@@ -4,11 +4,10 @@
 # podman build -t build-emcc -f Docker/build-emcc.Dockerfile .
 # (Emscripten's official images are amd64. To use arm64, add `--build-arg ARCH=arm64`.)
 #
-# Run the build and deliver results to public/help/ and src/assets/js/puzzles/:
+# Run the build and deliver results to src/assets/puzzles/:
 # podman run --rm \
 #   -v ./puzzles:/app/puzzles:ro \
 #   -v ./Docker/build-emcc.sh:/app/build-emcc.sh:ro \
-#   -v ./public:/app/public \
 #   -v ./src/assets:/app/assets \
 #   build-emcc
 # Mounting build-emcc.sh is optional; use if the script has changed since the image was built.
