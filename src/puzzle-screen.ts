@@ -266,7 +266,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         }
         <wa-dropdown-item data-command="share">
           <wa-icon slot="icon" name="share"></wa-icon>
-          Share…
+          Share
         </wa-dropdown-item>
         <wa-divider></wa-divider>
         <wa-dropdown-item data-command="load-game">
@@ -284,7 +284,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         <wa-divider></wa-divider>
         <wa-dropdown-item data-command="settings">
           <wa-icon slot="icon" name="settings"></wa-icon>
-          Preferences…
+          Preferences
         </wa-dropdown-item>
         <wa-dropdown-item data-command="about">
           <wa-icon slot="icon" name="info"></wa-icon>
