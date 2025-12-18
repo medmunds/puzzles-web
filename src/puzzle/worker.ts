@@ -3,6 +3,11 @@
 declare var self: DedicatedWorkerGlobalScope;
 
 import * as Sentry from "@sentry/browser";
+
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.registerWebWorker({ self });
+}
+
 import * as Comlink from "comlink";
 import { transfer } from "comlink";
 import createModule from "../assets/puzzles/emcc-runtime";
@@ -24,10 +29,6 @@ import type {
   PuzzleStaticAttributes,
   Size,
 } from "./types.ts";
-
-if (import.meta.env.VITE_SENTRY_DSN) {
-  Sentry.registerWebWorker({ self });
-}
 
 installErrorHandlersInWorker();
 
