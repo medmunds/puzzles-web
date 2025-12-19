@@ -37,9 +37,9 @@ const androidAppLink =
 const iOSAppLink = "https://apps.apple.com/in/app/puzzles-reloaded/id6504365885";
 // const iOSOldAppLink = "https://apps.apple.com/us/app/simon-tathams-puzzles/id622220631";
 
-const repoLink = "https://github.com/medmunds/puzzles";
-const forumLink = "https://github.com/medmunds/puzzles/discussions";
-const issuesLink = "https://github.com/medmunds/puzzles/issues";
+const repoLink = "https://github.com/medmunds/puzzles-web";
+const forumLink = "https://github.com/medmunds/puzzles-web/discussions";
+const issuesLink = "https://github.com/medmunds/puzzles-web/issues";
 
 // Form of dependencies.json
 interface DependencyInfo {
