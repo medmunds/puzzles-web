@@ -283,7 +283,13 @@ export class PuzzleViewInteractive extends PuzzleView {
       this.secondaryButtonFeedback();
     }
 
-    const { press, drag, release } = PuzzleViewInteractive.domToPuzzleButtons[button];
+    let { press, drag, release } = PuzzleViewInteractive.domToPuzzleButtons[button];
+    if (event.pointerType === "touch" || event.pointerType === "pen") {
+      press |= PuzzleButton.MOD_STYLUS;
+      drag |= PuzzleButton.MOD_STYLUS;
+      release |= PuzzleButton.MOD_STYLUS;
+    }
+
     const consumed = await this.puzzle.processMouse(location, press);
     if (consumed) {
       this.pointerTracking = { drag, release, pointerId };

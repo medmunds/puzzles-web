@@ -12,10 +12,6 @@ functional, they're likely to change significantly in future updates.
 * ::experimental:: This version allows you to save and return to arbitrary
   [checkpoints](features#checkpoints) within the undo history.
 
-* This version is built with "stylus mode" enabled. In many puzzles where
-  left-clicking does one thing and right-clicking does another, you can instead
-  repeatedly tap (or left-click) to cycle through all available states.
-
 * The command line options described in the manual are not available on the web. 
   However, you can provide game parameters or an ID or random seed in the
   URL to particular puzzle: add *?type=params* or *?id=id-or-seed*. (From within 

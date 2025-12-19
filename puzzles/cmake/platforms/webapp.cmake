@@ -28,7 +28,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSTYLUS_BASED -DNARROW_BORDERS")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNARROW_BORDERS")
 
 # -lexports.js prevents wasmImports name minification, which allows reusing
 # a single emcc runtime wrapper for all <puzzle>.wasm. (The linker doesn't

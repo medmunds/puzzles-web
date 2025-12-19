@@ -73,10 +73,11 @@ export enum PuzzleButton {
   UI_UPPER_BOUND,
 
   /* made smaller because of 'limited range of datatype' errors. */
+  MOD_STYLUS = 0x0800,
   MOD_CTRL = 0x1000,
   MOD_SHFT = 0x2000,
   MOD_NUM_KEYPAD = 0x4000,
-  MOD_MASK = 0x7000 /* mask for all modifiers */,
+  MOD_MASK = 0x7800 /* mask for all modifiers */,
 }
 
 export interface PuzzleStaticAttributes {
