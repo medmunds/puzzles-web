@@ -6,13 +6,14 @@ on:
       - main
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   build-icons:
     name: Build icons
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      actions: write  # cache, artifacts
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -51,7 +52,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      actions: write   # cache, artifacts
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -112,7 +112,6 @@ jobs:
     environment: production-build-app
     permissions:
       contents: read
-      actions: write   # cache, artifacts
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -174,7 +173,6 @@ jobs:
     environment: production
     permissions:
       contents: read
-      actions: read  # artifacts
       deployments: write
     steps:
       # Source and generated puzzles assets (catalog.json) are required
