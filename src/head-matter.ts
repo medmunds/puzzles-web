@@ -37,6 +37,12 @@ export class HeadMatter extends LitElement {
     const slot = e.target as HTMLSlotElement;
     const newChildNodes = slot.assignedElements({ flatten: true });
 
+    // Defer DOM changes to avoid interfering
+    // with synchronous disconnect/render phase.
+    queueMicrotask(() => this.updateHead(newChildNodes));
+  }
+
+  private updateHead(newChildNodes: Element[]) {
     this.restoreHead();
 
     const queries = new Set<string>();
