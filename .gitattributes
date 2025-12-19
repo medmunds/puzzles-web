@@ -1,0 +1,6 @@
+help/** linguist-documentation
+
+puzzles/** linguist-vendored
+puzzles/cmake/platforms/webapp.cmake -linguist-vendored
+puzzles/emcc-dependency-info.py -linguist-vendored
+puzzles/webapp.cpp -linguist-vendored
