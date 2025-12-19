@@ -24,23 +24,5 @@ functional, they're likely to change significantly in future updates.
 
 ## Changes to specific puzzles
 
-* **Dominosa:** you can right-click (long press) *on* a number to toggle 
-  highlighting all occurrences of that number in red or green.
-  (In the original, this requires pressing a number key.)
-  Right-clicking the space *between* numbers continues to place a barrier line.
-  See [*Dominosa controls*](manual/dominosa#dominosa-controls) in the manual.
-
-* **Filling:** this version's on-screen keyboard omits the <kbd>0</kbd> button.
-  Use <kbd>⌫</kbd> instead. (The two keys have had the same function since 
-  late 2025. This is only visible in apps that display an onscreen keyboard,
-  not the official puzzle collection website.)
-
-* ::experimental:: **Undead:** you can tap (left-click) a monster at the top 
-  to place that monster in the highlighted square, and tap it again to clear it. 
-  You can also long press (right-click) at the top to cycle the displayed counts 
-  between total, remaining, and placed/remaining. 
-  See [*Undead controls*](manual/undead#undead-controls) in the manual.
-
-Many of these modifications have been offered as patches to the original collection.
-The details may change in future updates, based on feedback from upstream maintainers.
-(If and when they're accepted, they'll be removed from this list.)
+(All changes to individual puzzles have been accepted back into the original 
+collection.)
