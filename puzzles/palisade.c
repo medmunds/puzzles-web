@@ -962,13 +962,15 @@ static char *interpret_move(const game_state *state, game_ui *ui,
 {
     int w = state->shared->params.w, h = state->shared->params.h;
     bool control = button & MOD_CTRL, shift = button & MOD_SHFT;
+    bool stylus = button & MOD_STYLUS;
 
     button = STRIP_BUTTON_MODIFIERS(button);
 
     if (button == LEFT_BUTTON || button == RIGHT_BUTTON) {
         int gx = FROMCOORD(x), gy = FROMCOORD(y), possible = BORDER_MASK;
         int px = (x - MARGIN) % TILESIZE, py = (y - MARGIN) % TILESIZE;
-        int hx, hy, dir, i;
+        int hx, hy, dir, i, gdiff, hdiff;
+        enum { MAYBE, YES, NO, NUM_STATES } cur_state, new_state;
 
         if (OUT_OF_BOUNDS(gx, gy, w, h)) return NULL;
 
@@ -993,24 +995,25 @@ static char *interpret_move(const game_state *state, game_ui *ui,
         ui->show = false;
 
         i = gy * w + gx;
-        switch ((button == RIGHT_BUTTON) |
-                ((state->borders[i] & BORDER(dir)) >> dir << 1) |
-                ((state->borders[i] & DISABLED(BORDER(dir))) >> dir >> 2)) {
+        cur_state = (state->borders[i] & BORDER(dir)) ? YES :
+                    (state->borders[i] & DISABLED(BORDER(dir))) ? NO : MAYBE;
 
-        case MAYBE_LEFT:
-        case ON_LEFT:
-        case ON_RIGHT:
-            return string(80, "F%d,%d,%dF%d,%d,%d",
-                          gx, gy, BORDER(dir),
-                          hx, hy, BORDER(FLIP(dir)));
-
-        case MAYBE_RIGHT:
-        case OFF_LEFT:
-        case OFF_RIGHT:
-            return string(80, "F%d,%d,%dF%d,%d,%d",
-                          gx, gy, DISABLED(BORDER(dir)),
-                          hx, hy, DISABLED(BORDER(FLIP(dir))));
+        if (stylus) {
+            int inc = button == LEFT_BUTTON ? 1 : -1;
+            new_state = (cur_state + inc + NUM_STATES) % NUM_STATES;
+        } else {
+            if (button == LEFT_BUTTON)
+                new_state = (cur_state == YES) ? MAYBE : YES;
+            else
+                new_state = (cur_state == NO) ? MAYBE : NO;
         }
+
+        gdiff = 0;
+        if ((cur_state == YES) != (new_state == YES)) gdiff |= BORDER(dir);
+        if ((cur_state == NO)  != (new_state == NO))  gdiff |= DISABLED(BORDER(dir));
+        if (gdiff == 0) return NULL;
+        hdiff = (gdiff >> dir << FLIP(dir)) | (gdiff >> (dir+4) << (FLIP(dir)+4));
+        return string(80, "F%d,%d,%dF%d,%d,%d", gx, gy, gdiff, hx, hy, hdiff);
     }
 
     if (IS_CURSOR_MOVE(button)) {
@@ -1581,5 +1584,5 @@ const struct game thegame = {
     true, false, game_print_size, game_print,
     true,                                     /* wants_statusbar */
     false, NULL,                       /* timing_state */
-    REQUIRE_RBUTTON,                           /* flags */
+    REQUIRE_RBUTTON | STYLUS_SUPPORT,          /* flags */
 };
