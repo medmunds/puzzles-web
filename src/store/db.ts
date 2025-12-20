@@ -69,7 +69,8 @@ export interface SavedGameMetadata {
 
 export interface SavedGameRecord extends SavedGameMetadata {
   saveType: SaveType; // IndexedDB can't index boolean, so use a number
-  data: Blob;
+  // data was originally stored as Blob; changed for Safari private browsing mode
+  data: Uint8Array<ArrayBuffer> | Blob;
   checkpoints?: readonly number[];
 }
 

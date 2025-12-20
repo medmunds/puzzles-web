@@ -232,8 +232,14 @@ class SavedGames {
       return { found: false };
     }
 
-    const buffer = await record.data.arrayBuffer();
-    const data = new Uint8Array(buffer);
+    let data: Uint8Array<ArrayBuffer>;
+    if (record.data instanceof Blob) {
+      // Blob data (stored by earlier versions)
+      const buffer = await record.data.arrayBuffer();
+      data = new Uint8Array(buffer);
+    } else {
+      data = record.data;
+    }
     const error = await puzzle.loadGame(data);
     if (error) {
       return { found: true, error };
@@ -258,8 +264,9 @@ class SavedGames {
     const timestamp = Date.now();
     const status = puzzle.status;
     const gameId = puzzle.currentGameId ?? "";
-    const savedGame = await puzzle.saveGame();
-    const data = new Blob([savedGame]);
+    const data: Uint8Array<ArrayBuffer> = await puzzle.saveGame();
+    // (Earlier versions converted data to a Blob, which is both unnecessary
+    // and not supported in IndexedDB by Safari private browsing mode.)
     const checkpoints = [...puzzle.checkpoints];
     await db.savedGames.put({
       puzzleId,
