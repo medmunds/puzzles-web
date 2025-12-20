@@ -156,6 +156,7 @@ jobs:
         env:
           VITE_ANALYTICS_BLOCK: ${{ vars.VITE_ANALYTICS_BLOCK }}
           VITE_APP_NAME: ${{ vars.APP_NAME }}
+          VITE_CANONICAL_BASE_URL: ${{ vars.VITE_CANONICAL_BASE_URL }}
           VITE_GIT_SHA: ${{ github.sha }}
           VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
         run: npm run build
