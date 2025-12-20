@@ -27,15 +27,15 @@ The *code* is a bit rough and ready. I'm planning to substantially rework large
 parts of it. There are still TODO comments scattered throughout. There are no
 tests yet. I wouldn't really recommend using it as a starting point for your
 own code right now, other than maybe seeing how I worked around certain browser
-bugs. (The package.json version is 0.0.0. That's not a mistake.)
+bugs. (The package.json version is 0.0.1. That's not a mistake.)
 
 ## Bug reports
 
-If you have a question about a puzzle or the collection, please use the
-[*Discussion forum*](./discussions) rather than creating a bug report.
+If you have a **question** about a puzzle or the collection, please use the
+[*Discussion forum*][discussions] rather than creating a bug report.
 
 If you came here because you've encountered a bug, thanks for helping.
-Click [*Issues*](./issues) above, then the green *New Issue* button.
+Click [*Issues*][issues] above, then the green *New Issue* button.
 
 A few requests:
 
@@ -58,6 +58,8 @@ A few requests:
 Simon Tatham has some really useful tips for [*How to Report Bugs
 Effectively*][sgt-bugs], available in several languages.
 
+[discussions]: https://github.com/medmunds/puzzles-web/discussions
+[issues]:https://github.com/medmunds/puzzles-web/issues
 [sgt-bugs]: https://www.chiark.greenend.org.uk/~sgtatham/bugs.html
 
 # Technical details
@@ -130,7 +132,7 @@ The web app is a vite multipage app (MPA). There are two main entry points:
   dynamically in the user's browser. The same puzzle.html is served for
   /blackbox and /bridges and all the other puzzles (via
   [vite-puzzles-routing.ts](vite-puzzles-routing.ts) in vite's dev and preview
-  servers; [functions/\[\[path\]\].ts](functions/[[path.ts]]) in production
+  servers; [functions/\[\[path\]\].ts](functions/[[path]].ts) in production
   Cloudflare Pages; and service worker code in [sw.ts](src/sw.ts) for offline
   use). All of the interesting functionality is in src/puzzle-screen.ts.
 
