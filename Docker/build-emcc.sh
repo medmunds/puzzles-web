@@ -52,6 +52,7 @@ CMAKE_ARGS=(
   -DWEB_APP=true
   -DCMAKE_C_FLAGS="-DVER='\"${VER}\"' -DVERSIONINFO_BINARY_VERSION='${BINARY_VERSION}'"
   -DPUZZLES_ENABLE_UNFINISHED="${BUILD_UNFINISHED}"
+  -DVCSID="${VCSID}"
 )
 
 emcmake cmake "${CMAKE_ARGS[@]}"
@@ -79,28 +80,6 @@ if [[ -f "${BUILD_DIR}/source-file-list.txt" ]]; then
     --sources "${BUILD_DIR}/source-file-list.txt" \
     --output "${BUILD_DIR}/dependencies.json"
 fi
-
-echo "[INFO] Building catalog.json..."
-jq --arg version "$VERSION" -R -s '
-  split("\n") | map(select(length > 0) | split(":") | {
-    id: .[0],
-    name: .[2],
-    description: .[3],
-    objective: .[4],
-    unfinished: (.[1] == "unfinished")
-  }) as $puzzles_data
-  | {
-    puzzleIds: ($puzzles_data | map(.id)),
-    puzzles: ($puzzles_data | map({(.id): ({
-      name: .name,
-      description: .description,
-      objective: .objective,
-      unfinished: .unfinished
-    } | if .unfinished then . else del(.unfinished) end)
-    }) | add),
-    version: $version
-  }
-' "${BUILD_DIR}/gamedesc.txt" > "${BUILD_DIR}/catalog.json"
 
 
 # --- Deliverables ---

@@ -24,6 +24,10 @@ set(HALIBUT_OPTIONS
         "-Chtml-section-shownumber:0:false"
 )
 
+if(NOT DEFINED VCSID)
+    set(VCSID "unknown")
+endif()
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -97,21 +101,28 @@ function(build_platform_extras)
                 DEPENDS ${help_dir}/en/index.html)
     endif()
 
-    # Generate gamedesc.txt -- adapted from windows.cmake.
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/gamedesc.txt "")
+    # Generate catalog.json
     list(SORT puzzle_names)
+    set(puzzles_map "{}")
+    set(puzzle_ids_arr "[]")
     foreach(name ${puzzle_names})
+        # Build puzzles[name]: {name: displayname, description, objective, unfinished?}
+        string(JSON obj SET "{}" "name" "\"${displayname_${name}}\"")
+        string(JSON obj SET "${obj}" "description" "\"${description_${name}}\"")
+        string(JSON obj SET "${obj}" "objective" "\"${objective_${name}}\"")
         list(FIND PUZZLES_ENABLE_UNFINISHED ${name} unfinished_pos)
         if (unfinished_pos GREATER -1)
-            set(unfinished "unfinished")
-        else()
-            set(unfinished "")
+            string(JSON obj SET "${obj}" "unfinished" "true")
         endif()
-        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/gamedesc.txt "\
-${name}:\
-${unfinished}:\
-${displayname_${name}}:\
-${description_${name}}:\
-${objective_${name}}\n")
+        string(JSON puzzles_map SET "${puzzles_map}" "${name}" "${obj}")
+
+        # Build puzzleIds[]
+        # string(JSON ... APPEND) is available in CMake 3.28+; for compatibility:
+        string(JSON puzzle_ids_arr SET "${puzzle_ids_arr}" 1000000 "\"${name}\"")
     endforeach()
+
+    string(JSON catalog_json SET "{}" "version" "\"${VCSID}\"")
+    string(JSON catalog_json SET "${catalog_json}" "puzzles" "${puzzles_map}")
+    string(JSON catalog_json SET "${catalog_json}" "puzzleIds" "${puzzle_ids_arr}")
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/catalog.json "${catalog_json}")
 endfunction()
