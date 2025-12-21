@@ -24,6 +24,15 @@ set(HALIBUT_OPTIONS
         "-Chtml-section-shownumber:0:false"
 )
 
+find_program(JQ jq)
+find_program(PYTHON3 python3)
+if(NOT JQ)
+    message(WARNING "dependencies.json cannot be built (did not find jq)")
+endif()
+if(NOT PYTHON3)
+    message(WARNING "dependencies.json cannot be built (did not find python3)")
+endif()
+
 if(NOT DEFINED VCSID)
     set(VCSID "unknown")
 endif()
@@ -125,4 +134,29 @@ function(build_platform_extras)
     string(JSON catalog_json SET "${catalog_json}" "puzzles" "${puzzles_map}")
     string(JSON catalog_json SET "${catalog_json}" "puzzleIds" "${puzzle_ids_arr}")
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/catalog.json "${catalog_json}")
+
+    # Generate dependencies.json from wasm source maps
+    if(JQ AND PYTHON3)
+        set(puzzle_map_files)
+        foreach(name ${puzzle_names})
+            list(APPEND puzzle_map_files "$<TARGET_FILE_DIR:${name}>/${name}.wasm.map")
+        endforeach()
+
+        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dependencies.json
+                COMMENT "Generating dependencies.json from source maps"
+                COMMAND ${JQ} -r .sources[] ${puzzle_map_files}
+                | sed -E -e "s=^(\\.\\./)+=/="
+                         -e "s=^/emsdk/(emscripten|lib)=/emsdk/upstream/\\1="
+                | grep -v "/puzzles"
+                | sort -u
+                | ${PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/emcc-dependency-info.py
+                    --sources -
+                    --output ${CMAKE_CURRENT_BINARY_DIR}/dependencies.json
+                DEPENDS
+                ${puzzle_names}
+                ${CMAKE_CURRENT_SOURCE_DIR}/emcc-dependency-info.py
+                VERBATIM)
+        add_custom_target(dependencies ALL
+                DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/dependencies.json)
+    endif()
 endfunction()

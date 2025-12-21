@@ -61,26 +61,6 @@ emcmake cmake "${CMAKE_ARGS[@]}"
   make -j"${JOBS}" VERBOSE="${VERBOSE:-}"
 )
 
-# Extract source file list from source maps if they were generated
-if ls "${BUILD_DIR}"/*.map 1> /dev/null 2>&1; then
-  echo "[INFO] Extracting source file list from source maps..."
-  jq -r '.sources[]' "${BUILD_DIR}"/*.map \
-    | sed -E -e 's=^(\.\./)+=/=' \
-             -e's=^/emsdk/(emscripten|lib)=/emsdk/upstream/\1=' \
-    | grep -v "/puzzles" \
-    | sort -u \
-    > "${BUILD_DIR}/source-file-list.txt"
-else
-  echo "[WARN] Missing source maps; cannot generate dependencies.json"
-fi
-
-if [[ -f "${BUILD_DIR}/source-file-list.txt" ]]; then
-  echo "[INFO] Generating dependencies.json"
-  python3 "${SRC_DIR}/emcc-dependency-info.py" \
-    --sources "${BUILD_DIR}/source-file-list.txt" \
-    --output "${BUILD_DIR}/dependencies.json"
-fi
-
 
 # --- Deliverables ---
 echo "[INFO] Delivering..."
