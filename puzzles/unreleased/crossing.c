@@ -979,6 +979,7 @@ static bool crossing_gen_walls_checkdsf(int w, int h, char *walls)
 		}
 	}
 	dsf_free(dsf);
+	(void)maxcell;
 	return maxsize == total;
 }
 
