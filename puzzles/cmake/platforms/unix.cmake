@@ -64,11 +64,16 @@ endif()
 add_compile_definitions(HELP_DIR="${CMAKE_INSTALL_PREFIX}/share/sgt-puzzles/help")
 
 function(get_platform_puzzle_extra_source_files OUTVAR NAME AUXILIARY)
-  if(build_icons AND EXISTS ${PUZZLES_ROOT_DIR}/icons/${NAME}.sav)
+  set(save_file "")
+  if(EXISTS ${PUZZLES_ROOT_DIR}/icons/${NAME}.sav)
+    set(save_file ${PUZZLES_ROOT_DIR}/icons/${NAME}.sav)
+  endif()
+
+  if(build_icons AND save_file)
     # If we have the equipment to rebuild the puzzles' icon images
     # from scratch, do so. Then changes in the puzzle display code
     # will cause the icon to auto-update.
-    build_icon(${NAME})
+    build_icon(${NAME} ${save_file})
     set(c_icon_file ${CMAKE_BINARY_DIR}/icons/${NAME}-icon.c)
   elseif(EXISTS ${PUZZLES_ROOT_DIR}/icons/${NAME}-icon.c)
     # Failing that, use a pre-built icon file in the 'icons'

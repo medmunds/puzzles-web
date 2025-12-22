@@ -104,7 +104,7 @@ set(icon_bindir ${CMAKE_BINARY_DIR}/icons)
 # the icons reflecting the building user's display preferences.
 set(empty_config_dir ${CMAKE_BINARY_DIR}/icons/config)
 
-function(build_icon name)
+function(build_icon name save_file)
   set(output_icon_files)
 
   # Compile the GTK puzzle binary without an icon, so that we can run
@@ -132,9 +132,9 @@ function(build_icon name)
       ${icon_bindir}/${name}-icon-maker
       ${redo_arg}
       --screenshot ${icon_bindir}/${name}-base.png
-      --load ${icon_srcdir}/${name}.sav
+      --load ${save_file}
     DEPENDS
-      ${name}-icon-maker ${icon_srcdir}/${name}.sav)
+      ${name}-icon-maker ${save_file})
 
   # Shrink it to a fixed-size square image for the web page,
   # trimming boring border parts of the original image in the
