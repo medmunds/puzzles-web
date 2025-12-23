@@ -93,6 +93,10 @@ if [[ -d "${BUILD_DIR}/unfinished" ]]; then
   cp "${BUILD_DIR}"/unfinished/*.{wasm,map} "${DIST_DIR}/" \
     || echo "[WARN] No unfinished .wasm files found."
 fi
+if [[ -d "${BUILD_DIR}/unreleased" ]]; then
+  cp "${BUILD_DIR}"/unreleased/*.{wasm,map} "${DIST_DIR}/" \
+    || echo "[WARN] No unreleased .wasm files found."
+fi
 shopt -u nullglob
 
 cp "${BUILD_DIR}/catalog.json" "${DIST_DIR}/" || echo "[WARN] No catalog.json found."

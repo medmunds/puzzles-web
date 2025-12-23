@@ -23,6 +23,7 @@ import "./command-link"; // may appear in embedded text (e.g., privacy.html)
 // Raw content
 import appLicenseText from "../LICENSE?raw";
 import puzzlesLicenseText from "../puzzles/LICENCE?raw";
+import unreleasedLicenseText from "../puzzles/unreleased/LICENCE?raw";
 import privacyHtml from "./assets/privacy.html?raw";
 
 // The name of this repo's project (which is covered by its LICENSE)
@@ -32,6 +33,7 @@ const appName = import.meta.env.VITE_APP_NAME || repoName;
 const appVersion = import.meta.env.VITE_APP_VERSION || "(development build)";
 
 const sgtPuzzlesLink = "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/";
+const unreleasedPuzzlesLink = "https://github.com/x-sheep/puzzles-unreleased";
 const androidAppLink =
   "https://play.google.com/store/apps/details?id=name.boyle.chris.sgtpuzzles";
 const iOSAppLink = "https://apps.apple.com/in/app/puzzles-reloaded/id6504365885";
@@ -171,6 +173,7 @@ export class AboutDialog extends LitElement {
           <p>
             A web adaptation of
             <cite>Simon&nbsp;Tatham’s Portable&nbsp;Puzzle&nbsp;Collection</cite>
+            and Lennard&nbsp;Sprong’s <cite>puzzles-unreleased</cite> additions,
             by&nbsp;Mike&nbsp;Edmunds
           </p>
           <p>
@@ -180,7 +183,7 @@ export class AboutDialog extends LitElement {
           </p>
           <p>
             This is open source software. Source code and more on GitHub:
-            ${this.renderOffsiteLink(repoLink)}
+            ${this.renderOffsiteLink(repoLink, repoLink.replace("https://", ""))}
             - ${this.renderOffsiteLink(forumLink, html`discussion&nbsp;forums`)}
             - ${this.renderOffsiteLink(issuesLink, html`bug&nbsp;reports`)}
           </p>
@@ -192,6 +195,9 @@ export class AboutDialog extends LitElement {
             <li>Simon Tatham and all the contributors to the official
               ${this.renderOffsiteLink(sgtPuzzlesLink, "Portable Puzzle Collection")}, 
               for over 20 years of fascinating puzzle solving</li>
+            <li>Lennard Sprong for the
+              ${this.renderOffsiteLink(unreleasedPuzzlesLink, "puzzles-unreleased")} 
+              additions (which actually <em>have</em> been released, at least twice now)</li>
             <li>Chris Boyle, Greg Hewgill and Kyle Swarner for their fantastic
               ${this.renderOffsiteLink(androidAppLink, "Android")} and
               ${this.renderOffsiteLink(iOSAppLink, "iOS")} apps, 
@@ -230,6 +236,10 @@ export class AboutDialog extends LitElement {
           <wa-details appearance="plain" icon-placement="start">
             <div slot="summary">Simon Tatham’s Portable Puzzle Collection</div>
             ${licenseTextToHTML(puzzlesLicenseText)}
+          </wa-details>
+          <wa-details appearance="plain" icon-placement="start">
+            <div slot="summary">x-sheep/puzzles-unreleased</div>
+            ${licenseTextToHTML(unreleasedLicenseText)}
           </wa-details>
 
           ${this.dependencies?.map(

@@ -3,6 +3,7 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
+import { puzzleDataMap } from "./puzzle/catalog.ts";
 import { puzzleContext } from "./puzzle/contexts.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import { puzzlePageUrl } from "./routing.ts";
@@ -81,15 +82,6 @@ export class ShareDialog extends SignalWatcher(LitElement) {
         ? puzzlePageUrl({ puzzleId, puzzleGameId: preferredId })
         : undefined;
 
-    // TODO: Skip sgt links for puzzles not on SGT's site (unfinished, unreleased, etc.)
-    const sgtBaseUrl = `https://www.chiark.greenend.org.uk/~sgtatham/puzzles/js/${encodeURIComponent(puzzleId ?? "unknown")}.html`;
-    const sgtGameIdLink = gameId
-      ? Object.assign(new URL(sgtBaseUrl), { hash: gameId })
-      : undefined;
-    const sgtRandomSeedLink = randomSeed
-      ? Object.assign(new URL(sgtBaseUrl), { hash: randomSeed })
-      : undefined;
-
     return html`
       <wa-dialog 
           light-dismiss
@@ -147,18 +139,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
           <div class="hint">Enter into any compatible portable puzzle collection 
             app to play this same game</div>
           
-          ${
-            sgtGameIdLink || sgtRandomSeedLink
-              ? html`
-                <div>
-                  <wa-divider></wa-divider>
-                  Play this game at Simon Tatham’s website
-                  ${this.renderOffsiteLink({ hint: "by game ID", url: sgtGameIdLink })}
-                  ${this.renderOffsiteLink({ hint: "by random seed", url: sgtRandomSeedLink })}
-                </div>
-                `
-              : nothing
-          }
+          ${this.renderSGTLinks({ puzzleId, puzzleParams, gameId, randomSeed })}
         </wa-details>
         
       </wa-dialog>
@@ -188,6 +169,72 @@ export class ShareDialog extends SignalWatcher(LitElement) {
         ${typeof label === "string" ? nothing : html`<div slot="label">${label}</div>`}
         <wa-copy-button slot="end" value=${value}></wa-copy-button>
       </wa-input>
+    `;
+  }
+
+  private renderSGTLinks({
+    puzzleId,
+    puzzleParams,
+    gameId,
+    randomSeed,
+  }: {
+    puzzleId?: string;
+    puzzleParams?: string;
+    gameId?: string;
+    randomSeed?: string;
+  }) {
+    if (
+      !puzzleId ||
+      puzzleDataMap[puzzleId]?.collection !== "original" ||
+      puzzleDataMap[puzzleId]?.unfinished
+    ) {
+      // Despite being "unfinished", Group actually _is_ available at SGT's site.
+      if (puzzleId !== "group") {
+        return nothing;
+      }
+    }
+
+    const sgtBaseUrl = `https://www.chiark.greenend.org.uk/~sgtatham/puzzles/js/${encodeURIComponent(puzzleId)}.html`;
+    const links = [];
+    if (gameId) {
+      links.push(
+        this.renderOffsiteLink({
+          hint: "by game ID",
+          url: Object.assign(new URL(sgtBaseUrl), { hash: encodeURIComponent(gameId) }),
+        }),
+      );
+    }
+    if (randomSeed) {
+      links.push(
+        this.renderOffsiteLink({
+          hint: "by random seed",
+          url: Object.assign(new URL(sgtBaseUrl), {
+            hash: encodeURIComponent(randomSeed),
+          }),
+        }),
+      );
+    }
+    if (puzzleParams) {
+      links.push(
+        this.renderOffsiteLink({
+          hint: "by puzzle type",
+          url: Object.assign(new URL(sgtBaseUrl), {
+            hash: encodeURIComponent(puzzleParams),
+          }),
+        }),
+      );
+    }
+    if (links.length === 0) {
+      // Make sure we show *some* link even if gameId and randomSeed are missing.
+      links.push(this.renderOffsiteLink({ url: sgtBaseUrl }));
+    }
+
+    return html`
+      <div>
+        <wa-divider></wa-divider>
+        Play this game at Simon Tatham’s website
+        ${links}
+      </div>
     `;
   }
 

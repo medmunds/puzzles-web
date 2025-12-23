@@ -73,7 +73,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
         <h1>Puzzles</h1>
       </div>
       <div class="subtitle">from Simon&nbsp;Tatham’s
-        portable&nbsp;puzzle&nbsp;collection</div>
+        portable&nbsp;puzzle&nbsp;collection and&nbsp;more</div>
 
       <div class="controls">
         <wa-dropdown>
@@ -105,7 +105,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
         </wa-dropdown>
       </div>
       <div class="subtitle">from Simon&nbsp;Tatham’s
-        portable&nbsp;puzzle&nbsp;collection</div>
+        portable&nbsp;puzzle&nbsp;collection and more</div>
 
       <div class="controls">
         <wa-button href="help/" appearance="plain" variant="brand">${

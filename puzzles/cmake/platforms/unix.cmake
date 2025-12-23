@@ -67,6 +67,9 @@ function(get_platform_puzzle_extra_source_files OUTVAR NAME AUXILIARY)
   set(save_file "")
   if(EXISTS ${PUZZLES_ROOT_DIR}/icons/${NAME}.sav)
     set(save_file ${PUZZLES_ROOT_DIR}/icons/${NAME}.sav)
+  elseif(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${PUZZLES_ROOT_DIR}/unreleased
+          AND EXISTS ${PUZZLES_ROOT_DIR}/unreleased/savefiles/${NAME}.sav)
+    set(save_file ${PUZZLES_ROOT_DIR}/unreleased/savefiles/${NAME}.sav)
   endif()
 
   if(build_icons AND save_file)

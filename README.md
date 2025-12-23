@@ -3,7 +3,8 @@
 ### ▶ [Play the puzzles][play] in your browser
 
 This is a progressive web application (PWA) port of [Simon Tatham’s Portable
-Puzzle Collection][sgt-puzzles].
+Puzzle Collection][sgt-puzzles], with additional puzzles from Lennard Sprong's
+[puzzles-unreleased][puzzles-unreleased].
 
 The code targets Baseline 2023, so should run in any reasonably recent browser.
 It's meant to work with a variety of input devices (including touch screens)
@@ -16,6 +17,7 @@ my own play, or wanted to experiment with before submitting patches upstream.
 
 [differences]: https://puzzles.twistymaze.com/help/differences
 [play]: https://puzzles.twistymaze.com/
+[puzzles-unreleased]: https://github.com/x-sheep/puzzles-unreleased
 [sgt-puzzles]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/
 
 ## Status
