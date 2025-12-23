@@ -1,0 +1,13 @@
+CMakeFiles
+cmake_install.cmake
+Makefile*
+
+abcdsolver
+ascentsolver
+boatssolver
+brickssolver
+crossingsolver
+saladsolver
+seismicsolver
+spokessolver
+stickssolver
