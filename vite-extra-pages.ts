@@ -151,11 +151,12 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
     const paths: Map<string, string> = new Map();
     for (const filePath of globSync(pagesSet.sources)) {
       const absFilePath = makeAbsolutePath(filePath);
-      // Switch source extension (e.g., .md) to .html to handle as index page.
-      let urlPath = filePath.replace(/\.[^.]+$/, ".html");
+      let urlPath = filePath;
       if (pagesSet.resolve && filePath.startsWith(pagesSet.resolve.path)) {
         urlPath = pagesSet.resolve.url + filePath.slice(pagesSet.resolve.path.length);
       }
+      // Switch source extension (e.g., .md) to .html to handle as index page.
+      urlPath = urlPath.replace(/\.[^.]+$/, ".html");
       paths.set(urlPath, absFilePath);
     }
 
