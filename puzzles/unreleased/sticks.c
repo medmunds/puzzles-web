@@ -1373,7 +1373,7 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
 			{
 				sprintf(buf, "%d", state->numbers[y*w+x]);
 				draw_text(dr, COORD(x+0.5), COORD(y+0.5), 
-					tile & F_BLOCK ? FONT_FIXED : FONT_VARIABLE,
+					FONT_VARIABLE,
 					tilesize*0.7, ALIGN_HCENTRE|ALIGN_VCENTRE,
 					tile & F_ERROR ? COL_ERROR : tile & F_BLOCK ? COL_NUMBER : COL_GRID, buf);
 			}
