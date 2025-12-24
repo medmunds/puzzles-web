@@ -158,15 +158,17 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
       }
     }
 
-    result.push(html`<wa-divider></wa-divider>`);
-    result.push(html`
-      <wa-dropdown-item 
-          type="checkbox"
-          role="menuitemradio"
-          ?checked=${isCustom} 
-          value="#custom"
-        >Custom type…</wa-dropdown-item>
-    `);
+    if (this.puzzle?.canConfigure) {
+      result.push(html`<wa-divider></wa-divider>`);
+      result.push(html`
+        <wa-dropdown-item 
+            type="checkbox"
+            role="menuitemradio"
+            ?checked=${isCustom} 
+            value="#custom"
+          >Custom type…</wa-dropdown-item>
+      `);
+    }
 
     return result;
   }
