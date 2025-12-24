@@ -1787,9 +1787,16 @@ config_item *midend_get_config(midend *me, int which, char **wintitle)
 
     switch (which) {
       case CFG_SETTINGS:
-	sprintf(titlebuf, "%s configuration", me->ourgame->name);
-	*wintitle = titlebuf;
-	return me->ourgame->configure(me->params);
+	    sprintf(titlebuf, "%s configuration", me->ourgame->name);
+	    *wintitle = titlebuf;
+        if (!me->ourgame->can_configure) {
+            ret = snewn(1, config_item);
+            ret[0].type = C_END;
+            ret[0].name = NULL;
+            return ret;
+        }
+        assert(me->ourgame->configure != NULL);
+        return me->ourgame->configure(me->params);
       case CFG_SEED:
       case CFG_DESC:
         if (!me->curparams) {
@@ -2066,6 +2073,12 @@ const char *midend_set_config(midend *me, int which, config_item *cfg)
 
     switch (which) {
       case CFG_SETTINGS:
+        if (!me->ourgame->can_configure) {
+            if (cfg && cfg[0].type != C_END)
+                return "This puzzle does not support configuration";
+            return NULL;
+        }
+        assert(me->ourgame->custom_params != NULL);
 	params = me->ourgame->custom_params(cfg);
 	error = me->ourgame->validate_params(params, true);
 
