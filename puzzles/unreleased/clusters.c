@@ -667,8 +667,14 @@ static void game_changed_state(game_ui *ui, const game_state *oldstate,
 {
 }
 
-#define COORD(x)     ( (x) * tilesize + tilesize/2 )
-#define FROMCOORD(x) ( ((x)-(tilesize/2)) / tilesize )
+#ifdef NARROW_BORDERS
+#define BORDER (tilesize/10) /* = grid line thickness */
+#else
+#define BORDER (tilesize/2)
+#endif
+
+#define COORD(x)     ( (x) * tilesize + BORDER )
+#define FROMCOORD(x) ( ((x)-BORDER) / tilesize )
 
 struct game_drawstate {
 	int tilesize;
@@ -700,8 +706,8 @@ static char *interpret_move(const game_state *state, game_ui *ui,
 
 	if (IS_MOUSE_DOWN(button) || IS_MOUSE_DRAG(button))
 	{
-		if (ox >= (ds->tilesize / 2) && gx < w
-			&& oy >= (ds->tilesize / 2) && gy < h) {
+		if (ox >= BORDER && gx < w
+			&& oy >= BORDER && gy < h) {
 			hx = gx;
 			hy = gy;
 			ui->cursor = false;
@@ -928,8 +934,13 @@ static void game_get_cursor_location(const game_ui *ui,
 static void game_compute_size(const game_params *params, int tilesize,
                               const game_ui *ui, int *x, int *y)
 {
-	*x = (params->w + 1) * tilesize;
-	*y = (params->h + 1) * tilesize;
+	*x = params->w * tilesize + 2*BORDER;
+	*y = params->h * tilesize + 2*BORDER;
+#ifdef NARROW_BORDERS
+	/* -1 to match outer grid in game_redraw */
+	*x -= 1;
+	*y -= 1;
+#endif
 }
 
 static void game_set_size(drawing *dr, game_drawstate *ds,
@@ -1023,8 +1034,8 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
 
 	if(ds->grid[0] == ~0)
 	{
-		draw_rect(dr, 0, 0, (w + 1)*tilesize, (h + 1)*tilesize, COL_BACKGROUND);
-		draw_update(dr, 0, 0, (w + 1)*tilesize, (h + 1)*tilesize);
+		draw_rect(dr, 0, 0, w*tilesize + 2*BORDER, h*tilesize + 2*BORDER, COL_BACKGROUND);
+		draw_update(dr, 0, 0, w*tilesize + 2*BORDER, h*tilesize + 2*BORDER);
 
 		draw_rect(dr, COORD(0) - tilesize / 10, COORD(0) - tilesize / 10,
 			tilesize*w + 2 * (tilesize / 10) - 1,

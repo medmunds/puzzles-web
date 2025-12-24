@@ -1149,7 +1149,13 @@ struct game_drawstate {
 	marks_t *marks;
 };
 
-#define FROMCOORD(x) ( ((x)-(tilesize/2)) / tilesize )
+#ifdef NARROW_BORDERS
+#define BORDER 1
+#else
+#define BORDER (tilesize/2)
+#endif
+
+#define FROMCOORD(x) ( ((x)-BORDER) / tilesize )
 static char *interpret_move(const game_state *state, game_ui *ui,
 							const game_drawstate *ds,
 							int ox, int oy, int button)
@@ -1383,9 +1389,10 @@ static void game_get_cursor_location(const game_ui *ui,
                                      int *x, int *y, int *w, int *h)
 {
 	if(ui->cshow) {
-		*x = (ui->hx+0.5) * ds->tilesize;
-		*y = (ui->hy+0.5) * ds->tilesize;
-		*w = *h = ds->tilesize;
+		int tilesize = ds->tilesize;
+		*x = BORDER + ui->hx * tilesize;
+		*y = BORDER + ui->hy * tilesize;
+		*w = *h = tilesize;
 	}
 }
 
@@ -1394,7 +1401,7 @@ static void game_compute_size(const game_params *params, int tilesize,
 {
 	int o = params->o;
 	
-	*x = *y = (o+1) * tilesize;
+	*x = *y = o * tilesize + 2*BORDER;
 }
 
 static void game_set_size(drawing *dr, game_drawstate *ds,
@@ -1531,16 +1538,17 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
 	
 	if(ds->redraw)
 	{
-		draw_rect(dr, 0, 0, (o+1)*tilesize, (o+1)*tilesize, COL_BACKGROUND);
-		draw_rect(dr, (tilesize/2), (tilesize/2)-1, o*tilesize+1, o*tilesize+1, COL_BORDER);
-		draw_update(dr, 0, 0, (o+1)*tilesize, (o+1)*tilesize);
+		int totalsize = o*tilesize + 2*BORDER;
+		draw_rect(dr, 0, 0, totalsize, totalsize, COL_BACKGROUND);
+		draw_rect(dr, BORDER, BORDER-1, o*tilesize+1, o*tilesize+1, COL_BORDER);
+		draw_update(dr, 0, 0, totalsize, totalsize);
 	}
 	
 	for(y = 0; y < o; y++)
 	for(x = 0; x < o; x++)
 	{
-		tx = x*tilesize + (tilesize/2);
-		ty = y*tilesize + (tilesize/2);
+		tx = BORDER + x*tilesize;
+		ty = BORDER + y*tilesize;
 		
 		fs = state->flags[y*o+x];
 		
@@ -1704,14 +1712,14 @@ static void game_print(drawing *dr, const game_state *state, const game_ui *ui,
 	for(x = 0; x <= o; x++)
 	for(y = 0; y < o; y++)
 	{
-		draw_line(dr, (x+0.5)*tilesize, (y+0.5)*tilesize, 
-			(x+0.5)*tilesize, (y+1.5)*tilesize, ink);
+		draw_line(dr, BORDER + x*tilesize, BORDER + y*tilesize,
+			BORDER + x*tilesize, BORDER + (y+1)*tilesize, ink);
 	}
 	for(x = 0; x < o; x++)
 	for(y = 0; y <= o; y++)
 	{
-		draw_line(dr, (x+0.5)*tilesize, (y+0.5)*tilesize, 
-				(x+1.5)*tilesize, (y+0.5)*tilesize, ink);
+		draw_line(dr, BORDER + x*tilesize, BORDER + y*tilesize,
+				BORDER + (x+1)*tilesize, BORDER + y*tilesize, ink);
 	}
 
 	for(x = 0; x < o-1; x++)
@@ -1719,8 +1727,8 @@ static void game_print(drawing *dr, const game_state *state, const game_ui *ui,
 	{
 		if(state->clues[y*co+x])
 		{
-			int tx = x*tilesize + (tilesize*1.5);
-			int ty = y*tilesize + (tilesize*1.5);
+			int tx = BORDER + (x+1)*tilesize;
+			int ty = BORDER + (y+1)*tilesize;
 			mathrax_clue_label(symbols, buf, state->clues[y*co+x]);
 
 			draw_circle(dr, tx, ty, tilesize/3, paper, ink);
@@ -1734,8 +1742,8 @@ static void game_print(drawing *dr, const game_state *state, const game_ui *ui,
 	{
 		if(!state->grid[y*o+x]) continue;
 		buf[0] = state->grid[y*o+x] + '0';
-		draw_text(dr, (x+1)*tilesize,
-			  (y+1)*tilesize,
+		draw_text(dr, BORDER + x*tilesize + tilesize/2,
+			  BORDER + y*tilesize + tilesize/2,
 			  FONT_VARIABLE, tilesize/2,
 			  ALIGN_VCENTRE | ALIGN_HCENTRE, ink, buf);
 	}

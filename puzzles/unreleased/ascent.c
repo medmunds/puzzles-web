@@ -3204,6 +3204,12 @@ static game_state *execute_move(const game_state *state, const char *move)
  * Drawing routines *
  * **************** */
 
+#ifdef NARROW_BORDERS
+#define BORDER 0
+#else
+#define BORDER (tilesize/2)
+#endif
+
 static void game_get_cursor_location(const game_ui *ui,
                                      const game_drawstate *ds,
                                      const game_state *state,
@@ -3226,35 +3232,48 @@ static void game_get_cursor_location(const game_ui *ui,
 static void game_compute_size(const game_params *params, int tilesize,
                               const game_ui *ui, int *x, int *y)
 {
-	*x = (params->w+1) * tilesize;
-	*y = (params->h+1) * tilesize;
+	*x = params->w * tilesize + 2*BORDER;
+	*y = params->h * tilesize + 2*BORDER;
 
 	if (params->mode == MODE_HONEYCOMB)
 		*x += (tilesize / 2);
 	else if (params->mode == MODE_EDGES)
 	{
+#ifdef NARROW_BORDERS
+		/* Need extra space since we can't intrude into border */
+		*x += (tilesize * 2);
+		*y += (tilesize * 2);
+#else
 		*x += (tilesize * 1.5);
 		*y += (tilesize * 1.5);
+#endif
 	}
+#ifdef NARROW_BORDERS
+	/* +1 for right/bottom grid outline (normally drawn in border) */
+	*x += 1;
+	*y += 1;
+#endif
 }
 
 static void game_set_offsets(int h, int mode, int tilesize, int *offsetx, int *offsety)
 {
-	*offsetx = tilesize / 2;
-	*offsety = tilesize / 2;
+	*offsetx = BORDER;
+	*offsety = BORDER;
 	if (mode == MODE_HEXAGON)
-		*offsetx -= (h / 2) * (tilesize / 2);
+		*offsetx -= (h - 1) * tilesize / 4;
 	else if (mode == MODE_HONEYCOMB)
 	{
 		*offsetx -= ((h / 2) - 1) * tilesize;
 		if (h & 1)
 			*offsetx -= tilesize;
 	}
+#ifndef NARROW_BORDERS
 	else if (mode == MODE_EDGES)
 	{
 		*offsetx -= tilesize / 4;
 		*offsety -= tilesize / 4;
 	}
+#endif
 }
 
 static void game_set_size(drawing *dr, game_drawstate *ds,

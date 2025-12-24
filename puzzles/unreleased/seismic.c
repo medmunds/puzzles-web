@@ -1337,7 +1337,16 @@ struct game_drawstate {
 	int FIXME;
 };
 
-#define FROMCOORD(x) ( ((x)-(tilesize/2)) / tilesize )
+#define GRIDEXTRA 1
+
+#ifdef NARROW_BORDERS
+/* The top/left grid outline is drawn within the border area */
+#define BORDER (GRIDEXTRA*2)
+#else
+#define BORDER (tilesize/2)
+#endif
+
+#define FROMCOORD(x) ( ((x)-BORDER) / tilesize )
 
 static char *interpret_move(const game_state *state, game_ui *ui, const game_drawstate *ds,
 				int ox, int oy, int button)
@@ -1570,17 +1579,23 @@ static void game_get_cursor_location(const game_ui *ui,
                                      int *x, int *y, int *w, int *h)
 {
 	if(ui->cshow) {
-		*x = (ui->hx+0.5) * ds->tilesize;
-		*y = (ui->hy+0.5) * ds->tilesize;
-		*w = *h = ds->tilesize;
+		int tilesize = ds->tilesize;
+		*x = BORDER + ui->hx * tilesize;
+		*y = BORDER + ui->hy * tilesize;
+		*w = *h = tilesize;
 	}
 }
 
 static void game_compute_size(const game_params *params, int tilesize,
                               const game_ui *ui, int *x, int *y)
 {
-	*x = (params->w + 1) * tilesize;
-	*y = (params->h + 1) * tilesize;
+	*x = params->w * tilesize + 2*BORDER;
+	*y = params->h * tilesize + 2*BORDER;
+#ifdef NARROW_BORDERS
+	/* Compensate for outer grid outline drawn in border area */
+	*x -= GRIDEXTRA*2;
+	*y -= GRIDEXTRA*2;
+#endif
 }
 
 static void game_set_size(drawing *dr, game_drawstate *ds,
@@ -1639,8 +1654,6 @@ static void game_free_drawstate(drawing *dr, game_drawstate *ds)
 	sfree(ds);
 }
 
-#define GRIDEXTRA 1
-
 #define FLASH_TIME 0.7F
 #define FLASH_FRAME 0.1F
 
@@ -1673,11 +1686,11 @@ static void game_redraw(drawing *dr, game_drawstate *ds, const game_state *oldst
 	 * should start by drawing a big background-colour rectangle
 	 * covering the whole window.
 	 */
-	draw_rect(dr, 0, 0, (w+1)*tilesize, (h+1)*tilesize, COL_BACKGROUND);
-	draw_update(dr, 0, 0, (w+1)*tilesize, (h+1)*tilesize);
+	draw_rect(dr, 0, 0, w*tilesize + 2*BORDER, h*tilesize + 2*BORDER, COL_BACKGROUND);
+	draw_update(dr, 0, 0, w*tilesize + 2*BORDER, h*tilesize + 2*BORDER);
 	
-	draw_rect(dr, (0.5*tilesize) - (GRIDEXTRA*2), 
-		(0.5*tilesize) - (GRIDEXTRA*2),
+	draw_rect(dr, BORDER - (GRIDEXTRA*2),
+		BORDER - (GRIDEXTRA*2),
 		(w*tilesize) + (GRIDEXTRA*2),
 		(h*tilesize) + (GRIDEXTRA*2),
 		COL_BORDER);
@@ -1700,8 +1713,8 @@ static void game_redraw(drawing *dr, game_drawstate *ds, const game_state *oldst
 			color = (x+y) % 3 == flash ? COL_BACKGROUND :
 				(x+y+1) % 3 == flash ? COL_LOWLIGHT : COL_HIGHLIGHT;
 		
-		tx = cx = (x+0.5) * tilesize;
-		ty = cy = (y+0.5) * tilesize;
+		tx = cx = BORDER + x * tilesize;
+		ty = cy = BORDER + y * tilesize;
 		cw = tilesize - 1;
 		ch = tilesize - 1;
 		
@@ -1793,7 +1806,7 @@ static void game_redraw(drawing *dr, game_drawstate *ds, const game_state *oldst
 			
 			buf[0] = c + '0';
 			
-			draw_text(dr, (x+1)*tilesize, (y+1)*tilesize,
+			draw_text(dr, BORDER + x * tilesize + tilesize/2, BORDER + y * tilesize + tilesize/2,
 				FONT_VARIABLE, tilesize/2, ALIGN_HCENTRE|ALIGN_VCENTRE, color,
 				buf);
 		}
@@ -1852,14 +1865,14 @@ static void game_print(drawing *dr, const game_state *state, const game_ui *ui,
 	for(x = 1; x < w; x++)
 	for(y = 0; y < h; y++)
 	{
-		draw_line(dr, (x+0.5)*tilesize, (y+0.5)*tilesize, 
-			(x+0.5)*tilesize, (y+1.5)*tilesize, line);
+		draw_line(dr, BORDER + x*tilesize, BORDER + y*tilesize,
+			BORDER + x*tilesize, BORDER + (y+1)*tilesize, line);
 	}
 	for(x = 0; x < w; x++)
 	for(y = 1; y < h; y++)
 	{
-		draw_line(dr, (x+0.5)*tilesize, (y+0.5)*tilesize, 
-				(x+1.5)*tilesize, (y+0.5)*tilesize, line);
+		draw_line(dr, BORDER + x*tilesize, BORDER + y*tilesize,
+				BORDER + (x+1)*tilesize, BORDER + y*tilesize, line);
 	}
 	
 	print_line_width(dr, tilesize / 30);
@@ -1871,27 +1884,27 @@ static void game_print(drawing *dr, const game_state *state, const game_ui *ui,
 		i2 = y*w+x+1;
 		
 		if(x == 0)
-			draw_line(dr, (x+0.5)*tilesize, (y+0.5)*tilesize, 
-				(x+0.5)*tilesize, (y+1.5)*tilesize, ink);
+			draw_line(dr, BORDER + x*tilesize, BORDER + y*tilesize,
+				BORDER + x*tilesize, BORDER + (y+1)*tilesize, ink);
 		
 		if(x == w-1 || dsf_canonify(state->dsf, i1) != dsf_canonify(state->dsf, i2))
-			draw_line(dr, (x+1.5)*tilesize, (y+0.5)*tilesize, 
-				(x+1.5)*tilesize, (y+1.5)*tilesize, ink);
+			draw_line(dr, BORDER + (x+1)*tilesize, BORDER + y*tilesize,
+				BORDER + (x+1)*tilesize, BORDER + (y+1)*tilesize, ink);
 		
 		i2 = (y+1)*w+x;
 		
 		if(y == 0)
-			draw_line(dr, (x+0.5)*tilesize, (y+0.5)*tilesize, 
-				(x+1.5)*tilesize, (y+0.5)*tilesize, ink);
+			draw_line(dr, BORDER + x*tilesize, BORDER + y*tilesize,
+				BORDER + (x+1)*tilesize, BORDER + y*tilesize, ink);
 		
 		if(y == h-1 || dsf_canonify(state->dsf, i1) != dsf_canonify(state->dsf, i2))
-			draw_line(dr, (x+0.5)*tilesize, (y+1.5)*tilesize, 
-				(x+1.5)*tilesize, (y+1.5)*tilesize, ink);
+			draw_line(dr, BORDER + x*tilesize, BORDER + (y+1)*tilesize,
+				BORDER + (x+1)*tilesize, BORDER + (y+1)*tilesize, ink);
 		
 		if(state->grid[i1] > 0)
 		{
 			buf[0] = state->grid[i1] + '0';
-			draw_text(dr, (x+1)*tilesize, (y+1)*tilesize,
+			draw_text(dr, BORDER + (x + 0.5) * tilesize, BORDER + (y + 0.5) * tilesize,
 				FONT_VARIABLE, tilesize/2, ALIGN_HCENTRE|ALIGN_VCENTRE, ink,
 				buf);
 		}

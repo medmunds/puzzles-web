@@ -1249,6 +1249,12 @@ static game_state *execute_move(const game_state *state, const char *move)
  * Drawing routines *
  * **************** */
 
+#ifdef NARROW_BORDERS
+#define BORDER 0
+#else
+#define BORDER ((tilesize)/2)
+#endif
+
 static void game_get_cursor_location(const game_ui *ui,
                                      const game_drawstate *ds,
                                      const game_state *state,
@@ -1269,16 +1275,21 @@ static void game_compute_size(const game_params *params, int tilesize,
                               const game_ui *ui, int *x, int *y)
 {
 	tilesize &= ~1;
-	*x = (params->w+1) * tilesize;
-	*y = (params->h+1) * tilesize;
+	*x = params->w * tilesize + 2*BORDER;
+	*y = params->h * tilesize + 2*BORDER;
 
 	*x += (tilesize / 2);
+#ifdef NARROW_BORDERS
+	/* +1 for right/bottom edges normally drawn in border */
+	*x += 1;
+	*y += 1;
+#endif
 }
 
 static void game_set_offsets(int h, int tilesize, int *offsetx, int *offsety)
 {
-	*offsetx = tilesize / 2;
-	*offsety = tilesize / 2;
+	*offsetx = BORDER;
+	*offsety = BORDER;
 	*offsetx -= ((h / 2) - 1) * tilesize;
 	if (h & 1)
 		*offsetx -= tilesize;

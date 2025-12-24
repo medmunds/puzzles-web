@@ -1557,7 +1557,16 @@ struct game_drawstate {
 	cell *oldpencil;
 };
 
-#define FROMCOORD(x) ( ((x)-(ds->tilesize/2)) / ds->tilesize )
+#define GRIDEXTRA 1
+
+#ifdef NARROW_BORDERS
+/* The top/left grid outline is drawn within the border area */
+#define BORDER (GRIDEXTRA*2)
+#else
+#define BORDER (tilesize/2)
+#endif
+
+#define FROMCOORD(x) ( ((x)-BORDER) / ds->tilesize )
 
 static char *interpret_move(const game_state *state, game_ui *ui, const game_drawstate *ds,
 				int mx, int my, int button)
@@ -1566,6 +1575,7 @@ static char *interpret_move(const game_state *state, game_ui *ui, const game_dra
 	int h = state->h;
 	int x = ui->hx;
 	int y = ui->hy;
+	int tilesize = ds->tilesize;
 	char m;
 	char buf[80];
 	
@@ -1691,8 +1701,8 @@ static char *interpret_move(const game_state *state, game_ui *ui, const game_dra
 	else if (IS_MOUSE_DRAG(button) || IS_MOUSE_RELEASE(button))
 	{
 		cell c;
-		int cx = mx >= ds->tilesize/2 ? FROMCOORD(mx) : -1;
-		int cy = my >= ds->tilesize/2 ? FROMCOORD(my) : -1;
+		int cx = mx >= BORDER ? FROMCOORD(mx) : -1;
+		int cy = my >= BORDER ? FROMCOORD(my) : -1;
 		
 		if(cx == ui->hx && cy == ui->hy)
 			c = EMPTY;
@@ -1845,18 +1855,24 @@ static void game_get_cursor_location(const game_ui *ui,
                                      const game_params *params,
                                      int *x, int *y, int *w, int *h)
 {
+	int tilesize = ds->tilesize;
 	if(ui->kmode) {
-		*x = (ui->hx+0.5) * ds->tilesize;
-		*y = (ui->hy+0.5) * ds->tilesize;
-		*w = *h = ds->tilesize;
+		*x = BORDER + ui->hx * tilesize;
+		*y = BORDER + ui->hy * tilesize;
+		*w = *h = tilesize;
 	}
 }
 
 static void game_compute_size(const game_params *params, int tilesize,
                               const game_ui *ui, int *x, int *y)
 {
-	*x = (params->w + 1) * tilesize;
-	*y = (params->h + 1) * tilesize;
+	*x = params->w * tilesize + 2*BORDER;
+	*y = params->h * tilesize + 2*BORDER;
+#ifdef NARROW_BORDERS
+	/* Compensate for outer grid outline drawn in border area */
+	*x -= GRIDEXTRA*2;
+	*y -= GRIDEXTRA*2;
+#endif
 }
 
 static void game_set_size(drawing *dr, game_drawstate *ds,
@@ -1936,7 +1952,6 @@ static void game_free_drawstate(drawing *dr, game_drawstate *ds)
 	sfree(ds);
 }
 
-#define GRIDEXTRA 1
 #define SIDE_SIZE 0.6F
 
 static void rome_draw_line(drawing *dr, double thick, int x1, int y1, int x2, int y2, int color)
@@ -2017,10 +2032,10 @@ static void game_redraw(drawing *dr, game_drawstate *ds, const game_state *oldst
 	 */
 	if(ds->redraw)
 	{
-		draw_rect(dr, 0, 0, (w+1)*tilesize, (h+1)*tilesize, COL_BACKGROUND);
-		draw_update(dr, 0, 0, (w+1)*tilesize, (h+1)*tilesize);
-		draw_rect(dr, (0.5*tilesize) - (GRIDEXTRA*2), 
-			(0.5*tilesize) - (GRIDEXTRA*2),
+		draw_rect(dr, 0, 0, w*tilesize + 2*BORDER, h*tilesize + 2*BORDER, COL_BACKGROUND);
+		draw_update(dr, 0, 0, w*tilesize + 2*BORDER, h*tilesize + 2*BORDER);
+		draw_rect(dr, BORDER - (GRIDEXTRA*2),
+			BORDER - (GRIDEXTRA*2),
 			(w*tilesize) + (GRIDEXTRA*2),
 			(h*tilesize) + (GRIDEXTRA*2),
 			COL_BORDER);
@@ -2046,12 +2061,12 @@ static void game_redraw(drawing *dr, game_drawstate *ds, const game_state *oldst
 			c |= ui->kmode == KEYMODE_PLACE ? FD_PLACE :
 				ui->kmode == KEYMODE_PENCIL ? FD_PENCIL : FD_CURSOR;
 		
-		if(!ds->redraw && flash == ds->oldflash && 
+		if(!ds->redraw && flash == ds->oldflash &&
 			ds->oldgrid[i1] == c && ds->oldpencil[i1] == p)
 			continue;
-		
-		cx = (x+0.5) * tilesize;
-		cy = (y+0.5) * tilesize;
+
+		cx = BORDER + x * tilesize;
+		cy = BORDER + y * tilesize;
 		cw = tilesize - 1;
 		ch = tilesize - 1;
 		
@@ -2100,7 +2115,7 @@ static void game_redraw(drawing *dr, game_drawstate *ds, const game_state *oldst
 		/* Pencil cursor */
 		if(kmode == KEYMODE_PENCIL && ui->hx == x && ui->hy == y)
 		{
-			draw_text(dr, (x+1)*tilesize, (y+1)*tilesize,
+			draw_text(dr, BORDER + x*tilesize + tilesize/2, BORDER + y*tilesize + tilesize/2,
 				FONT_FIXED, tilesize/1.8, ALIGN_VCENTRE | ALIGN_HCENTRE,
 				COL_HIGHLIGHT, "?");
 		}
@@ -2108,24 +2123,24 @@ static void game_redraw(drawing *dr, game_drawstate *ds, const game_state *oldst
 		if((c & FD_KBMASK) == c)
 		{
 			if(p & FM_UP)
-				rome_draw_arrow(dr, (x+1)*tilesize, (y+0.75)*tilesize,
+				rome_draw_arrow(dr, BORDER + x*tilesize + tilesize/2, BORDER + y*tilesize + tilesize/4,
 					tilesize*0.12, FM_UP, COL_ARROW_PENCIL);
 			
 			if(p & FM_DOWN)
-				rome_draw_arrow(dr, (x+1)*tilesize, (y+1.25)*tilesize,
+				rome_draw_arrow(dr, BORDER + x*tilesize + tilesize/2, BORDER + y*tilesize + 3*tilesize/4,
 					tilesize*0.12, FM_DOWN, COL_ARROW_PENCIL);
 			
 			if(p & FM_LEFT)
-				rome_draw_arrow(dr, (x+0.75)*tilesize, (y+1)*tilesize,
+				rome_draw_arrow(dr, BORDER + x*tilesize + tilesize/4, BORDER + y*tilesize + tilesize/2,
 					tilesize*0.12, FM_LEFT, COL_ARROW_PENCIL);
 			
 			if(p & FM_RIGHT)
-				rome_draw_arrow(dr, (x+1.25)*tilesize, (y+1)*tilesize,
+				rome_draw_arrow(dr, BORDER + x*tilesize + 3*tilesize/4, BORDER + y*tilesize + tilesize/2,
 					tilesize*0.12, FM_RIGHT, COL_ARROW_PENCIL);
 						
 			if(p & FD_ENTRY)
 			{
-				draw_rect(dr, (x+1)*tilesize - 2, (y+1)*tilesize - 2,
+				draw_rect(dr, BORDER + x*tilesize + tilesize/2 - 2, BORDER + y*tilesize + tilesize/2 - 2,
 					4, 4, COL_ARROW_PENCIL);
 			}
 		}
@@ -2134,17 +2149,17 @@ static void game_redraw(drawing *dr, game_drawstate *ds, const game_state *oldst
 		
 		if(c & FM_GOAL)
 		{
-			draw_circle(dr, (x+1)*tilesize, (y+1)*tilesize, 
+			draw_circle(dr, BORDER + x*tilesize + tilesize/2, BORDER + y*tilesize + tilesize/2,
 				tilesize / 3, COL_GOAL, COL_GOAL);
 		}
 		else if(c & FM_ARROWMASK)
 		{
-			rome_draw_arrow(dr, (x+1)*tilesize, (y+1)*tilesize,
+			rome_draw_arrow(dr, BORDER + x*tilesize + tilesize/2, BORDER + y*tilesize + tilesize/2,
 				tilesize *0.3, c, -1);
 		}
 		else if(c & FD_ENTRY)
 		{
-			draw_rect(dr, (x+1)*tilesize - 2, (y+1)*tilesize - 2,
+			draw_rect(dr, BORDER + x*tilesize + tilesize/2 - 2, BORDER + y*tilesize + tilesize/2 - 2,
 				4, 4, COL_ARROW_ENTRY);
 		}
 	}
@@ -2202,14 +2217,14 @@ static void game_print(drawing *dr, const game_state *state, const game_ui *ui,
 	for(x = 1; x < w; x++)
 	for(y = 0; y < h; y++)
 	{
-		draw_line(dr, (x+0.5)*tilesize, (y+0.5)*tilesize, 
-			(x+0.5)*tilesize, (y+1.5)*tilesize, line);
+		draw_line(dr, BORDER + x*tilesize, BORDER + y*tilesize,
+			BORDER + x*tilesize, BORDER + (y+1)*tilesize, line);
 	}
 	for(x = 0; x < w; x++)
 	for(y = 1; y < h; y++)
 	{
-		draw_line(dr, (x+0.5)*tilesize, (y+0.5)*tilesize, 
-				(x+1.5)*tilesize, (y+0.5)*tilesize, line);
+		draw_line(dr, BORDER + x*tilesize, BORDER + y*tilesize,
+				BORDER + (x+1)*tilesize, BORDER + y*tilesize, line);
 	}
 	
 	print_line_width(dr, tilesize / 30);
@@ -2221,31 +2236,31 @@ static void game_print(drawing *dr, const game_state *state, const game_ui *ui,
 		i2 = y*w+x+1;
 		
 		if(x == 0)
-			draw_line(dr, (x+0.5)*tilesize, (y+0.5)*tilesize, 
-				(x+0.5)*tilesize, (y+1.5)*tilesize, ink);
+			draw_line(dr, BORDER + x*tilesize, BORDER + y*tilesize,
+				BORDER + x*tilesize, BORDER + (y+1)*tilesize, ink);
 		
 		if(x == w-1 || dsf_canonify(state->dsf, i1) != dsf_canonify(state->dsf, i2))
-			draw_line(dr, (x+1.5)*tilesize, (y+0.5)*tilesize, 
-				(x+1.5)*tilesize, (y+1.5)*tilesize, ink);
+			draw_line(dr, BORDER + (x+1)*tilesize, BORDER + y*tilesize,
+				BORDER + (x+1)*tilesize, BORDER + (y+1)*tilesize, ink);
 		
 		i2 = (y+1)*w+x;
 		
 		if(y == 0)
-			draw_line(dr, (x+0.5)*tilesize, (y+0.5)*tilesize, 
-				(x+1.5)*tilesize, (y+0.5)*tilesize, ink);
+			draw_line(dr, BORDER + x*tilesize, BORDER + y*tilesize,
+				BORDER + (x+1)*tilesize, BORDER + y*tilesize, ink);
 		
 		if(y == h-1 || dsf_canonify(state->dsf, i1) != dsf_canonify(state->dsf, i2))
-			draw_line(dr, (x+0.5)*tilesize, (y+1.5)*tilesize, 
-				(x+1.5)*tilesize, (y+1.5)*tilesize, ink);
+			draw_line(dr, BORDER + x*tilesize, BORDER + (y+1)*tilesize,
+				BORDER + (x+1)*tilesize, BORDER + (y+1)*tilesize, ink);
 		
 		if(state->grid[i1] & FM_GOAL)
 		{
-			draw_circle(dr, (x+1)*tilesize, (y+1)*tilesize, 
+			draw_circle(dr, BORDER + x*tilesize + tilesize/2, BORDER + y*tilesize + tilesize/2,
 				tilesize / 3, ink, ink);
 		}
 		if(state->grid[i1] & FM_ARROWMASK)
 		{
-			rome_draw_arrow(dr, (x+1)*tilesize, (y+1)*tilesize,
+			rome_draw_arrow(dr, BORDER + x*tilesize + tilesize/2, BORDER + y*tilesize + tilesize/2,
 				tilesize *0.3, state->grid[i1], ink);
 		}
 	}

@@ -1252,10 +1252,19 @@ static const char *current_key_label(const game_ui *ui,
 #define FD_ERRMASK  124
 
 #define TILE_SIZE (ds->tilesize)
-#define OUTER_COORD(x) ( (x) * TILE_SIZE + (TILE_SIZE/4))
+
+#ifdef NARROW_BORDERS
+#define BORDER_START(tilesize) 0
+#define BORDER_END(tilesize) 0
+#else
+#define BORDER_START(tilesize) ((tilesize)/4)
+#define BORDER_END(tilesize) ((tilesize)/2)
+#endif
+
+#define OUTER_COORD(x) ( (x) * TILE_SIZE + BORDER_START(TILE_SIZE) )
 #define INNER_COORD(x) (OUTER_COORD((x) + n))
 
-#define FROMCOORD(x) ( (((x) - (TILE_SIZE/4)) / TILE_SIZE) - n )
+#define FROMCOORD(x) ( (((x) - BORDER_START(TILE_SIZE)) / TILE_SIZE) - n )
 
 struct game_drawstate {
 	int tilesize;
@@ -1516,8 +1525,12 @@ static void game_compute_size(const game_params *params, int tilesize,
 	int h = params->h;
 	int n = params->n;
 	
-	*x = (w+n) * tilesize + (tilesize*3/4);
-	*y = (h+n) * tilesize + (tilesize*3/4);
+	*x = (w+n) * tilesize + BORDER_START(tilesize) + BORDER_END(tilesize);
+	*y = (h+n) * tilesize + BORDER_START(tilesize) + BORDER_END(tilesize);
+#ifdef NARROW_BORDERS
+	/* Accomodate `tx+1` for tile background used in game_redraw */
+	*x += 1;
+#endif
 }
 
 static void game_set_size(drawing *dr, game_drawstate *ds,
@@ -1823,8 +1836,8 @@ static void game_redraw(drawing *dr, game_drawstate *ds, const game_state *oldst
 	
 	if (!ds->initial)
 	{
-		int rx = (w+n) * TILE_SIZE + (TILE_SIZE*3/4);
-		int ry = (h+n) * TILE_SIZE + (TILE_SIZE*3/4);
+		int rx = (w+n) * TILE_SIZE + BORDER_START(TILE_SIZE) + BORDER_END(TILE_SIZE);
+		int ry = (h+n) * TILE_SIZE + BORDER_START(TILE_SIZE) + BORDER_END(TILE_SIZE);
 		
 		/* Draw a rectangle covering the screen for background */
 		draw_rect(dr, 0, 0, rx, ry, COL_OUTERBG);
