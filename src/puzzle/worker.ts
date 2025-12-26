@@ -37,9 +37,39 @@ installErrorHandlersInWorker();
  */
 export class WorkerPuzzle implements FrontendConstructorArgs {
   static async create(puzzleId: string): Promise<WorkerPuzzle> {
+    const url = new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href;
     const module = await createModule({
-      locateFile: () =>
-        new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href,
+      // Emscripten's generated wasm loading includes code that (in workers only)
+      // falls back to XHR and ignores any HTTP error. That leads to cryptic errors
+      // like "expected magic word 00 61 73 6d, found 46 69 6c 65" for 404 responses.
+      // Substitute our own wasm loader.
+      instantiateWasm: async (
+        imports: WebAssembly.Imports,
+        successCallback: (instance: WebAssembly.Instance) => void,
+      ) => {
+        // failureCallback is not currently exposed to instantiateWasm:
+        // https://github.com/emscripten-core/emscripten/issues/23038
+        const response = await fetch(url);
+        if (import.meta.env.VITE_SENTRY_DSN) {
+          Sentry.addBreadcrumb({
+            type: "http",
+            category: "fetch",
+            data: {
+              url,
+              method: "GET",
+              status_code: response.status,
+              reason: response.statusText,
+            },
+          });
+        }
+        if (!response.ok) {
+          throw new Error(
+            `Error ${response.status}: ${response.statusText} loading ${url}`,
+          );
+        }
+        const result = await WebAssembly.instantiateStreaming(response, imports);
+        successCallback(result.instance);
+      },
     });
     return new WorkerPuzzle(puzzleId, module);
   }

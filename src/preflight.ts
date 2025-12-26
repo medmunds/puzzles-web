@@ -53,6 +53,8 @@ const preflightChecks: {
     Boolean(
       new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }),
     ), // throws if not supported -- ~2020
+  "WebAssembly.instantiateStreaming": () =>
+    typeof WebAssembly.instantiateStreaming === "function", // ~2021 (Safari; 2018 others)
 
   // CSS -- mostly Baseline 2023
   "CSS nested selectors": () => CSS.supports("selector(& .foo)"),
