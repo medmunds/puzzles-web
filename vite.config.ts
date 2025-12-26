@@ -5,6 +5,7 @@ import { build, defineConfig, type UserConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { extraPages, renderMarkdown, renderTemplate } from "./vite-extra-pages";
 import { puzzleIds, puzzlesMpaRouting } from "./vite-puzzles-routing";
+import { wasmSourcemaps } from "./vite-wasm-sourcemaps";
 
 function defaultAppVersion(): string {
   const dateStr = new Date().toISOString().slice(0, 10).replaceAll("-", "");
@@ -86,6 +87,7 @@ export default defineConfig(async ({ command }) => {
       ),
     },
     plugins: [
+      wasmSourcemaps(),
       license({
         thirdParty: {
           output: {
