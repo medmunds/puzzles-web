@@ -40,11 +40,30 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (PUZZLE_IDS.has(puzzleId)) {
       const canonicalPath = `/${puzzleId}`;
       if (url.pathname !== canonicalPath) {
+        // Redirect to clean url
         const redirectUrl = new URL(canonicalPath, url);
         redirectUrl.search = url.search;
-        return Response.redirect(redirectUrl.toString(), 308);
+        const response = Response.redirect(redirectUrl.toString(), 308);
+        const headers = new Headers(response.headers);
+        headers.set("Cache-Control", "public, max-age=86400");
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers,
+        });
       }
-      return context.env.ASSETS.fetch(new URL("/puzzle.html", url.origin));
+
+      // Return puzzle.html content
+      const response = await context.env.ASSETS.fetch(
+        new URL("/puzzle.html", url.origin),
+      );
+      const headers = new Headers(response.headers);
+      headers.set("Cache-Control", "public, max-age=60, must-revalidate");
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
     }
   }
 

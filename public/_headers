@@ -1,5 +1,23 @@
+/*
+  Cache-Control: public, max-age=14400, must-revalidate
+
 /assets/*
   Cache-Control: public, max-age=31556952, immutable
 
 /preflight/*
   Cache-Control: public, max-age=31556952, immutable
+
+/
+  Cache-Control: public, max-age=60, must-revalidate
+
+/puzzle.html
+  Cache-Control: public, max-age=60, must-revalidate
+
+/help/*
+  Cache-Control: public, max-age=60, must-revalidate
+
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache
