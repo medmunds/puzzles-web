@@ -34,6 +34,10 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     release: import.meta.env.VITE_GIT_SHA,
     transport: Sentry.makeBrowserOfflineTransport(Sentry.makeFetchTransport),
     integrations: [Sentry.browserTracingIntegration(), wasmIntegration()],
+    ignoreErrors: [
+      // Emscripten runtime aborted wasm load on navigation/refresh:
+      /RuntimeError:\s*Aborted\s*\(NetworkError.*Build with -sASSERTIONS/i,
+    ],
     beforeBreadcrumb(breadcrumb, hint) {
       try {
         // Skip breadcrumbs for fetch("data:...") URIs (like all of our icon images)
