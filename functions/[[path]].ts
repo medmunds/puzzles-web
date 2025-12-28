@@ -59,6 +59,18 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       );
       const headers = new Headers(response.headers);
       headers.set("Cache-Control", "public, max-age=60, must-revalidate");
+      headers.set(
+        "Accept-CH",
+        "Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model",
+      );
+      headers.set(
+        "Permissions-Policy",
+        [
+          'ch-ua-platform-version=(self "https://*.sentry.io")',
+          'ch-ua-full-version-list=(self "https://*.sentry.io")',
+          'ch-ua-model=(self "https://*.sentry.io")',
+        ].join(", "),
+      );
       return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,

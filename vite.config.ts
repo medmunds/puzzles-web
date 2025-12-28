@@ -88,6 +88,17 @@ export default defineConfig(async ({ command, mode }) => {
       ),
       "import.meta.env.VITE_PREFLIGHT_CHECK": JSON.stringify(preflightPath),
     },
+    preview: {
+      headers: {
+        "Accept-CH":
+          "Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model",
+        "Permissions-Policy": [
+          'ch-ua-platform-version=(self "https://*.sentry.io")',
+          'ch-ua-full-version-list=(self "https://*.sentry.io")',
+          'ch-ua-model=(self "https://*.sentry.io")',
+        ].join(", "),
+      },
+    },
     plugins: [
       wasmSourcemaps(),
       license({

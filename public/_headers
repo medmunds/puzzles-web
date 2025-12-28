@@ -9,6 +9,8 @@
 
 /
   Cache-Control: public, max-age=60, must-revalidate
+  Accept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model
+  Permissions-Policy: ch-ua-platform-version=(self "https://*.sentry.io"), ch-ua-full-version-list=(self "https://*.sentry.io"), ch-ua-model=(self "https://*.sentry.io")
 
 /puzzle.html
   Cache-Control: public, max-age=60, must-revalidate
