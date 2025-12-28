@@ -12,6 +12,26 @@ import "@awesome.me/webawesome/dist/components/details/details.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 
+const ignoreErrors: (string | RegExp)[] = [
+  // Emscripten runtime aborted wasm load on navigation/refresh:
+  /RuntimeError:\s*Aborted\s*\(NetworkError.*Build with -sASSERTIONS/i,
+  // Web Awesome: https://github.com/shoelace-style/webawesome/issues/1905:
+  /TypeError.*clientX.*handleDragStop/,
+  // Web Awesome: https://github.com/shoelace-style/webawesome/issues/1911:
+  /TypeError.*(assignedElements|hidePopover).*disconnectedCallback/,
+  // Unknown DuckDuckGo complaint:
+  /^Error: invalid origin$/,
+] as const;
+
+function shouldIgnoreError(error: unknown) {
+  const errorString = error instanceof Error ? error.message : String(error);
+  return ignoreErrors.some((pattern) =>
+    pattern instanceof RegExp
+      ? pattern.test(errorString)
+      : errorString.includes(pattern),
+  );
+}
+
 /**
  * Create and display a crash-dialog for error.
  *
@@ -19,6 +39,9 @@ import "@awesome.me/webawesome/dist/components/icon/icon.js";
  * (to avoid getting stuck in a repeated error loop).
  */
 export function reportError(error: unknown) {
+  if (shouldIgnoreError(error)) {
+    return;
+  }
   try {
     let dialog = document.querySelector("crash-dialog");
     if (!dialog) {
