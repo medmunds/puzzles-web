@@ -1,16 +1,16 @@
 import * as child from "node:child_process";
 import * as path from "node:path";
 import license from "rollup-plugin-license";
-import { build, defineConfig, type UserConfig } from "vite";
+import { build, defineConfig, loadEnv, type UserConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { extraPages, renderMarkdown, renderTemplate } from "./vite-extra-pages";
 import { puzzleIds, puzzlesMpaRouting } from "./vite-puzzles-routing";
 import { wasmSourcemaps } from "./vite-wasm-sourcemaps";
 
-function defaultAppVersion(): string {
+function defaultAppVersion(env: Record<string, string>): string {
   const dateStr = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-  const gitSha = process.env.VITE_GIT_SHA
-    ? process.env.VITE_GIT_SHA.slice(0, 7)
+  const gitSha = env.VITE_GIT_SHA
+    ? env.VITE_GIT_SHA.slice(0, 7)
     : child.execSync("git rev-parse --short HEAD").toString().trim();
   return `${dateStr}.${gitSha || "unknown"}`;
 }
@@ -56,8 +56,9 @@ async function buildProductionPreflightModule() {
   return `/preflight/${generatedFile}`; // url, not file path
 }
 
-export default defineConfig(async ({ command }) => {
-  process.env.VITE_PREFLIGHT_CHECK =
+export default defineConfig(async ({ command, mode }) => {
+  const env = loadEnv(mode, process.cwd());
+  const preflightPath =
     command === "build" ? await buildProductionPreflightModule() : "/src/preflight.ts";
 
   return {
@@ -77,14 +78,15 @@ export default defineConfig(async ({ command }) => {
     },
     define: {
       "import.meta.env.VITE_ANALYTICS_BLOCK": JSON.stringify(
-        process.env.VITE_ANALYTICS_BLOCK ?? "",
+        env.VITE_ANALYTICS_BLOCK ?? "",
       ),
       "import.meta.env.VITE_CANONICAL_BASE_URL": JSON.stringify(
-        process.env.VITE_CANONICAL_BASE_URL ?? "",
+        env.VITE_CANONICAL_BASE_URL ?? "",
       ),
       "import.meta.env.VITE_APP_VERSION": JSON.stringify(
-        process.env.VITE_APP_VERSION ?? defaultAppVersion(),
+        env.VITE_APP_VERSION ?? defaultAppVersion(env),
       ),
+      "import.meta.env.VITE_PREFLIGHT_CHECK": JSON.stringify(preflightPath),
     },
     plugins: [
       wasmSourcemaps(),
@@ -207,7 +209,7 @@ export default defineConfig(async ({ command }) => {
       VitePWA({
         injectRegister: null, // registered in main.ts
         manifest: {
-          name: process.env.VITE_APP_NAME ?? "Puzzles web app",
+          name: env.VITE_APP_NAME || "Puzzles web app",
           short_name: "Puzzles",
           background_color: "#e8f3ff", // --wa-color-brand-fill-quiet (page bg)
           theme_color: "#d1e8ff", // --wa-color-brand-fill-normal (app bar)
