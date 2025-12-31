@@ -1,18 +1,40 @@
 # Cloudflare Pages HTTP headers control
 
-{{! Default for images and other files }}
+{{! Default for images and other files
+# Cannot set default like this: it gets merged with later overrides.
+# E.g., sw.js gets served with:
+#   Cache-Control: public, max-age=14400, must-revalidate, no-cache
+# Could use ! to detach the default in later rules, but that's broken on "/":
+# https://github.com/cloudflare/workers-sdk/issues/11351
 /*
+  Cache-Control: public, max-age=14400, must-revalidate
+/
+  ! Cache-Control
+  Cache-Control: public, max-age=60, must-revalidate
+}}
+
+{{! Favicons, robots.txt, etc. }}
+/:file.png
+  Cache-Control: public, max-age=14400, must-revalidate
+/:file.ico
+  Cache-Control: public, max-age=14400, must-revalidate
+/:file.svg
+  Cache-Control: public, max-age=14400, must-revalidate
+/:file.txt
   Cache-Control: public, max-age=14400, must-revalidate
 
 {{! Static assets with hashed filenames: cache "forever" }}
 /assets/*
+  ! Cache-Control
   Cache-Control: public, max-age=31556952, immutable
 
 /preflight/*
+  ! Cache-Control
   Cache-Control: public, max-age=31556952, immutable
 
 {{! Entry pages (clean urls: no .html): cache 60 seconds, allow high-entropy client hints to Sentry. }}
 /
+  ! Cache-Control
   Cache-Control: public, max-age=60, must-revalidate
 {{#if sentryDsnOrigin}}
   Accept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model
@@ -21,6 +43,7 @@
 {{#each puzzleIds}}
 
 /{{{this}}}
+  ! Cache-Control
   Cache-Control: public, max-age=60, must-revalidate
 {{#if ../sentryDsnOrigin}}
   Accept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model
@@ -29,11 +52,19 @@
 {{/each}}
 
 /help/*
+  ! Cache-Control
   Cache-Control: public, max-age=60, must-revalidate
 
-{{! Service worker and app related: always check for latest version }}
-/sw.js
-  Cache-Control: no-cache
+{{! Other app-related assets without hashed filenames: cache same as entry pages }}
+/:file.json
+  ! Cache-Control
+  Cache-Control: public, max-age=60, must-revalidate
 
-/manifest.webmanifest
+/:file.webmanifest
+  ! Cache-Control
+  Cache-Control: public, max-age=60, must-revalidate
+
+{{! Service worker: always check for latest version (browser may apply its own policy) }}
+/sw.js
+  ! Cache-Control
   Cache-Control: no-cache
