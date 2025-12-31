@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/src/css/help-page.css">
+</head>
+<body>
+  <h1 class="standalone-only">{{ title }}</h1>
+  {{{ body_html }}}
+  <p>More information:</p>
+  <ul>
+  {{#if manpage}}
+    <li><a href="{{ manpage }}"><cite>{{ title }}</cite> instruction manual</a></li>
+  {{/if}}
+    <li><a href="features">Common features</a> of this puzzles app</li>
+    <li><a href="./">Help home page</a></li>
+  </ul>
+  {{{ analytics_html }}}
+</body>
+</html>

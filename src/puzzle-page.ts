@@ -27,6 +27,7 @@ function initialize({ puzzleId, puzzleParams, puzzleGameId }: PuzzleUrlParams) {
   if (puzzleGameId) {
     puzzleScreen.setAttribute("gameid", puzzleGameId);
   }
+  puzzleScreen.replaceChildren(...appRoot.childNodes);
 
   appRoot.replaceChildren(puzzleScreen);
 }

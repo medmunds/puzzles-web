@@ -85,15 +85,3 @@ export function navigateToHomePage() {
   }
   window.location.href = homeUrl.href;
 }
-
-export const canonicalBaseUrl = import.meta.env.VITE_CANONICAL_BASE_URL;
-
-export function canonicalPuzzlePageUrl(puzzleId: string): URL | undefined {
-  if (!canonicalBaseUrl) {
-    return undefined;
-  }
-  return new URL(
-    puzzleId,
-    canonicalBaseUrl.endsWith("/") ? canonicalBaseUrl : `${canonicalBaseUrl}/`,
-  );
-}

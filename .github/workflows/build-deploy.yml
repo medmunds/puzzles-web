@@ -173,22 +173,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     permissions:
-      contents: read
       deployments: write
     steps:
-      # Source and generated puzzles assets (catalog.json) are required
-      # for wrangler to bundle the routing worker function.
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          persist-credentials: false
-
-      - name: Download puzzles artifact
-        uses: actions/download-artifact@v5
-        with:
-          name: puzzles
-          path: src/assets/puzzles
-
       - name: Download dist artifact
         uses: actions/download-artifact@v5
         with:

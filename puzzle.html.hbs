@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+  {{#if iconUrl}}
+    <link rel="icon" href="{{ iconUrl }}">
+  {{else}}
+    <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml">
+  {{/if}}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ puzzle.name }}&thinsp;&ndash;&thinsp;{{ puzzle.description ~}}
+      &thinsp;&ndash;&thinsp;from
+      {{~#if puzzle.isOriginal}} Simon Tatham’s {{else}} the extended {{/if ~}}
+      portable puzzle collection</title>
+    <meta name="application-name" content="{{ puzzle.name }}">
+    <meta name="application-title" content="{{ puzzle.name }}">
+    <meta name="description" content="{{ puzzle.description }}">
+  {{#if canonicalUrl ~}}
+    <link rel="canonical" href="{{ canonicalUrl }}">
+  {{~/if}}
+    <link rel="stylesheet" href="/src/css/puzzle.css">
+    <script nomodule>
+      window.location.href = "/unsupported.html?f=script%20type%3D%22module%22";
+    </script>
+    <script type="module" crossorigin src="{{ preflightSrc }}"></script>
+    <script type="module" src="/src/puzzle-page.ts"></script>
+  </head>
+  <body>
+    <div id="app">
+    {{#if puzzle.unfinished }}
+      <section class="warning">
+        ⚠️ This is an unfinished, experimental puzzle.
+        There may be bugs and missing features.
+      </section>
+    {{/if}}
+      <noscript>
+        <header>
+          <h1>{{ puzzle.name }} <small>{{ puzzle.description }}</small></h1>
+          <p>{{ puzzle.objective }}</p>
+        </header>
+        <section class="warning">
+          ⚠️ This puzzle is an interactive game implemented in JavaScript.
+          To play it, you will need to enable JavaScript in your browser.
+        </section>
+      </noscript>
+    </div>
+    {{{ analytics_html }}}
+  </body>
+</html>

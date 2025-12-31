@@ -6,11 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Puzzles&thinsp;&ndash;&thinsp;from Simon Tatham’s portable puzzle collection</title>
     <meta name="application-name" content="Puzzles">
+  {{#if canonicalUrl ~}}
+    <link rel="canonical" href="{{ canonicalUrl }}">
+  {{~/if}}
     <link rel="stylesheet" href="/src/css/home.css">
     <script nomodule>
       window.location.href = "/unsupported.html?f=script%20type%3D%22module%22";
     </script>
-    <script type="module" crossorigin src="%VITE_PREFLIGHT_CHECK%"></script>
+    <script type="module" crossorigin src="{{ preflightSrc }}"></script>
     <script type="module" src="/src/home-page.ts"></script>
   </head>
   <body>
@@ -70,6 +73,6 @@
           or endorsement by their owners.</small></div>
       </footer>
     </home-screen>
-    %VITE_ANALYTICS_BLOCK%
+    {{{ analytics_html }}}
   </body>
 </html>

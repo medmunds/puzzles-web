@@ -6,7 +6,7 @@ import { showAlert } from "./alert-dialog.ts";
 import { type PuzzleData, puzzleDataMap } from "./puzzle/catalog.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
-import { canonicalPuzzlePageUrl, helpUrl, homePageUrl } from "./routing.ts";
+import { helpUrl, homePageUrl } from "./routing.ts";
 import { Screen } from "./screen.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
@@ -24,7 +24,6 @@ import "@awesome.me/webawesome/dist/components/radio/radio.js";
 import "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
 import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
 import "./dynamic-content.ts";
-import "./head-matter.ts";
 import "./puzzle/puzzle-context.ts";
 import "./puzzle/puzzle-history.ts";
 import "./puzzle/puzzle-keys.ts";
@@ -119,10 +118,6 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       throw new Error("PuzzleScreen.render without puzzleData");
     }
 
-    const canonicalUrl = canonicalPuzzlePageUrl(this.puzzleId);
-    const iconUrl = new URL(`./assets/icons/${this.puzzleId}-64d8.png`, import.meta.url)
-      .href;
-
     return html`
       <puzzle-context 
           puzzleid=${this.puzzleId}
@@ -130,19 +125,6 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           @puzzle-params-change=${this.handlePuzzleParamsChange}
           @puzzle-game-state-change=${this.handlePuzzleGameStateChange}
       >
-        <head-matter>
-          <title>
-            ${this.puzzleData.name}&thinsp;&ndash;&thinsp;${this.puzzleData.description}&thinsp;&ndash;&thinsp;from 
-            Simon Tatham’s portable puzzle collection
-          </title>
-          <meta name="application-name" content="${this.puzzleData.name}">
-          <meta name="application-title" content="${this.puzzleData.name}">
-          <meta name="description" content="${this.puzzleData.description}">
-          ${this.themeColor ? html`<meta name="theme-color" content=${this.themeColor}>` : nothing}
-          ${canonicalUrl ? html`<link rel="canonical" href="${canonicalUrl}">` : nothing}
-          <link rel="icon" href=${iconUrl}>
-        </head-matter>
-        
         <main>
           <header>
             ${this.renderGameMenu()}

@@ -1,10 +1,11 @@
 import * as child from "node:child_process";
+import fs from "node:fs";
 import * as path from "node:path";
 import license from "rollup-plugin-license";
 import { build, defineConfig, loadEnv, type UserConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-import { extraPages, renderMarkdown, renderTemplate } from "./vite-extra-pages";
-import { puzzleIds, puzzlesMpaRouting } from "./vite-puzzles-routing";
+import { puzzleIds, puzzles } from "./src/assets/puzzles/catalog.json";
+import { extraPages, renderHandlebars, renderMarkdown } from "./vite-extra-pages";
 import { wasmSourcemaps } from "./vite-wasm-sourcemaps";
 
 function defaultAppVersion(env: Record<string, string>): string {
@@ -58,8 +59,17 @@ async function buildProductionPreflightModule() {
 
 export default defineConfig(async ({ command, mode }) => {
   const env = loadEnv(mode, process.cwd());
-  const preflightPath =
+  const preflightSrc =
     command === "build" ? await buildProductionPreflightModule() : "/src/preflight.ts";
+  let canonicalBaseUrl = env.VITE_CANONICAL_BASE_URL;
+  if (canonicalBaseUrl && !canonicalBaseUrl.endsWith("/")) {
+    canonicalBaseUrl += "/";
+  }
+  const analytics_html = env.VITE_ANALYTICS_BLOCK;
+  const commonTemplateData = { preflightSrc, analytics_html };
+  const sentryDsnOrigin = env.VITE_SENTRY_DSN
+    ? new URL(env.VITE_SENTRY_DSN).origin
+    : "";
 
   return {
     appType: "mpa",
@@ -67,37 +77,31 @@ export default defineConfig(async ({ command, mode }) => {
       assetsInlineLimit: 5120, // default 4096; this covers a few icons above that
       rollupOptions: {
         input: [
-          "index.html",
-          "puzzle.html",
+          // See also extraPages plugin below, which adds index, puzzle and help page inputs
           "unsupported.html",
-          // See also extraPages plugin below, which adds help page inputs
         ],
       },
       sourcemap: true,
       target: "es2022",
     },
     define: {
-      "import.meta.env.VITE_ANALYTICS_BLOCK": JSON.stringify(
-        env.VITE_ANALYTICS_BLOCK ?? "",
-      ),
       "import.meta.env.VITE_CANONICAL_BASE_URL": JSON.stringify(
         env.VITE_CANONICAL_BASE_URL ?? "",
       ),
       "import.meta.env.VITE_APP_VERSION": JSON.stringify(
         env.VITE_APP_VERSION ?? defaultAppVersion(env),
       ),
-      "import.meta.env.VITE_PREFLIGHT_CHECK": JSON.stringify(preflightPath),
     },
     preview: {
-      headers: {
-        "Accept-CH":
-          "Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model",
-        "Permissions-Policy": [
-          'ch-ua-platform-version=(self "https://*.sentry.io")',
-          'ch-ua-full-version-list=(self "https://*.sentry.io")',
-          'ch-ua-model=(self "https://*.sentry.io")',
-        ].join(", "),
-      },
+      headers: sentryDsnOrigin
+        ? {
+            "Accept-CH":
+              "Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model",
+            "Permissions-Policy": ["platform-version", "full-version-list", "model"]
+              .map((perm) => `ch-ua-${perm}=("${sentryDsnOrigin}")`)
+              .join(", "),
+          }
+        : {},
     },
     plugins: [
       wasmSourcemaps(),
@@ -142,10 +146,46 @@ export default defineConfig(async ({ command, mode }) => {
           },
         },
       }),
-      puzzlesMpaRouting(),
       extraPages({
         // debug: true,
         pages: [
+          {
+            virtualPages: [
+              {
+                urlPathname: "index.html",
+                data: {
+                  ...commonTemplateData,
+                  canonicalUrl: canonicalBaseUrl || undefined,
+                },
+              },
+            ],
+            transforms: [renderHandlebars({ file: "index.html.hbs" })],
+          },
+          {
+            virtualPages: Object.entries(puzzles).map(([id, puzzleData]) => {
+              const canonicalUrl = canonicalBaseUrl
+                ? new URL(id, canonicalBaseUrl).href
+                : undefined;
+              let iconUrl: string | undefined = `src/assets/icons/${id}-64d8.png`;
+              if (!fs.existsSync(iconUrl)) {
+                iconUrl = undefined;
+              }
+              return {
+                urlPathname: `${id}.html`,
+                data: {
+                  ...commonTemplateData,
+                  puzzle: {
+                    id,
+                    isOriginal: puzzleData.collection === "original",
+                    ...puzzleData,
+                  },
+                  iconUrl,
+                  canonicalUrl,
+                },
+              };
+            }),
+            transforms: [renderHandlebars({ file: "puzzle.html.hbs" })],
+          },
           {
             // Our own help pages, served at /help/...
             sources: "help/**/*.md",
@@ -155,7 +195,8 @@ export default defineConfig(async ({ command, mode }) => {
                 linkify: true,
                 typographer: true,
               }),
-              renderTemplate({ file: "help/_template.html" }),
+              (data) => ({ ...commonTemplateData, ...data }),
+              renderHandlebars({ file: "help/_template.html.hbs" }),
             ],
           },
           {
@@ -166,17 +207,27 @@ export default defineConfig(async ({ command, mode }) => {
             transforms: [
               ({ source, ...data }) => {
                 // first line of fragment is (bare) title; remainder is html body
-                const [title, ...lines] = source.split("\n");
+                const [title, ...lines] = String(source).split("\n");
                 const body_html = lines.join("\n");
-                // basename is used to construct "full manual page" link
-                // TODO: only add "full manual page" link if manual page exists?
                 // TODO: add warning notice for unfinished puzzles
-                const basename = encodeURIComponent(
-                  path.basename(data.urlPathname, ".html"),
-                );
-                return { ...data, source, basename, title, body_html };
+                // manpage (relative to the overview page) if manual page exists
+                const basename = path.basename(String(data.urlPathname), ".html");
+                const manpage = fs.existsSync(
+                  `src/assets/puzzles/manual/${basename}.html`,
+                )
+                  ? `manual/${basename}#${basename}`
+                  : undefined;
+
+                return {
+                  ...commonTemplateData,
+                  ...data,
+                  source,
+                  manpage,
+                  title,
+                  body_html,
+                };
               },
-              renderTemplate({ file: "help/_overview.html" }),
+              renderHandlebars({ file: "help/_overview.html.hbs" }),
             ],
           },
           {
@@ -187,7 +238,11 @@ export default defineConfig(async ({ command, mode }) => {
             transforms: [
               // In markdown source, make the image standalone-only
               ({ source, ...data }) => ({
-                source: source.replace(/^(\s*!\[]\(.*\))$/m, "$1 {.standalone-only}"),
+                ...commonTemplateData,
+                source: String(source).replace(
+                  /^(\s*!\[]\(.*\))$/m,
+                  "$1 {.standalone-only}",
+                ),
                 ...data,
               }),
               renderMarkdown({
@@ -195,7 +250,7 @@ export default defineConfig(async ({ command, mode }) => {
                 linkify: true,
                 typographer: true,
               }),
-              renderTemplate({ file: "help/_unreleased.html" }),
+              renderHandlebars({ file: "help/_unreleased.html.hbs" }),
             ],
           },
           {
@@ -207,13 +262,21 @@ export default defineConfig(async ({ command, mode }) => {
               // TODO: convert internal links to clean urls
               ({ source, ...data }) => ({
                 ...data,
-                html: source
+                html: String(source)
                   .replace(/<!DOCTYPE[^>]*>/m, "<!doctype html>")
                   .replace("<html>", '<html lang="en">')
                   .replace("</head>", `${manualAdditionalHeadTags}\n</head>`)
-                  .replace("</body>", "%VITE_ANALYTICS_BLOCK%\n</body>"),
+                  .replace("</body>", `${analytics_html}</body>`),
               }),
             ],
+          },
+          {
+            // Cloudflare Pages HTTP headers
+            virtualPages: [
+              { urlPathname: "_headers", data: { puzzleIds, sentryDsnOrigin } },
+            ],
+            transforms: [renderHandlebars({ file: "_headers.txt.hbs" })],
+            entryPoint: false,
           },
         ],
       }),

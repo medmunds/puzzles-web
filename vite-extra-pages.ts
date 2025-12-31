@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { attrs as mditPluginAttrs } from "@mdit/plugin-attrs";
 import { icon as mditPluginIcon } from "@mdit/plugin-icon";
+import Handlebars from "handlebars";
 import MarkdownIt, {
   type Options as MarkdownItOptions,
   type PresetName as MarkdownItPresetName,
@@ -17,17 +18,21 @@ import MarkdownIt, {
 import mditPluginAnchor from "markdown-it-anchor";
 import { globSync } from "tinyglobby";
 import {
+  type Connect,
   createFilter,
   type MinimalPluginContextWithoutEnvironment,
   type Plugin,
+  type PreviewServer,
   type ResolvedConfig,
+  type ViteDevServer,
 } from "vite";
-import { isViteMagicUrl } from "./vite-puzzles-routing";
 
 const PLUGIN_ID = "extra-pages";
 
+const escapeHtml = Handlebars.Utils.escapeExpression;
+
 export type TransformAddWatchFile = (absolutePath: string) => void;
-export type TransformData = Record<string, string>;
+export type TransformData = Record<string, unknown>;
 export type Transform = (
   this: MinimalPluginContextWithoutEnvironment,
   data: TransformData,
@@ -51,6 +56,12 @@ export interface ExtraPagesSet {
   };
 
   /**
+   * Whether to treat these files as entry points (rollup inputs).
+   * Default true. Set to false for auxiliary files like _headers, robots.txt, etc.
+   */
+  entryPoint?: boolean;
+
+  /**
    * Pipeline of transform functions.
    * Each is called with the result of the previous transform.
    *
@@ -67,12 +78,39 @@ export interface ExtraPagesSet {
   transforms?: Transform[];
 }
 
+export interface VirtualPagesSet {
+  virtualPages: Array<{
+    urlPathname: string; // e.g. "puzzles/1.html"
+
+    /**
+     * Initial data to pass to the transform pipeline.
+     * (Provide {source: htmlContent} if you aren't defining any transforms,
+     * or arbitrary data objects for template transforms.)
+     */
+    data?: TransformData;
+  }>;
+
+  /**
+   * Whether to treat these files as entry points (rollup inputs).
+   * Default true. Set to false for auxiliary files like _headers, robots.txt, etc.
+   */
+  entryPoint?: boolean;
+
+  /**
+   * Pipeline of transform functions.
+   * The first function gets:
+   *   urlPathname: pathname portion of requested url
+   *   ...data: from the matching virtualPages entry
+   */
+  transforms?: Transform[];
+}
+
 export interface ExtraPagesPluginOptions {
   /**
    * Sets of source files to treat as additional index pages,
    * possibly with transformations.
    */
-  pages?: ExtraPagesSet[];
+  pages?: (ExtraPagesSet | VirtualPagesSet)[];
 
   /**
    * Whether to output routing information. Default false.
@@ -81,17 +119,28 @@ export interface ExtraPagesPluginOptions {
 }
 
 // Build command helper
-interface BuildPagesSet extends ExtraPagesSet {
-  // requested url.pathname => resolved absolute source path
-  paths: Map<string, string>;
+interface BuildPagesSet {
+  transforms?: Transform[];
+  entryPoint: boolean;
+
+  // requested url.pathname => resolved absolute source path (ExtraPagesSet)
+  //                        => initial transform pipeline data (VirtualPagesSet)
+  pages: Map<string, { sourceFile?: string; data?: TransformData }>;
 }
 
 // Dev server helper
-interface DevPagesSet extends ExtraPagesSet {
-  // File extensions that might match a sources glob
-  sourceExts: string[];
-  // Glob filter built from pagesSet.sources (project-relative)
-  matchesSource: (id: string) => boolean;
+interface DevPagesSet {
+  transforms?: Transform[];
+  entryPoint: boolean;
+
+  // For ExtraPagesSet:
+  sources?: ExtraPagesSet["sources"];
+  resolve?: ExtraPagesSet["resolve"];
+  sourceExts?: string[];
+  matchesSource?: (id: string) => boolean;
+
+  // For VirtualPagesSet:
+  virtualPages?: Map<string, TransformData>;
 }
 
 // Fallback when no transforms provided: treats source as output html.
@@ -134,6 +183,28 @@ function extractGlobExtensions(patterns: string | readonly string[]): string[] {
   return [...exts];
 }
 
+export function cleanUrl(pathname: string): string {
+  if (!pathname.endsWith(".html")) {
+    return pathname;
+  }
+  let cleaned = pathname.slice(0, -5);
+  if (cleaned === "index") {
+    cleaned = "";
+  } else if (cleaned.endsWith("/index")) {
+    cleaned = cleaned.slice(0, -5);
+  }
+  return cleaned;
+}
+
+/**
+ * Return true if url is something we should let Vite handle.
+ */
+function isViteMagicUrl(url: URL) {
+  if (url.pathname.includes("@vite")) return true;
+  const viteMagicParams = ["import", "raw", "inline", "url", "v", "t"];
+  return viteMagicParams.some((param) => url.searchParams.has(param));
+}
+
 /**
  * Vite plugin to generate additional index pages
  */
@@ -147,36 +218,105 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
   const makeAbsolutePath = (filePath: string) =>
     path.isAbsolute(filePath) ? filePath : path.join(config.root, filePath);
 
-  function constructBuildPagesSet(pagesSet: ExtraPagesSet): BuildPagesSet {
-    const paths: Map<string, string> = new Map();
-    for (const filePath of globSync(pagesSet.sources)) {
-      const absFilePath = makeAbsolutePath(filePath);
-      let urlPath = filePath;
-      if (pagesSet.resolve && filePath.startsWith(pagesSet.resolve.path)) {
-        urlPath = pagesSet.resolve.url + filePath.slice(pagesSet.resolve.path.length);
+  function constructBuildPagesSet(
+    pagesSet: ExtraPagesSet | VirtualPagesSet,
+  ): BuildPagesSet {
+    const pages = new Map<string, { sourceFile?: string; data?: TransformData }>();
+
+    if ("virtualPages" in pagesSet) {
+      for (const { urlPathname, data } of pagesSet.virtualPages) {
+        pages.set(urlPathname, { data });
       }
-      // Switch source extension (e.g., .md) to .html to handle as index page.
-      urlPath = urlPath.replace(/\.[^.]+$/, ".html");
-      paths.set(urlPath, absFilePath);
+    } else {
+      for (const filePath of globSync(pagesSet.sources)) {
+        const absFilePath = makeAbsolutePath(filePath);
+        let urlPath = filePath;
+        if (pagesSet.resolve && filePath.startsWith(pagesSet.resolve.path)) {
+          urlPath = pagesSet.resolve.url + filePath.slice(pagesSet.resolve.path.length);
+        }
+        // Switch source extension (e.g., .md) to .html to handle as index page.
+        urlPath = urlPath.replace(/\.[^.]+$/, ".html");
+        pages.set(urlPath, { sourceFile: absFilePath });
+      }
     }
 
-    return { ...pagesSet, paths };
+    return {
+      transforms: pagesSet.transforms,
+      entryPoint: pagesSet.entryPoint ?? true,
+      pages,
+    };
   }
 
-  function constructDevPagesSet(pagesSet: ExtraPagesSet): DevPagesSet {
-    const sourceExts = extractGlobExtensions(pagesSet.sources);
-    if (sourceExts.length < 1) {
-      throw new Error(`Unable to extract extensions from glob ${pagesSet.sources}`);
+  function constructDevPagesSet(
+    pagesSet: ExtraPagesSet | VirtualPagesSet,
+  ): DevPagesSet {
+    if ("virtualPages" in pagesSet) {
+      const virtualPages = new Map<string, TransformData>();
+      for (const { urlPathname, data } of pagesSet.virtualPages) {
+        virtualPages.set(urlPathname, data ?? {});
+      }
+      return {
+        transforms: pagesSet.transforms,
+        entryPoint: pagesSet.entryPoint ?? true,
+        virtualPages,
+      };
+    } else {
+      const sourceExts = extractGlobExtensions(pagesSet.sources);
+      if (sourceExts.length < 1) {
+        throw new Error(`Unable to extract extensions from glob ${pagesSet.sources}`);
+      }
+      const matchesSource = createFilter(pagesSet.sources, [], { resolve: false });
+      return {
+        transforms: pagesSet.transforms,
+        entryPoint: pagesSet.entryPoint ?? true,
+        sources: pagesSet.sources,
+        resolve: pagesSet.resolve,
+        sourceExts,
+        matchesSource,
+      };
     }
-    const matchesSource = createFilter(pagesSet.sources, [], { resolve: false });
-    return { ...pagesSet, sourceExts, matchesSource };
   }
 
-  // Return pathname to the absolute source file path from pagesSet,
-  // if one matches. pathname must be relative to base (no leading '/').
-  // (This is meant to be the same logic as BuildPagesSet.paths,
-  // but in reverse and on the fly for use on the dev server.)
-  function resolveUrl(pathname: string, pagesSet: DevPagesSet): string | null {
+  // Return resolved source file or virtual data for a pathname, if one matches.
+  // pathname must be relative to base (no leading '/').
+  function resolveUrl(
+    pathname: string,
+    pagesSet: DevPagesSet,
+  ): {
+    sourceFile?: string;
+    data?: TransformData;
+    resolvedPathname?: string;
+  } | null {
+    if (pagesSet.virtualPages) {
+      if (pagesSet.virtualPages.has(pathname)) {
+        return {
+          data: pagesSet.virtualPages.get(pathname),
+          resolvedPathname: pathname,
+        };
+      }
+      // Clean URLs: /foo -> foo.html
+      if (pathname !== "" && !pathname.endsWith("/") && !/\.[^.]+$/.test(pathname)) {
+        const withHtml = `${pathname}.html`;
+        if (pagesSet.virtualPages.has(withHtml)) {
+          return {
+            data: pagesSet.virtualPages.get(withHtml),
+            resolvedPathname: withHtml,
+          };
+        }
+      }
+      // Index routing: /foo/ -> foo/index.html, or / -> index.html
+      if (pathname.endsWith("/") || pathname === "") {
+        const withIndex = `${pathname}index.html`;
+        if (pagesSet.virtualPages.has(withIndex)) {
+          return {
+            data: pagesSet.virtualPages.get(withIndex),
+            resolvedPathname: withIndex,
+          };
+        }
+      }
+      return null;
+    }
+
     // First, reverse resolve (url -> path) if configured; else keep as-is
     let sourcePathRel: string;
     if (pagesSet.resolve) {
@@ -192,11 +332,7 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
 
     // Remove any .html extension and handle index routing before testing
     // pagesSet.sourceExts. We only remove .html, not arbitrary extensions,
-    // because the build output of this plugin is html only. (We don't want to
-    // accidentally handle a dev server request for url .../foo.md, because
-    // that wouldn't work in production--the requested url should have been
-    // .../foo.html or .../foo.) As a side effect, this also handles clean urls
-    // for extra pages in the dev server.
+    // because the build output of this plugin is html only.
     if (sourcePathRel.endsWith(".html")) {
       sourcePathRel = sourcePathRel.slice(0, -5);
     } else if (sourcePathRel.endsWith("/") || sourcePathRel === "") {
@@ -205,43 +341,230 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
     }
 
     // Try each possible extension looking for a match
-    for (const ext of pagesSet.sourceExts) {
+    for (const ext of pagesSet.sourceExts ?? []) {
       // Verify that the constructed source file path would match the glob...
       const possiblePath = `${sourcePathRel}${ext}`;
-      if (pagesSet.matchesSource(possiblePath)) {
+      if (pagesSet.matchesSource?.(possiblePath)) {
         // ... and that it exists
         const sourceFile = makeAbsolutePath(possiblePath);
         if (fs.existsSync(sourceFile) && fs.statSync(sourceFile).isFile()) {
-          return sourceFile;
+          // Canonical URL for physical files always ends in .html
+          let resolvedPathname = sourcePathRel;
+          if (pagesSet.resolve) {
+            // Restore URL prefix: replace resolve.path with resolve.url
+            resolvedPathname =
+              pagesSet.resolve.url + sourcePathRel.slice(pagesSet.resolve.path.length);
+          }
+          resolvedPathname += ".html";
+          return { sourceFile, resolvedPathname };
         }
       }
     }
     return null; // no matches
   }
 
+  function findManagedPage(pathname: string) {
+    for (const pagesSet of devPagesSets) {
+      const resolved = resolveUrl(pathname, pagesSet);
+      if (resolved) {
+        return { pagesSet, resolved };
+      }
+    }
+    return null;
+  }
+
+  function isSourceFile(pathname: string) {
+    for (const pagesSet of devPagesSets) {
+      if (pagesSet.matchesSource?.(pathname)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   async function renderPage(
-    sourceFile: string, // absolute path
-    transforms: Transform[] | undefined,
     urlPathname: string,
+    transforms: Transform[] | undefined,
     pluginContext: MinimalPluginContextWithoutEnvironment,
-    extraData?: TransformData,
+    initialData: TransformData = {},
+    sourceFile?: string, // absolute path
     addWatchFile?: TransformAddWatchFile,
   ) {
-    addWatchFile?.(sourceFile);
-    const source = fs.readFileSync(sourceFile).toString();
+    let data: TransformData = { ...initialData, urlPathname };
+    if (sourceFile) {
+      addWatchFile?.(sourceFile);
+      const source = fs.readFileSync(sourceFile).toString();
+      data = { ...data, source, sourceFile };
+    }
 
-    let data: TransformData = { ...extraData, source, urlPathname, sourceFile };
     for (const transform of transforms ?? [defaultTransform]) {
       data = await transform.call(pluginContext, data, addWatchFile);
     }
     if (!Object.hasOwn(data, "html")) {
       const keys = Object.keys(data).join(", ");
+      const context = sourceFile ? `page ${sourceFile}` : `virtual page ${urlPathname}`;
       pluginContext.error(
-        `transforms pipeline for ${sourceFile} did not return 'html'. Got ${keys}`,
+        `transforms pipeline for ${context} did not return 'html'. Got ${keys}`,
       );
     }
-    return data.html ?? "";
+    return data.html ? String(data.html) : "";
   }
+
+  const createMiddleware = (
+    server: ViteDevServer | PreviewServer,
+    isDev: boolean,
+    addDependency?: (sourceFile: string, urlPathname: string) => void,
+  ): Connect.NextHandleFunction => {
+    const base = config.base ?? "/";
+    const servableDirs = isDev
+      ? [config.publicDir, config.root]
+      : [config.build.outDir];
+
+    const checkFileExists = (pathname: string): boolean => {
+      const rel = pathname.startsWith("/") ? pathname.slice(1) : pathname;
+      for (const dir of servableDirs) {
+        const resolved = path.join(dir, rel);
+        if (fs.existsSync(resolved) && fs.statSync(resolved).isFile()) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // Add vite's transformIndexHtml to the end of each pipeline
+    // for env substitution, HMR, etc.
+    const transformIndexHtml: Transform = async (data) => {
+      if (!isDev) {
+        return data;
+      }
+      const devServer = server as ViteDevServer;
+      return {
+        ...data,
+        html: await devServer.transformIndexHtml(
+          String(data.urlPathname),
+          String(data.html),
+          data.originalUrl ? String(data.originalUrl) : undefined,
+        ),
+      };
+    };
+
+    // Surrogate plugin context for rendering outside hooks
+    const pluginContextProxy = {
+      info: (msg: string) => config.logger.info(msg, { timestamp: true }),
+      warn: (msg: string) => config.logger.warn(msg, { timestamp: true }),
+      error: (msg: string) => config.logger.error(msg, { timestamp: true }),
+    } as unknown as MinimalPluginContextWithoutEnvironment;
+
+    return (req, res, next) => {
+      if (!req.url) {
+        return next();
+      }
+      const url = new URL(req.url, "http://origin-unused");
+      if (isViteMagicUrl(url)) {
+        // Don't process vite internals or requests for ?raw, etc.
+        return next();
+      }
+
+      const originalReqUrl = req.url;
+      let pathname = url.pathname;
+      if (pathname.startsWith(base)) {
+        pathname = pathname.slice(base.length);
+      }
+
+      // 2. Block source files
+      // (Don't serve source files that are part of an extra pages set.)
+      if (isDev && isSourceFile(pathname)) {
+        res.statusCode = 404;
+        res.end();
+        return;
+      }
+
+      // 3. Resolve page (canonical, clean, or index)
+      const managed = findManagedPage(pathname);
+      const canonical = managed
+        ? (managed.resolved.resolvedPathname ?? pathname)
+        : pathname.endsWith(".html")
+          ? pathname
+          : checkFileExists(`${pathname.replace(/\/$/, "") || "/index"}.html`)
+            ? `${pathname.replace(/\/$/, "") || "/index"}.html`
+            : null;
+
+      const isPage = managed || (canonical && checkFileExists(canonical));
+
+      if (isPage && canonical) {
+        // 4. Handle Redirects (e.g. /foo.html -> /foo)
+        const cleaned = cleanUrl(pathname);
+        if (cleaned !== pathname) {
+          // Redirect to clean version
+          const targetPath = base + cleaned;
+          if (targetPath !== url.pathname) {
+            const newUrl = new URL(req.url, "http://origin-unused");
+            newUrl.pathname = targetPath;
+            res.statusCode = 308;
+            res.setHeader("Location", newUrl.pathname + newUrl.search + newUrl.hash);
+            res.end();
+            return;
+          }
+        }
+
+        // 5. Handle Rewrites and Rendering
+        if (canonical !== pathname) {
+          // Rewrite internal URL
+          const newUrl = new URL(req.url, "http://origin-unused");
+          newUrl.pathname = base + canonical;
+          req.url = newUrl.pathname + newUrl.search + newUrl.hash;
+
+          // If we're in preview, let Vite serve the rewritten URL from dist
+          if (!isDev) {
+            return next();
+          }
+        }
+
+        // In dev, render managed pages on the fly
+        if (isDev && managed) {
+          const { data, sourceFile, resolvedPathname } = managed.resolved;
+          const urlPathname = resolvedPathname ?? pathname;
+          if (debug) {
+            config.logger.info(
+              `responding to ${req.url} with ${sourceFile ?? "virtual page"} (${urlPathname})`,
+              { timestamp: true },
+            );
+          }
+          const transforms = managed.pagesSet.transforms
+            ? [...managed.pagesSet.transforms]
+            : [defaultTransform];
+          if (managed.pagesSet.entryPoint) {
+            transforms.push(transformIndexHtml);
+          }
+          renderPage(
+            pathname,
+            transforms,
+            pluginContextProxy,
+            { ...data, originalUrl: originalReqUrl },
+            sourceFile,
+            (watchFile) => addDependency?.(watchFile, pathname),
+          )
+            .then((html) => {
+              if (managed.pagesSet.entryPoint) {
+                res.setHeader("Content-Type", "text/html");
+              }
+              res.statusCode = 200;
+              res.end(html);
+            })
+            .catch((err) => {
+              res.statusCode = 500;
+              res.end(`Error rendering page: ${err}`);
+              config.logger.error(`error rendering ${urlPathname}: ${err}`, {
+                timestamp: true,
+              });
+            });
+          return;
+        }
+      }
+
+      next();
+    };
+  };
 
   return {
     name: PLUGIN_ID,
@@ -259,23 +582,7 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
       }
     },
 
-    //
-    // Dev server handling
-    //
-    // Synthesize missing .html files on the fly, from corresponding .md sources.
-    //
     configureServer(devServer) {
-      // Add vite's transformIndexHtml to the end of each pipeline
-      // for env substitution, HMR, etc.
-      const transformIndexHtml: Transform = async (data) => ({
-        ...data,
-        html: await devServer.transformIndexHtml(
-          data.urlPathname,
-          data.html,
-          data.originalUrl || undefined,
-        ),
-      });
-
       // Track dependencies: map from source/template file -> set of url pathnames that depend on it
       const fileDependencies = new Map<string, Set<string>>();
       const addDependency = (sourceFile: string, urlPathname: string) => {
@@ -284,6 +591,7 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
         if (!dependencies) {
           dependencies = new Set();
           fileDependencies.set(absPath, dependencies);
+          devServer.watcher.add(absPath);
         }
         dependencies.add(urlPathname);
       };
@@ -293,8 +601,9 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
         const dependentPages = fileDependencies.get(changedFile);
         if (dependentPages && dependentPages.size > 0) {
           if (debug) {
-            this.info(
+            config.logger.info(
               `${changedFile} changed, reloading pages: ${[...dependentPages].join(", ")}`,
+              { timestamp: true },
             );
           }
           // Trigger HMR for all pages that depend on this file
@@ -307,78 +616,27 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
         }
       });
 
-      devServer.middlewares.use((req, res, next) => {
-        // Get the pathname component of the url (relative to base)
-        const url = new URL(req.url ?? "", "http://origin-unused");
-        let pathname = url.pathname;
-        if (pathname.startsWith(config.base)) {
-          pathname = pathname.slice(config.base.length);
-        }
-
-        // Ignore vite internals
-        if (pathname.includes("@vite") || isViteMagicUrl(url)) {
-          return next();
-        }
-
-        // If there's an extension, only .html could be an extra pages request.
-        // (Extensionless urls like foo/bar and index urls like foo/ also could be.)
-        if (/\.[^.]+$/.test(pathname) && !pathname.endsWith(".html")) {
-          return next();
-        }
-
-        // Try to dynamically resolve from dev page sets
-        for (const pagesSet of devPagesSets) {
-          const sourceFile = resolveUrl(pathname, pagesSet);
-          if (sourceFile) {
-            if (debug) {
-              this.info(`responding to ${req.url} with ${sourceFile}`);
-            }
-            renderPage(
-              sourceFile,
-              [...(pagesSet.transforms ?? [defaultTransform]), transformIndexHtml],
-              pathname,
-              this,
-              { originalUrl: req.url ?? "" },
-              (watchFile) => addDependency(watchFile, pathname),
-            )
-              .then((html) => {
-                res.setHeader("Content-Type", "text/html");
-                res.statusCode = 200;
-                res.end(html);
-              })
-              .catch((err) => {
-                res.statusCode = 500;
-                res.end(`Error rendering page: ${err}`);
-                this.error(`error rendering ${pathname} from ${sourceFile}: ${err}`);
-              });
-            return;
-          }
-        }
-
-        return next();
-      });
+      devServer.middlewares.use(createMiddleware(devServer, true, addDependency));
     },
 
-    //
-    // Build time handling
-    //
-    // Synthesize missing build.rollupOptions.input .html files
-    // from corresponding .md sources.
-    //
-    // (Input must be specified as .html, not .md, so that vite's index html
-    // processing is applied -- including static asset management.
-    // See https://github.com/vitejs/vite/discussions/10922.)
-    //
+    configurePreviewServer(previewServer) {
+      previewServer.middlewares.use(createMiddleware(previewServer, false));
+    },
 
     options: {
       handler(options) {
-        const extraInputs = buildPagesSets.flatMap((pagesSet) => [
-          ...pagesSet.paths.keys(),
-        ]);
+        // Add entryPoint pages to rollup inputs
+        const extraInputs = buildPagesSets
+          .filter(({ entryPoint }) => entryPoint)
+          .flatMap((pagesSet) => [...pagesSet.pages.keys()]);
+        if (extraInputs.length === 0) {
+          return;
+        }
+
         if (typeof options.input === "string") {
-          options.input = [...extraInputs, options.input];
+          options.input = [...new Set([...extraInputs, options.input])];
         } else if (Array.isArray(options.input)) {
-          options.input = [...extraInputs, ...options.input];
+          options.input = [...new Set([...extraInputs, ...options.input])];
         } else if (typeof options.input === "object") {
           options.input = {
             ...Object.fromEntries(extraInputs.map((id) => [id, id])),
@@ -390,47 +648,63 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
       },
     },
 
-    resolveId: {
-      order: "pre",
-      filter: {
-        id: /\.html$/,
-      },
-      handler(id, _importer, _options) {
-        // TODO: only run this when options.isEntry?
-        for (const pagesSet of buildPagesSets) {
-          if (pagesSet.paths.has(id)) {
-            return {
-              id,
-              meta: { [PLUGIN_ID]: { pagesSet } },
-            };
-          }
+    resolveId(id, _importer, _options) {
+      for (const pagesSet of buildPagesSets) {
+        if (pagesSet.pages.has(id)) {
+          return {
+            id,
+            meta: { [PLUGIN_ID]: { pagesSet } },
+          };
         }
-        return null;
-      },
+      }
+      return null;
     },
 
-    load: {
-      order: "pre",
-      filter: {
-        id: /\.html$/,
-      },
-      async handler(id, _options) {
-        const pagesSet: BuildPagesSet | undefined =
-          this.getModuleInfo(id)?.meta?.[PLUGIN_ID]?.pagesSet;
-        if (pagesSet) {
-          const sourceFile = pagesSet.paths.get(id);
-          if (!sourceFile) {
-            // Shouldn't have meta[PLUGIN_ID] if id not in pagesSet
-            throw new Error(`Inconsistency between resolveId and load for id='${id}'`);
-          }
-          const html = await renderPage(sourceFile, pagesSet.transforms, id, this);
-          if (debug) {
-            this.info(`generated ${id} from ${pagesSet.paths.get(id)}`);
-          }
-          return html;
+    async load(id) {
+      const pagesSet: BuildPagesSet | undefined =
+        this.getModuleInfo(id)?.meta?.[PLUGIN_ID]?.pagesSet;
+      if (pagesSet) {
+        const page = pagesSet.pages.get(id);
+        if (!page) {
+          // Shouldn't have meta[PLUGIN_ID] if id not in pagesSet
+          throw new Error(`Inconsistency between resolveId and load for id='${id}'`);
         }
-        return null;
-      },
+        const html = await renderPage(
+          cleanUrl(id),
+          pagesSet.transforms,
+          this,
+          page.data,
+          page.sourceFile,
+          (file) => this.addWatchFile(file),
+        );
+        if (debug) {
+          const from = page.sourceFile ?? "virtual page";
+          this.info(`generated ${id} from ${from}`);
+        }
+        return html;
+      }
+      return null;
+    },
+
+    async generateBundle(_options, _bundle) {
+      // Emit non-entryPoint pages
+      for (const pagesSet of buildPagesSets.filter(({ entryPoint }) => !entryPoint)) {
+        for (const [id, page] of pagesSet.pages) {
+          const content = await renderPage(
+            cleanUrl(id),
+            pagesSet.transforms,
+            this,
+            page.data,
+            page.sourceFile,
+            (file) => this.addWatchFile(file),
+          );
+          this.emitFile({
+            type: "asset",
+            fileName: id,
+            source: content,
+          });
+        }
+      }
     },
   };
 };
@@ -513,9 +787,9 @@ export const renderMarkdown = (
 
     // Extract first h1 from markdown as title, else fall back to source basename
     const title =
-      data.source.match(/^#\s+(.+)$/m)?.[1] ??
-      path.basename(data.sourceFile ?? "", ".md");
-    const html = md.render(data.source);
+      String(data.source).match(/^#\s+(.+)$/m)?.[1] ??
+      path.basename(data.sourceFile ? String(data.sourceFile) : "", ".md");
+    const html = md.render(String(data.source));
     return {
       ...data,
       title,
@@ -525,57 +799,42 @@ export const renderMarkdown = (
   };
 };
 
-// A simple default template for rendered markdown
-const defaultTemplateContent = `
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>=TITLE=</title>
-</head>
-<body>
-=BODY_HTML=
-</body>
-</html>
-`;
-
 /**
- * Creates a transform function that renders a simple template,
- * given either the template content or a file containing it.
- *
- * Within the template, `=NAME=` variables will be replaced with data["name"].
- * Values will be escaped as html unless the name ends in _HTML.
+ * Creates a transform function that renders a Handlebars template.
  */
-export const renderTemplate = (
-  options: { content: string } | { file: string } = { content: defaultTemplateContent },
-): Transform =>
-  function (data, addWatchFile) {
-    let template: string;
-    if ("file" in options) {
-      // TODO: resolve relative options.file from config.root (need config param, or root in data)
-      // TODO: could cache template file content (at least in build)
+export interface RenderHandlebarsOptions {
+  content?: string;
+  file?: string;
+  partials?: Record<string, string>;
+  partialFiles?: Record<string, string>;
+}
+
+export const renderHandlebars =
+  (options: RenderHandlebarsOptions): Transform =>
+  async (data, addWatchFile) => {
+    let templateContent: string;
+    if (options.file) {
       addWatchFile?.(options.file);
-      template = fs.readFileSync(options.file, "utf8");
+      templateContent = fs.readFileSync(options.file, "utf8");
     } else {
-      template = options.content;
+      templateContent = options.content ?? "";
     }
 
-    const html = template.replace(/=(\w+)=/g, (match, name: string) => {
-      const value = data[name] ?? data[name.toLowerCase()];
-      if (value === undefined) {
-        this.warn(`unresolved template variable ${match}`);
-        return match;
+    const instance = Handlebars.create();
+
+    if (options.partials) {
+      for (const [name, content] of Object.entries(options.partials)) {
+        instance.registerPartial(name, content);
       }
-      return name.endsWith("_HTML") ? value : escapeHtml(value);
-    });
+    }
+    if (options.partialFiles) {
+      for (const [name, filePath] of Object.entries(options.partialFiles)) {
+        addWatchFile?.(filePath);
+        instance.registerPartial(name, fs.readFileSync(filePath, "utf8"));
+      }
+    }
+
+    const template = instance.compile(templateContent);
+    const html = template(data);
     return { ...data, html };
   };
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}

@@ -1,0 +1,39 @@
+# Cloudflare Pages HTTP headers control
+
+{{! Default for images and other files }}
+/*
+  Cache-Control: public, max-age=14400, must-revalidate
+
+{{! Static assets with hashed filenames: cache "forever" }}
+/assets/*
+  Cache-Control: public, max-age=31556952, immutable
+
+/preflight/*
+  Cache-Control: public, max-age=31556952, immutable
+
+{{! Entry pages (clean urls: no .html): cache 60 seconds, allow high-entropy client hints to Sentry. }}
+/
+  Cache-Control: public, max-age=60, must-revalidate
+{{#if sentryDsnOrigin}}
+  Accept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model
+  Permissions-Policy: ch-ua-platform-version=("{{sentryDsnOrigin}}"), ch-ua-full-version-list=("{{sentryDsnOrigin}}"), ch-ua-model=("{{sentryDsnOrigin}}")
+{{/if}}
+{{#each puzzleIds}}
+
+/{{{this}}}
+  Cache-Control: public, max-age=60, must-revalidate
+{{#if ../sentryDsnOrigin}}
+  Accept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model
+  Permissions-Policy: ch-ua-platform-version=("{{../sentryDsnOrigin}}"), ch-ua-full-version-list=("{{../sentryDsnOrigin}}"), ch-ua-model=("{{../sentryDsnOrigin}}")
+{{/if}}
+{{/each}}
+
+/help/*
+  Cache-Control: public, max-age=60, must-revalidate
+
+{{! Service worker and app related: always check for latest version }}
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache

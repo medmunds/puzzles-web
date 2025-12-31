@@ -5,7 +5,7 @@ import { repeat } from "lit/directives/repeat.js";
 import type { FavoriteChangeEvent } from "./catalog-card.ts";
 import rawHomeScreenCSS from "./css/home-screen.css?inline";
 import { puzzleDataMap, puzzleIds } from "./puzzle/catalog.ts";
-import { canonicalBaseUrl, puzzlePageUrl } from "./routing.ts";
+import { puzzlePageUrl } from "./routing.ts";
 import { Screen } from "./screen.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
@@ -21,7 +21,6 @@ import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "./catalog-card.ts";
 import "./command-link";
 import "./dynamic-content.ts";
-import "./head-matter.ts";
 
 @customElement("home-screen")
 export class HomeScreen extends SignalWatcher(Screen) {
@@ -38,11 +37,6 @@ export class HomeScreen extends SignalWatcher(Screen) {
     // Deliberately skip <slot name="header"> and <slot="footer">
     // to substitute our interactive versions for the static ones in index.html.
     return html`
-      <head-matter>
-        ${this.themeColor ? html`<meta name="theme-color" content=${this.themeColor}>` : nothing}
-        ${canonicalBaseUrl ? html`<link rel="canonical" href="${canonicalBaseUrl}">` : nothing}
-      </head-matter>
-
       <header part="header">${
         this.size === "large" ? this.renderWideHeader() : this.renderCompactHeader()
       }</header>

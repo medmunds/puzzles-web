@@ -83,10 +83,7 @@ There are two main parts to the code:
   custom plugins.
 
 There are a few other directories whose names should mostly be self explanatory.
-(The [`/functions`](functions) directory contains [Cloudflare Pages] routing
-functions used in the public deployment.)
 
-[Cloudflare Pages]: https://developers.cloudflare.com/pages/
 [Emscripten]: https://emscripten.org/
 [emsdk]: https://github.com/emscripten-core/emsdk
 [Lit]: https://lit.dev/
@@ -124,19 +121,18 @@ changes and additions:
 
 ### Web app code
 
-The web app is a vite multipage app (MPA). There are two main entry points:
+The web app is a vite multipage app (MPA). Most of the entry pages are rendered
+at build time (or on-the-fly in vite's dev server) via this project's custom
+[vite-extra-pages.ts](vite-extra-pages.ts) plugin. There are two main templates:
 
-* [index.html](index.html) is the main screen with the list of puzzles. It's
-  meant to render *something* useful with JavaScript disabled, but most of the
-  interesting functionality is in src/home-screen.ts.
+* [index.html.hbs](index.html.hbs) is the template for the main screen with the
+  list of puzzles. It's meant to render *something* useful with JavaScript 
+  disabled, but most of the interesting functionality is in src/home-screen.ts.
 
-* [puzzle.html](puzzle.html) is used for rendering all puzzle pages. This occurs
-  dynamically in the user's browser. The same puzzle.html is served for
-  /blackbox and /bridges and all the other puzzles (via
-  [vite-puzzles-routing.ts](vite-puzzles-routing.ts) in vite's dev and preview
-  servers; [functions/\[\[path\]\].ts](functions/[[path]].ts) in production
-  Cloudflare Pages; and service worker code in [sw.ts](src/sw.ts) for offline
-  use). All of the interesting functionality is in src/puzzle-screen.ts.
+* [puzzle.html.hbs](puzzle.html.hbs) is the template used for generating all
+  individual puzzle pages (e.g., `/blackbox`, `/bridges`, etc.). The puzzle
+  pages don't work without JavaScript, and nearly all of the interesting 
+  functionality is in src/puzzle-screen.ts.
 
 The src directory is a little in flux right now, but it may help to know that:
 
@@ -167,8 +163,8 @@ The src directory is a little in flux right now, but it may help to know that:
 * I'm using [Web Awesome] web components, and have just borrowed their
   [design tokens] to use throughout this app's CSS.
 
-* The help system is assembled from three different areas (using the custom
-  [vite-extra-pages.ts](vite-extra-pages.ts) plugin in this project):
+* The help system is assembled from three different areas (also using the
+  vite-extra-pages plugin):
   [help](help) for the main help pages; [puzzles/html](puzzles/html) (from the
   upstream repo) for the initial overview help for each puzzle; and the manual
   (sourced from [puzzles/puzzles.but](puzzles/puzzles.but) and built into html

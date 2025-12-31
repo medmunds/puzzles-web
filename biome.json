@@ -23,6 +23,6 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/puzzles", "!functions/worker-configuration.d.ts"]
+    "includes": ["**", "!**/puzzles"]
   }
 }
