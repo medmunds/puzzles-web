@@ -68,3 +68,9 @@
 /sw.js
   ! Cache-Control
   Cache-Control: no-cache
+
+{{! Discourage indexing of pages.dev deployments }}
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+https://:version.:project.pages.dev/*
+  X-Robots-Tag: noindex
