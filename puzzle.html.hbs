@@ -15,9 +15,9 @@
     <meta name="application-name" content="{{ puzzle.name }}">
     <meta name="application-title" content="{{ puzzle.name }}">
     <meta name="description" content="{{ puzzle.description }}">
-  {{#if canonicalUrl ~}}
+  {{#if canonicalUrl}}
     <link rel="canonical" href="{{ canonicalUrl }}">
-  {{~/if}}
+  {{/if}}
     <link rel="stylesheet" href="/src/css/puzzle.css">
     <script nomodule>
       window.location.href = "/unsupported.html?f=script%20type%3D%22module%22";
