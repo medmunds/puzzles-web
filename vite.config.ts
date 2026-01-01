@@ -80,6 +80,9 @@ export default defineConfig(async ({ command, mode }) => {
           // See also extraPages plugin below, which adds index, puzzle and help page inputs
           "unsupported.html",
         ],
+        output: {
+          validate: true,
+        },
       },
       sourcemap: true,
       target: "es2022",

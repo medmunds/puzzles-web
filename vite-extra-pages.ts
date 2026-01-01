@@ -623,6 +623,67 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
       previewServer.middlewares.use(createMiddleware(previewServer, false));
     },
 
+    // Safari workaround:
+    // Vite's code splitting injects _shared_ chunks (used by multiple entry points)
+    // as <script type="module" src="...">, to prevent waterfalls. Importing a
+    // dependency from a different script module can cause a race condition in
+    // Safari (even without circular dependencies) that causes the script to stop
+    // executing, with no error message. Work around this by converting hoisted,
+    // code-split chunks to <link rel="modulepreload">, which somehow avoids the
+    // problem. (Vite already uses <link rel="modulepreload"> for non-shared chunks.)
+    transformIndexHtml: {
+      order: "post",
+      handler(html, ctx) {
+        // Only run if we have a bundle (build mode).
+        // Only process entry chunks (which includes html entry points).
+        if (!ctx.bundle || !ctx.chunk?.isEntry) {
+          return html;
+        }
+
+        // Figure out which scripts are the entry point(s) from the original html
+        // and which were added by Vite's code splitting.
+        // (Looking at a single level of imports is sufficient.)
+        const rootImports = new Set(ctx.chunk.imports);
+        const codeSplitImports = new Set<string>();
+        for (const rootImport of rootImports) {
+          const chunk = ctx.bundle[rootImport];
+          if (chunk && "imports" in chunk) {
+            for (const subImport of chunk.imports) {
+              codeSplitImports.add(subImport);
+              rootImports.delete(subImport);
+            }
+          }
+        }
+        if (codeSplitImports.size < 1) {
+          return html;
+        }
+        // console.log(`Transforming ${ctx.chunk.facadeModuleId} (${ctx.chunk.fileName})`);
+        // console.log(`  Root imports: ${[...rootImports].join(", ")}`);
+        // console.log(`  Code-split imports: ${[...codeSplitImports].join(", ")}`);
+
+        // For the codeSplitImports, convert:
+        //   <script type="module" [crossorigin] src="..."></script>
+        // to:
+        //   <link rel="modulepreload" [crossorigin] href="...">
+        //
+        // In non-shared-chunk cases, vite may have _already_ generated
+        // <link rel="modulepreload"> for what we've (mis-)identified as rootImports.
+        // That's OK, leave those unchanged. (vite has also included an actual root
+        // script module, probably ctx.chunk.fileName.)
+        return html.replace(
+          /<script\s+type="module"\s+([^>]*)\s*src="\/([^"]+)"([^>]*)><\/script>/g,
+          (scriptTag, attrs1, src, attrs2) => {
+            if (codeSplitImports.has(src)) {
+              // Preserve crossorigin, integrity, nonce, etc. attrs.
+              return `<link rel="modulepreload" ${attrs1}href="/${src}"${attrs2}>`;
+            } else {
+              return scriptTag;
+            }
+          },
+        );
+      },
+    },
+
     options: {
       handler(options) {
         // Add entryPoint pages to rollup inputs
