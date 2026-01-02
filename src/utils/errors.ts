@@ -18,12 +18,12 @@ export function installErrorHandlers() {
   // Catch otherwise unhandled JavaScript errors
   window.addEventListener("error", (event) => {
     try {
-      const { message, filename, lineno, colno } = event;
+      const { message, filename, lineno, colno, error } = event;
       // (The message already starts with "Uncaught Error:".)
       const errorMessage = `${message}${
         filename ? ` at ${filename}:${lineno}:${colno}` : ""
       }`;
-      reportError(errorMessage);
+      void reportError(errorMessage, error);
     } catch (error) {
       console.error("Error in onerror handler", error);
     }
@@ -32,13 +32,10 @@ export function installErrorHandlers() {
   // Catch unhandled promise rejections
   window.addEventListener("unhandledrejection", (event) => {
     try {
-      const description = String(
-        event.reason instanceof Error && event.reason.stack
-          ? event.reason.stack
-          : event.reason,
-      );
+      const error = event.reason instanceof Error ? event.reason : undefined;
+      const description = String(error?.stack ?? event.reason);
       const errorMessage = `Unhandled Promise Rejection: ${description}`;
-      reportError(errorMessage);
+      void reportError(errorMessage, error);
     } catch (error) {
       console.error("Error in onunhandledrejection handler", error);
     }
@@ -60,7 +57,7 @@ const isWorkerUnhandledErrorMessage = (
 const handleWorkerMessage = (event: MessageEvent<unknown>) => {
   if (isWorkerUnhandledErrorMessage(event)) {
     console.error(event.data.message, event.data.error);
-    reportError(event.data.message);
+    void reportError(event.data.message, event.data.error);
   }
 };
 

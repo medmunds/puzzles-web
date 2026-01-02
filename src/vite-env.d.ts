@@ -12,6 +12,7 @@ interface ImportMetaEnv {
   readonly VITE_CANONICAL_BASE_URL: string;
   readonly VITE_GIT_SHA?: string;
   readonly VITE_SENTRY_DSN?: string;
+  readonly VITE_SENTRY_FILTER_APPLICATION_ID?: string;
 }
 
 interface ImportMeta {

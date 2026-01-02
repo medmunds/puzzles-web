@@ -1,6 +1,7 @@
 import * as child from "node:child_process";
 import fs from "node:fs";
 import * as path from "node:path";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import license from "rollup-plugin-license";
 import { build, defineConfig, loadEnv, type UserConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -19,6 +20,10 @@ function defaultAppVersion(env: Record<string, string>): string {
 const manualAdditionalHeadTags = `\
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="/src/css/help-page.css">`;
+
+// Arbitrary metadata to identify own stack frames.
+// Used as Sentry.thirdPartyErrorFilterIntegration filterKeys
+const sentryFilterApplicationId = "code-from-puzzles-web";
 
 // Build src/preflight.ts for production and return its (public) url.
 // (It needs a lower build target than the main bundle, and must be kept
@@ -101,6 +106,9 @@ export default defineConfig(async ({ command, mode }) => {
       ),
       "import.meta.env.VITE_APP_VERSION": JSON.stringify(
         env.VITE_APP_VERSION ?? defaultAppVersion(env),
+      ),
+      "import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID": JSON.stringify(
+        sentryFilterApplicationId,
       ),
     },
     preview: {
@@ -316,6 +324,10 @@ export default defineConfig(async ({ command, mode }) => {
             `assets/@(${puzzleIds.join("|")})*.wasm`,
           ],
         },
+      }),
+      sentryVitePlugin({
+        // Must be last plugin
+        applicationKey: sentryFilterApplicationId,
       }),
     ],
   } satisfies UserConfig;

@@ -31,6 +31,7 @@
     "@biomejs/biome": "^2.3.10",
     "@mdit/plugin-attrs": "^0.24.1",
     "@mdit/plugin-icon": "^0.23.0",
+    "@sentry/vite-plugin": "^4.6.1",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^24.10.4",
     "@vite-pwa/assets-generator": "^1.0.2",

@@ -28,12 +28,24 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     return parts.join("");
   };
 
+  const integrations = [Sentry.browserTracingIntegration(), wasmIntegration()];
+  if (import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID) {
+    integrations.push(
+      Sentry.thirdPartyErrorFilterIntegration({
+        filterKeys: [import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID],
+        // don't use "drop-if" here -- see beforeSend below.
+        // (Also, Sentry likely identifies our wasm as third-party frames.)
+        behaviour: "apply-tag-if-contains-third-party-frames",
+      }),
+    );
+  }
+
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
     sendDefaultPii: false,
     release: import.meta.env.VITE_GIT_SHA,
     transport: Sentry.makeBrowserOfflineTransport(Sentry.makeFetchTransport),
-    integrations: [Sentry.browserTracingIntegration(), wasmIntegration()],
+    integrations,
     ignoreErrors: [
       // Emscripten runtime aborted wasm load on navigation/refresh:
       /RuntimeError:\s*Aborted\s*\(NetworkError.*Build with -sASSERTIONS/i,
@@ -77,6 +89,18 @@ if (import.meta.env.VITE_SENTRY_DSN) {
         }
       } catch {}
       return breadcrumb;
+    },
+    beforeSend(event, hint) {
+      // If thirdPartyErrorFilterIntegration identified third_party_code,
+      // mark the original error instance for crash-dialog to ignore.
+      if (event.tags?.third_party_code) {
+        if (hint?.originalException instanceof Error) {
+          // @ts-expect-error: TS2339: Adding custom property to Error object
+          hint.originalException.__third_party_code__ = true;
+        }
+        // For drop-if-contains-third-party-frames, return null here.
+      }
+      return event;
     },
   });
 }

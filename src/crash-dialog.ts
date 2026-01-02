@@ -3,6 +3,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { cssWATweaks } from "./utils/css.ts";
+import { sleep } from "./utils/timing.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -23,8 +24,7 @@ const ignoreErrors: (string | RegExp)[] = [
   /^Error: invalid origin$/,
 ] as const;
 
-function shouldIgnoreError(error: unknown) {
-  const errorString = error instanceof Error ? error.message : String(error);
+function shouldIgnoreError(errorString: string) {
   return ignoreErrors.some((pattern) =>
     pattern instanceof RegExp
       ? pattern.test(errorString)
@@ -32,28 +32,43 @@ function shouldIgnoreError(error: unknown) {
   );
 }
 
+async function isErrorInThirdPartyCode(error: unknown) {
+  // Borrow Sentry.thirdPartyErrorFilterIntegration's stack trace filtering.
+  // The __third_party_code__ flag is set in Sentry.init beforeSend() in main.ts.
+  // Sentry's processing is async, so wait a tick for it to finish.
+  await sleep(0);
+  return error instanceof Error && "__third_party_code__" in error;
+}
+
 /**
- * Create and display a crash-dialog for error.
+ * Create and display a crash-dialog for message.
+ * (Provide the original error object if available, for better filtering.)
  *
- * If the crash-dialog is already open, adds error to its list
+ * If the crash-dialog is already open, adds message to its list
  * (to avoid getting stuck in a repeated error loop).
  */
-export function reportError(error: unknown) {
-  if (shouldIgnoreError(error)) {
+export async function reportError(message: string, error?: unknown) {
+  const isIgnored = shouldIgnoreError(message);
+  const isThirdParty = await isErrorInThirdPartyCode(error);
+  if (isIgnored || isThirdParty) {
+    if (import.meta.env.VITE_SENTRY_DSN) {
+      Sentry.addBreadcrumb({
+        type: "error",
+        category: "error.ignored",
+        message,
+        data: { isIgnored, isThirdParty },
+      });
+    }
     return;
   }
+
   try {
     let dialog = document.querySelector("crash-dialog");
     if (!dialog) {
       dialog = document.createElement("crash-dialog");
       document.body.appendChild(dialog);
     }
-    dialog.reportError(error).catch((err: Error) => {
-      if (import.meta.env.VITE_SENTRY_DSN) {
-        Sentry.captureException(err);
-      }
-      console.error("Error while trying to reportError", err, error);
-    });
+    await dialog.reportError(message);
   } catch (err) {
     if (import.meta.env.VITE_SENTRY_DSN) {
       Sentry.captureException(err);
@@ -95,8 +110,7 @@ export class CrashDialog extends LitElement {
    * Otherwise, if dialog is not open, open it to show error.
    * If dialog is already open, append error to the displayed list.
    */
-  async reportError(error: unknown) {
-    const errorString = error instanceof Error ? error.message : String(error);
+  async reportError(errorString: string) {
     if (this.suppressedErrors.has(errorString)) {
       return;
     }
