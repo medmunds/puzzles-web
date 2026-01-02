@@ -107,6 +107,7 @@ class PWAManager {
    * The app should call this from the window.load event.
    */
   async initialize() {
+    await settings.loaded;
     if (this.allowOfflineUse) {
       await this.registerSW();
     } else {
@@ -119,6 +120,7 @@ class PWAManager {
    * (Call after resetting settings.)
    */
   async reinitialize() {
+    await settings.loaded;
     if (this.allowOfflineUse && !this.wb) {
       await this.registerSW();
     } else if (!this.allowOfflineUse && this.wb) {

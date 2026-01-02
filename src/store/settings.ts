@@ -77,14 +77,19 @@ class Settings {
   );
   private _maxScale = signal<number>(defaultSettings.maxScale);
 
-  private constructor() {
+  private readonly _loaded: Promise<void>;
+
+  constructor() {
     window.addEventListener("pageshow", this.handlePageShow);
+    this._loaded = this.loadSettings();
   }
 
-  static async create(): Promise<Settings> {
-    const settings = new Settings();
-    await settings.loadSettings();
-    return settings;
+  /**
+   * Resolved once initial settings have been loaded.
+   * (Settings will have default values if accessed before that.)
+   */
+  get loaded(): Promise<void> {
+    return this._loaded;
   }
 
   private handlePageShow = async (event: PageTransitionEvent) => {
@@ -446,4 +451,4 @@ class Settings {
 }
 
 // Singleton settings store instance
-export const settings = await Settings.create();
+export const settings = new Settings();

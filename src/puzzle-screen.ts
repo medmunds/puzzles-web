@@ -100,7 +100,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     window.removeEventListener("keydown", this.handleBubbledKeyDown);
   }
 
-  protected override async willUpdate(changedProperties: Map<string, unknown>) {
+  protected override willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("puzzleId") && this.puzzleId) {
       const data = puzzleDataMap[this.puzzleId];
       if (!data) {
@@ -499,6 +499,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     const { puzzle } = event.detail;
     event.preventDefault(); // We'll set up our own new game (or restore one from autoSave)
 
+    await settings.loaded;
     const prefs = await settings.getPuzzlePreferences(puzzle.puzzleId);
     await puzzle.setPreferences(prefs);
 

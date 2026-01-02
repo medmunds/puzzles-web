@@ -92,7 +92,7 @@ import "./icons";
 import { pwaManager } from "./utils/pwa.ts";
 
 if (document.readyState === "complete") {
-  await pwaManager.initialize();
+  void pwaManager.initialize();
 } else {
   window.addEventListener("load", async () => {
     await pwaManager.initialize();

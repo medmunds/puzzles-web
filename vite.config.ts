@@ -87,6 +87,14 @@ export default defineConfig(async ({ command, mode }) => {
       sourcemap: true,
       target: "es2022",
     },
+    esbuild: {
+      supported: {
+        // Avoid a Safari bug that breaks the module graph
+        // if two modules import a third that uses top-level await.
+        // https://bugs.webkit.org/show_bug.cgi?id=242740
+        "top-level-await": false,
+      },
+    },
     define: {
       "import.meta.env.VITE_CANONICAL_BASE_URL": JSON.stringify(
         env.VITE_CANONICAL_BASE_URL ?? "",

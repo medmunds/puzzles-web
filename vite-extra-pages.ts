@@ -625,12 +625,13 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
 
     // Safari workaround:
     // Vite's code splitting injects _shared_ chunks (used by multiple entry points)
-    // as <script type="module" src="...">, to prevent waterfalls. Importing a
-    // dependency from a different script module can cause a race condition in
-    // Safari (even without circular dependencies) that causes the script to stop
-    // executing, with no error message. Work around this by converting hoisted,
-    // code-split chunks to <link rel="modulepreload">, which somehow avoids the
-    // problem. (Vite already uses <link rel="modulepreload"> for non-shared chunks.)
+    // as parallel <script type="module" src="...">, to prevent waterfalls.
+    // This can cause a broken Safari module graph, stalling execution, if any
+    // two modules import from a third module that uses top-level await.
+    // https://bugs.webkit.org/show_bug.cgi?id=242740
+    // An effective workaround seems to be converting hoisted, code-split chunks
+    // to <link rel="modulepreload">, which somehow avoids the problem. (Vite
+    // already prefers <link rel="modulepreload"> for non-shared chunks.)
     transformIndexHtml: {
       order: "post",
       handler(html, ctx) {
@@ -640,7 +641,7 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
           return html;
         }
 
-        // Figure out which scripts are the entry point(s) from the original html
+        // Figure out which scripts are the root modules from the original html
         // and which were added by Vite's code splitting.
         // (Looking at a single level of imports is sufficient.)
         const rootImports = new Set(ctx.chunk.imports);
