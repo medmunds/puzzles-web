@@ -1,12 +1,12 @@
 import * as child from "node:child_process";
 import fs from "node:fs";
 import * as path from "node:path";
-import { sentryVitePlugin } from "@sentry/vite-plugin";
 import license from "rollup-plugin-license";
 import { build, defineConfig, loadEnv, type UserConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { puzzleIds, puzzles } from "./src/assets/puzzles/catalog.json";
 import { extraPages, renderHandlebars, renderMarkdown } from "./vite-extra-pages";
+import { sentryVitePlugin } from "./vite-sentry-plugin"; // from "@sentry/vite-plugin";
 import { wasmSourcemaps } from "./vite-wasm-sourcemaps";
 
 function defaultAppVersion(env: Record<string, string>): string {
@@ -328,6 +328,11 @@ export default defineConfig(async ({ command, mode }) => {
       sentryVitePlugin({
         // Must be last plugin
         applicationKey: sentryFilterApplicationId,
+
+        // We're not currently uploading sourcemaps or notifying releases from here,
+        // and we use a different mechanism to include the release id in the code.
+        sourcemaps: { disable: true },
+        release: { create: false, inject: false, deploy: false, finalize: false },
       }),
     ],
   } satisfies UserConfig;
