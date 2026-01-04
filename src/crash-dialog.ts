@@ -22,6 +22,14 @@ const ignoreErrors: (string | RegExp)[] = [
   /TypeError.*(assignedElements|hidePopover).*disconnectedCallback/,
   // Unknown DuckDuckGo complaint:
   /^Error: invalid origin$/,
+  // Browser extensions and extension-only APIs:
+  // (See Sentry's longer list:
+  // https://github.com/getsentry/relay/blob/322fa6f678add6abed4772fb6046cbf7daf4814a/relay-filter/src/browser_extensions.rs#L9-L81)
+  /^(chrome(-extension)?|moz-extension|safari(-web)?-extension):\/\//,
+  "Extension context invalidated",
+  "runtime.sendMessage",
+  "webkit-masked-url",
+  "window.__firefox__",
 ] as const;
 
 function shouldIgnoreError(errorString: string) {
