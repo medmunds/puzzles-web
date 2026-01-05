@@ -91,6 +91,25 @@ if (import.meta.env.VITE_SENTRY_DSN) {
       return breadcrumb;
     },
     beforeSend(event, hint) {
+      // An error in the worker or wasm will be incorrectly identified as third-party.
+      // Undo that if any stack frame's filename is (roughly):
+      //   /assets/worker-[hash].js
+      //   /assets/[puzzleid]-[hash].wasm
+      //   /src/assets/puzzles/[puzzleid].wasm  (dev)
+      //   /src/puzzle/worker.ts                (dev)
+      const reWorkerOrWasm =
+        /(\/assets\/(.+\.wasm|worker))|(\/src\/(assets\/puzzles\/.+\.wasm|puzzle\/worker))/;
+      if (
+        event.tags?.third_party_code &&
+        event.exception?.values?.some((exception) =>
+          exception.stacktrace?.frames?.some(
+            (frame) => frame.filename && reWorkerOrWasm.test(frame.filename),
+          ),
+        )
+      ) {
+        delete event.tags.third_party_code;
+      }
+
       // If thirdPartyErrorFilterIntegration identified third_party_code,
       // mark the original error instance for crash-dialog to ignore.
       if (event.tags?.third_party_code) {
