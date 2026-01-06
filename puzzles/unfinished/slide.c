@@ -2293,7 +2293,7 @@ static void game_get_cursor_location(const game_ui *ui,
 
 static int game_status(const game_state *state)
 {
-    return state->completed ? +1 : 0;
+    return state->completed >= 0 ? +1 : 0;
 }
 
 static bool game_timing_state(const game_state *state, game_ui *ui)
