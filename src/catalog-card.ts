@@ -99,7 +99,7 @@ export class CatalogCard extends LitElement {
   }
 
   private renderUnfinishedBadge() {
-    return this.unfinished ? html`<div part="unfinished">Unfinished</div>` : nothing;
+    return this.unfinished ? html`<div part="unfinished">Experimental</div>` : nothing;
   }
 
   protected override render() {
@@ -279,16 +279,24 @@ export class CatalogCard extends LitElement {
         transform: translate(-50%, -40%) rotate(-7.5deg);
         transform-origin: 50% 50%;
         
-        padding: var(--wa-space-2xs);
+        padding: var(--wa-space-3xs);
         font-size: var(--wa-font-size-2xs);
         line-height: 1;
-  
-        background-color: var(--wa-color-warning-fill-loud);
-        color: var(--wa-color-warning-on-loud);
-        border-color: var(--wa-color-surface-default);
+
+        background-color: var(--wa-color-surface-default);
+        color: var(--wa-color-text-normal);
+        
+        --border-width: var(--wa-border-width-m);
         border-style: solid;
-        border-width: var(--wa-border-width-m);
-        border-radius: var(--wa-border-radius-s);
+        border-width: var(--border-width);
+        border-image-source: repeating-linear-gradient(
+            -45deg,
+            var(--wa-color-warning-border-loud),
+            var(--wa-color-warning-border-loud) calc(2 * var(--border-width)),
+            var(--wa-color-surface-default) calc(2 * var(--border-width)),
+            var(--wa-color-surface-default)  calc(3 * var(--border-width))
+        );
+        border-image-slice: 1;
       }
   
       wa-icon[name="game-in-progress"] {

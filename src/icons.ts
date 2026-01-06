@@ -21,6 +21,7 @@ import crownIcon from "lucide-static/icons/crown.svg";
 import deleteIcon from "lucide-static/icons/delete.svg";
 import downloadIcon from "lucide-static/icons/download.svg";
 import externalLinkIcon from "lucide-static/icons/external-link.svg";
+import flaskConicalIcon from "lucide-static/icons/flask-conical.svg";
 import frownIcon from "lucide-static/icons/frown.svg";
 import gemIcon from "lucide-static/icons/gem.svg";
 import hashIcon from "lucide-static/icons/hash.svg";
@@ -43,7 +44,6 @@ import squareMenuIcon from "lucide-static/icons/square-menu.svg";
 import squarePenIcon from "lucide-static/icons/square-pen.svg";
 import swatchBookIcon from "lucide-static/icons/swatch-book.svg";
 import thumbsUpIcon from "lucide-static/icons/thumbs-up.svg";
-import trafficConeIcon from "lucide-static/icons/traffic-cone.svg";
 import trash2Icon from "lucide-static/icons/trash-2.svg";
 import triangleAlertIcon from "lucide-static/icons/triangle-alert.svg";
 import undo2Icon from "lucide-static/icons/undo-2.svg";
@@ -89,7 +89,7 @@ const defaultIcons: IconMap = {
   "share": share2Icon,
   "show-solution": sparklesIcon,
   "undo": undo2Icon,
-  "unfinished": trafficConeIcon,
+  "unfinished": flaskConicalIcon,
   // generic notifications
   "info": infoIcon,
   "success": checkIcon,
