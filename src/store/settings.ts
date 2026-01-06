@@ -27,7 +27,14 @@ export const isSerializedSettings = (obj: unknown): obj is SerializedSettings =>
 const defaultSettings = {
   allowOfflineUse: null,
   autoUpdate: null,
-  favoritePuzzles: new Set<PuzzleId>(),
+  favoritePuzzles: new Set<PuzzleId>([
+    "keen",
+    "loopy",
+    "mines",
+    "net",
+    "solo",
+    "untangle",
+  ]),
   showIntro: true,
   showUnfinishedPuzzles: false,
   showMouseButtonToggle: false,
@@ -109,9 +116,11 @@ class Settings {
     if (commonSettings) {
       update(this._allowOfflineUse, commonSettings.allowOfflineUse);
       update(this._autoUpdate, commonSettings.autoUpdate);
-      const favoritePuzzles = new Set(commonSettings.favoritePuzzles);
-      if (!equalSet(favoritePuzzles, this._favoritePuzzles.get())) {
-        this._favoritePuzzles.set(favoritePuzzles);
+      if (commonSettings.favoritePuzzles !== undefined) {
+        const favoritePuzzles = new Set(commonSettings.favoritePuzzles);
+        if (!equalSet(favoritePuzzles, this._favoritePuzzles.get())) {
+          this._favoritePuzzles.set(favoritePuzzles);
+        }
       }
       update(this._showIntro, commonSettings.showIntro);
       update(this._showUnfinishedPuzzles, commonSettings.showUnfinishedPuzzles);
