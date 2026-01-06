@@ -114,7 +114,12 @@ export class ScrollAnimationController implements ReactiveController {
 
     const scrollY = this.scrollContainer.scrollTop;
     const currentTime =
-      1000 * clamp(0, (animationDuration * scrollY) / rangeEnd, animationDuration);
+      1000 *
+      clamp(
+        0,
+        (animationDuration * scrollY) / Math.max(rangeEnd, 1),
+        animationDuration,
+      );
 
     const animations = animationElement
       .getAnimations({ subtree: true })
