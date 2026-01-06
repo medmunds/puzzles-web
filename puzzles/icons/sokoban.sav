@@ -1,0 +1,15 @@
+SAVEFILE:41:Simon Tatham's Portable Puzzle Collection
+VERSION :1:1
+GAME    :7:Sokoban
+PARAMS  :5:12x10
+CPARAMS :5:12x10
+SEED    :15:259482166106022
+DESC    :89:w13tsbs7w2s2bsts3bsw2s2tbsbsfbtw2tsbts4t2w2sbstws3bsw2sbsts2tsbsw2tfs2bs2tb2w2s4bstsfvw13
+NSTATES :1:7
+STATEPOS:1:7
+MOVE    :1:8
+MOVE    :1:4
+MOVE    :1:6
+MOVE    :1:8
+MOVE    :1:8
+MOVE    :1:2
