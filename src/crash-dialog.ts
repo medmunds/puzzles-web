@@ -12,6 +12,7 @@ import "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
 import "@awesome.me/webawesome/dist/components/details/details.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
+import "@awesome.me/webawesome/dist/components/textarea/textarea.js";
 
 const ignoreErrors: (string | RegExp)[] = [
   // Emscripten runtime aborted wasm load on navigation/refresh:
@@ -102,12 +103,27 @@ export class CrashDialog extends LitElement {
   @state()
   private suppressErrors = false;
 
+  // Whether the current content of the user description
+  // textarea might include an email address.
+  @state()
+  private mightHavePersonalInfo = false;
+
+  private postingUserDescription = false;
+
   @query("wa-dialog")
   private dialog?: HTMLElementTagNameMap["wa-dialog"];
+
+  @query("wa-textarea")
+  private userDescription?: HTMLElementTagNameMap["wa-textarea"];
 
   reset() {
     this.suppressErrors = false;
     this.errors = [];
+    if (this.userDescription) {
+      this.userDescription.value = "";
+    }
+    this.mightHavePersonalInfo = false;
+    this.postingUserDescription = false;
     if (import.meta.env.VITE_SENTRY_DSN) {
       this.sentryLastEventId = Sentry.lastEventId();
     }
@@ -142,13 +158,34 @@ export class CrashDialog extends LitElement {
         <div>Uh-oh, an unexpected error occurred. Sorry about that.
           ${import.meta.env.VITE_SENTRY_DSN ? "The developer has been notified." : nothing}
         </div>
-        <div>If this happens more than once, try reloading the page.</div>
+        <div>If this keeps happening, try reloading the page.</div>
       `,
     ];
+
+    if (import.meta.env.VITE_SENTRY_DSN) {
+      const noPersonal = this.mightHavePersonalInfo ? "highlight" : nothing;
+      content.push(html`
+        <wa-textarea
+          label="What were you doing when this occurred? (optional)"
+          maxlength="1000"
+          resize="auto"
+          rows="3"
+          @input=${this.handleUserDescriptionChange}
+          @change=${this.handleUserDescriptionChange}
+        >
+          <div slot="hint">
+            If you know what causes this, it can help fix the problem. 
+            (Please <strong class=${noPersonal}>don’t include email addresses</strong> 
+            or other personal information.)
+          </div>
+        </wa-textarea>
+      `);
+    }
+
     if (this.sentryLastEventId) {
       content.push(
         html`
-          <div>For bug reports, please mention <strong>event ID</strong><br>
+          <div class="event-id">Event ID (for GitHub bug reports):<br>
             <span id="event-id">${this.sentryLastEventId}</span>
             <wa-copy-button from="event-id"></wa-copy-button>
           </div>
@@ -191,18 +228,44 @@ export class CrashDialog extends LitElement {
     this.suppressErrors = checkbox.checked;
   }
 
-  private handleDismiss() {
+  private handleUserDescriptionChange() {
+    this.mightHavePersonalInfo = /\w+@\w+/.test(this.userDescription?.value ?? "");
+  }
+
+  private async postUserDescription() {
+    if (!this.postingUserDescription) {
+      const description = this.userDescription?.value?.trim();
+      if (description) {
+        this.postingUserDescription = true;
+        try {
+          await Sentry.sendFeedback({
+            associatedEventId: this.sentryLastEventId,
+            message: description,
+          });
+        } catch (error: unknown) {
+          console.error("Error in Sentry.captureFeedback", error);
+          Sentry.captureException(error);
+        } finally {
+          this.postingUserDescription = false;
+        }
+      }
+    }
+  }
+
+  private async handleDismiss() {
     if (this.suppressErrors) {
       for (const error of this.errors) {
         this.suppressedErrors.add(error);
       }
     }
+    await this.postUserDescription();
   }
 
-  private handleReload(event: UIEvent) {
+  private async handleReload(event: UIEvent) {
     if (event.target instanceof HTMLElement) {
       event.target.setAttribute("loading", "");
     }
+    await this.postUserDescription();
     window.location.reload();
   }
 
@@ -267,21 +330,37 @@ export class CrashDialog extends LitElement {
         
         flex: 0 1 auto;
         min-height: 3em;
-        max-height: 40vh;
+        max-height: 30vh;
         overflow: auto;
         
         display: flex;
         flex-direction: column;
         gap: var(--wa-space-xs);
-        
-        div {
-          white-space: pre-wrap;
-          line-height: var(--wa-line-height-condensed);
-        }
+      }
+      wa-details > div:not([slot]) {
+        white-space: pre-wrap;
+        line-height: var(--wa-line-height-condensed);
       }
       
+      .event-id {
+        line-height: var(--wa-line-height-condensed);
+      }
       #event-id {
         user-select: all;
+      }
+      wa-copy-button::part(button) {
+        padding: 0;
+        padding-inline-start: var(--wa-space-2xs);
+      }
+
+      wa-textarea::part(textarea) {
+        max-height: 6lh;
+      }
+      wa-textarea::part(label) {
+        font-weight: var(--wa-font-weight-normal);
+      }
+      .highlight {
+        color: var(--wa-color-danger-on-quiet);
       }
     `,
   ];
