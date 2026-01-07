@@ -1,4 +1,5 @@
 import type { WaSelectEvent } from "@awesome.me/webawesome";
+import type { PropertyValues } from "@lit/reactive-element";
 import { html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { property, state } from "lit/decorators.js";
@@ -259,7 +260,7 @@ export class Screen extends LitElement {
     this.removeEventListener("wa-select", this.handleDropdownSelect);
   }
 
-  protected override updated() {
+  protected override updated(_changedProperties: PropertyValues) {
     if (!import.meta.env.PROD && this.isConnected && !this.dynamicContent) {
       throw new Error("Screen subclass must render <dynamic-content> element");
     }
