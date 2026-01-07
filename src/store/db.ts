@@ -44,6 +44,9 @@ export interface PuzzleSettings {
 
   // Default params for new puzzles
   params?: EncodedParams;
+
+  // For unfinished puzzles, timestamp when the alert was last shown
+  lastUnfinishedAlert?: number;
 }
 
 export type SettingsRecord =

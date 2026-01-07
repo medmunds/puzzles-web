@@ -421,6 +421,25 @@ class Settings {
     });
   }
 
+  async getLastUnfinishedAlert(puzzleId: PuzzleId): Promise<number | undefined> {
+    const puzzleRecord = await this.getPuzzleSettings(puzzleId);
+    return puzzleRecord?.lastUnfinishedAlert;
+  }
+
+  async setLastUnfinishedAlert(
+    puzzleId: PuzzleId,
+    lastUnfinishedAlert: number,
+  ): Promise<void> {
+    const { lastUnfinishedAlert: _, ...current } =
+      (await this.getPuzzleSettings(puzzleId)) ?? {};
+    const updated: PuzzleSettings = { ...current, lastUnfinishedAlert };
+    await db.settings.put({
+      id: puzzleId,
+      type: "puzzle",
+      data: updated,
+    });
+  }
+
   async clearCommonSettings() {
     await db.settings.delete(COMMON_SETTINGS_ID);
     await this.loadSettings();

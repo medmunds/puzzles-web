@@ -31,6 +31,10 @@ import "./puzzle/puzzle-preset-menu.ts";
 import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
 
+// How often to show the warning for unfinished puzzles, in milliseconds.
+// (Maybe make this a setting: hourly, daily, weekly, never. Then default to 1 hour.)
+const UNFINISHED_WARNING_REPEAT = 24 * 60 * 60 * 1000;
+
 @customElement("puzzle-screen")
 export class PuzzleScreen extends SignalWatcher(Screen) {
   /** The puzzle type, e.g. "blackbox" */
@@ -110,6 +114,13 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       this.autoSaveFilename = undefined;
       this.puzzleLoaded = false;
       this.defaultHelpLabel = `${this.puzzleData.name} Help`;
+    }
+  }
+
+  protected override updated(changedProperties: Map<string, unknown>) {
+    super.updated(changedProperties);
+    if (changedProperties.has("puzzleId")) {
+      void this.showUnfinishedWarning();
     }
   }
 
@@ -624,6 +635,29 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       }
     }
   };
+
+  private async showUnfinishedWarning() {
+    // Show an alert for unfinished puzzles, at most once per UNFINISHED_WARNING_REPEAT.
+    if (this.puzzleId && this.puzzleData?.unfinished) {
+      await settings.loaded;
+      const lastShown = await settings.getLastUnfinishedAlert(this.puzzleId);
+      const now = Date.now();
+      if (lastShown === undefined || now - lastShown > UNFINISHED_WARNING_REPEAT) {
+        await settings.setLastUnfinishedAlert(this.puzzleId, now);
+        await showAlert({
+          label: "Experimental puzzle",
+          message:
+            // showAlert doesn't support html. (Could render alert-dialog instead.)
+            `“${this.puzzleData.name}” is an experimental, unfinished puzzle.` +
+            " Don’t be surprised if you find bugs or unexpected behavior." +
+            " (Check “Help” for the current status.)",
+          type: "warning",
+          icon: "unfinished",
+          lightDismiss: true,
+        });
+      }
+    }
+  }
 
   //
   // Styles
