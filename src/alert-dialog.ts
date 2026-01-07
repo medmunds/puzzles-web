@@ -11,6 +11,8 @@ export interface AlertOptions {
   label?: string;
   message?: string;
   type?: "info" | "success" | "warning" | "error";
+  icon?: string;
+  lightDismiss?: boolean;
 }
 
 export async function showAlert(options: AlertOptions) {
@@ -30,6 +32,12 @@ export class AlertDialog extends LitElement {
 
   @property({ type: String, reflect: true })
   type: Required<AlertOptions>["type"] = "error";
+
+  @property({ type: String })
+  icon: string | undefined = undefined;
+
+  @property({ type: Boolean, attribute: "light-dismiss" })
+  lightDismiss = false;
 
   closed: Promise<void> = Promise.resolve();
 
@@ -53,8 +61,8 @@ export class AlertDialog extends LitElement {
 
   protected override render() {
     return html`
-      <wa-dialog @wa-after-hide=${this.handleDialogHide}>
-        <wa-icon slot="label" name=${this.type}></wa-icon>
+      <wa-dialog ?light-dismiss=${this.lightDismiss} @wa-after-hide=${this.handleDialogHide}>
+        <wa-icon slot="label" name=${this.icon || this.type}></wa-icon>
         ${this.label ? html`<div slot="label">${this.label}</div>` : nothing}
         ${this.message ? html`<div>${this.message}</div>` : nothing}
       </wa-dialog>
