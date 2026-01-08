@@ -75,6 +75,15 @@ export default defineConfig(async ({ command, mode }) => {
   const sentryDsnOrigin = env.VITE_SENTRY_DSN
     ? new URL(env.VITE_SENTRY_DSN).origin
     : "";
+  const createSentryVitePlugin = () =>
+    sentryVitePlugin({
+      applicationKey: sentryFilterApplicationId,
+
+      // We're not currently uploading sourcemaps or notifying releases from here,
+      // and we use a different mechanism to include the release id in the code.
+      sourcemaps: { disable: true },
+      release: { create: false, inject: false, deploy: false, finalize: false },
+    });
 
   return {
     appType: "mpa",
@@ -325,15 +334,10 @@ export default defineConfig(async ({ command, mode }) => {
           ],
         },
       }),
-      sentryVitePlugin({
-        // Must be last plugin
-        applicationKey: sentryFilterApplicationId,
-
-        // We're not currently uploading sourcemaps or notifying releases from here,
-        // and we use a different mechanism to include the release id in the code.
-        sourcemaps: { disable: true },
-        release: { create: false, inject: false, deploy: false, finalize: false },
-      }),
+      createSentryVitePlugin(), // Must be last plugin
     ],
+    worker: {
+      plugins: () => [createSentryVitePlugin()],
+    },
   } satisfies UserConfig;
 });
