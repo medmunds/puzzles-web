@@ -8,8 +8,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.registerWebWorker({ self });
 }
 
-import * as Comlink from "comlink";
-import { transfer } from "comlink";
+import { expose, proxy, type Remote, transfer } from "comlink";
 import createModule from "../assets/puzzles/emcc-runtime";
 import { installErrorHandlersInWorker } from "../utils/errors-worker.ts";
 import { Drawing } from "./drawing.ts";
@@ -364,17 +363,17 @@ interface WorkerPuzzleFactory {
 const workerPuzzleFactory: WorkerPuzzleFactory = {
   async create(puzzleId: string) {
     const workerPuzzle = await WorkerPuzzle.create(puzzleId);
-    return Comlink.proxy(workerPuzzle);
+    return proxy(workerPuzzle);
   },
 };
 
-Comlink.expose(workerPuzzleFactory);
+expose(workerPuzzleFactory);
 
 type ComlinkRemoteFactory<T> = {
   [K in keyof T]: T[K] extends (...args: infer A) => Promise<infer R>
-    ? (...args: A) => Promise<Comlink.Remote<R>>
+    ? (...args: A) => Promise<Remote<R>>
     : T[K];
 };
 
-export type RemoteWorkerPuzzle = Comlink.Remote<WorkerPuzzle>;
+export type RemoteWorkerPuzzle = Remote<WorkerPuzzle>;
 export type RemoteWorkerPuzzleFactory = ComlinkRemoteFactory<WorkerPuzzleFactory>;

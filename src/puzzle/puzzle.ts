@@ -1,7 +1,6 @@
 import { computed, type Signal, signal } from "@lit-labs/signals";
 import * as Sentry from "@sentry/browser";
-import * as Comlink from "comlink";
-import { transfer } from "comlink";
+import { proxy, releaseProxy, transfer, wrap } from "comlink";
 import {
   installWorkerErrorReceivers,
   uninstallWorkerErrorReceivers,
@@ -46,7 +45,7 @@ export class Puzzle {
     });
     sentryWebWorkerIntegration?.addWorker(worker);
     installWorkerErrorReceivers(worker);
-    const workerFactory = Comlink.wrap<RemoteWorkerPuzzleFactory>(worker);
+    const workerFactory = wrap<RemoteWorkerPuzzleFactory>(worker);
     const workerPuzzle = await workerFactory.create(puzzleId);
 
     const staticProps = await workerPuzzle.getStaticProperties();
@@ -83,15 +82,15 @@ export class Puzzle {
 
   private async initialize(): Promise<void> {
     await this.workerPuzzle.setCallbacks(
-      Comlink.proxy(this.notifyChange),
-      Comlink.proxy(this.notifyTimerState),
+      proxy(this.notifyChange),
+      proxy(this.notifyTimerState),
     );
   }
 
   public async delete(): Promise<void> {
     await this.detachCanvas();
     await this.workerPuzzle.delete();
-    this.workerPuzzle[Comlink.releaseProxy]();
+    this.workerPuzzle[releaseProxy]();
     uninstallWorkerErrorReceivers(this.worker);
     this.worker.terminate();
   }
@@ -485,7 +484,7 @@ export class Puzzle {
     fontInfo: FontInfo,
   ): Promise<void> {
     // Transfer the canvas to the worker
-    await this.workerPuzzle.attachCanvas(Comlink.transfer(canvas, [canvas]), fontInfo);
+    await this.workerPuzzle.attachCanvas(transfer(canvas, [canvas]), fontInfo);
     // Delay one frame to avoid a problem in Safari and Firefox where the
     // onscreen canvas initially (and somewhat randomly) appears solid black
     // or solid background color. (Seems like drawing to the offscreen canvas
