@@ -122,6 +122,28 @@ if (import.meta.env.VITE_SENTRY_DSN) {
       return event;
     },
   });
+
+  Sentry.addEventProcessor((event, _hint) => {
+    try {
+      const root = document.documentElement;
+      const rootStyle = getComputedStyle(root);
+      const viewport = window.visualViewport;
+      event.contexts = {
+        ...event.contexts,
+        Display: {
+          "Window Size": `${window.innerWidth}x${window.innerHeight}`,
+          "Document Size": `${root.clientWidth}x${root.clientHeight}`,
+          "Visual Viewport": viewport ? `${viewport.width}x${viewport.height}` : "n/a",
+          DPR: window.devicePixelRatio,
+          "Dark Mode": window.matchMedia("(prefers-color-scheme: dark)").matches,
+          "Touch Points": navigator.maxTouchPoints,
+          "Root Font Size": rootStyle.fontSize,
+          Direction: rootStyle.direction,
+        },
+      };
+    } catch {}
+    return event;
+  });
 }
 
 import { installErrorHandlers } from "./utils/errors.ts";

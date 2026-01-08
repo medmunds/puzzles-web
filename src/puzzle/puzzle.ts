@@ -96,6 +96,22 @@ export class Puzzle {
     this.worker.terminate();
   }
 
+  private _size = "<unknown>";
+
+  private captureSentryContext() {
+    if (import.meta.env.VITE_SENTRY_DSN) {
+      Sentry.setContext("Puzzle", {
+        "Puzzle ID": this.puzzleId,
+        Params: this.params,
+        "Game ID": this.currentGameId,
+        "Random Seed": this.randomSeed,
+        "Current Move": this.currentMove,
+        "Total Moves": this.totalMoves,
+        Size: this._size,
+      });
+    }
+  }
+
   private notifyChange = async (message: ChangeNotification) => {
     // Callback from C++ Frontend: update signals with provided data.
     // (Message originates in worker.)
@@ -107,13 +123,6 @@ export class Puzzle {
 
     switch (message.type) {
       case "game-id-change": {
-        if (import.meta.env.VITE_SENTRY_DSN) {
-          Sentry.setContext("Puzzle", {
-            puzzleId: this.puzzleId,
-            gameId: message.currentGameId,
-            randomSeed: message.randomSeed,
-          });
-        }
         update(this._currentGameId, message.currentGameId);
         update(this._randomSeed, message.randomSeed);
         break;
@@ -136,6 +145,8 @@ export class Puzzle {
         // @ts-expect-error: message.type never
         throw new Error(`Unknown notifyChange type ${message.type}`);
     }
+
+    this.captureSentryContext();
   };
 
   // Static properties (no reactivity needed)
@@ -367,7 +378,18 @@ export class Puzzle {
   }
 
   public async saveGame(): Promise<Uint8Array<ArrayBuffer>> {
-    return this.workerPuzzle.saveGame();
+    const result = this.workerPuzzle.saveGame();
+    if (import.meta.env.VITE_SENTRY_DSN) {
+      // Capture the most recent (auto-)save as a Sentry attachment.
+      // (There's no way to replace a specific attachment, so just clear all.)
+      Sentry.getCurrentScope().clearAttachments();
+      Sentry.getCurrentScope().addAttachment({
+        filename: "save.txt",
+        data: await result,
+        contentType: "text/plain",
+      });
+    }
+    return result;
   }
 
   //
@@ -476,6 +498,10 @@ export class Puzzle {
   }
 
   public async resizeDrawing({ w, h }: Size, dpr: number): Promise<void> {
+    if (import.meta.env.VITE_SENTRY_DSN) {
+      this._size = `${w}x${h} @ ${dpr}x`;
+      this.captureSentryContext();
+    }
     await this.workerPuzzle.resizeDrawing({ w, h }, dpr);
   }
 
