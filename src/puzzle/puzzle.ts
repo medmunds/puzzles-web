@@ -43,7 +43,23 @@ export class Puzzle {
       type: "module",
       name: `puzzle-worker-${puzzleId}`,
     });
-    sentryWebWorkerIntegration?.addWorker(worker);
+    if (sentryWebWorkerIntegration) {
+      sentryWebWorkerIntegration.addWorker(worker);
+      // Handle forwarded event enrichment data from worker
+      worker.addEventListener("message", (event: MessageEvent<unknown>) => {
+        if (
+          typeof event.data === "object" &&
+          event.data !== null &&
+          "type" in event.data &&
+          event.data.type === "sentry-breadcrumb" &&
+          "breadcrumb" in event.data &&
+          typeof event.data.breadcrumb === "object" &&
+          event.data.breadcrumb !== null
+        ) {
+          Sentry.addBreadcrumb(event.data.breadcrumb);
+        }
+      });
+    }
     installWorkerErrorReceivers(worker);
     const workerFactory = wrap<RemoteWorkerPuzzleFactory>(worker);
     const workerPuzzle = await workerFactory.create(puzzleId);

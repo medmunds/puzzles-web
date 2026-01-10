@@ -31,6 +31,14 @@ import type {
 
 installErrorHandlersInWorker();
 
+// Sentry does not currently forward event enrichment data to the main thread,
+// so do it ourselves. https://github.com/getsentry/sentry-javascript/issues/18704
+const addBreadcrumb = (breadcrumb: Sentry.Breadcrumb) => {
+  if (import.meta.env.VITE_SENTRY_DSN) {
+    self.postMessage({ type: "sentry-breadcrumb", breadcrumb });
+  }
+};
+
 /**
  * Worker-side implementation of main-thread Puzzle class
  */
@@ -50,7 +58,7 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
         // https://github.com/emscripten-core/emscripten/issues/23038
         const response = await fetch(url);
         if (import.meta.env.VITE_SENTRY_DSN) {
-          Sentry.addBreadcrumb({
+          addBreadcrumb({
             type: "http",
             category: "fetch",
             data: {
