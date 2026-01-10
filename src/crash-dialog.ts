@@ -23,6 +23,8 @@ const ignoreErrors: (string | RegExp)[] = [
   /TypeError.*(assignedElements|hidePopover).*disconnectedCallback/,
   // Unknown DuckDuckGo complaint:
   /^Error: invalid origin$/,
+  // Chrome iOS "Translate" bug (in anonymous script):
+  /^RangeError: Maximum call stack size exceeded.*at undefined/,
   // Browser extensions and extension-only APIs:
   // (See Sentry's longer list:
   // https://github.com/getsentry/relay/blob/322fa6f678add6abed4772fb6046cbf7daf4814a/relay-filter/src/browser_extensions.rs#L9-L81)

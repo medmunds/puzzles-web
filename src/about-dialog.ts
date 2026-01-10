@@ -63,7 +63,7 @@ interface DependencyInfo {
 function licenseTextToHTML(
   text: string,
   label?: string | HTMLTemplateResult,
-): HTMLTemplateResult[] {
+): HTMLTemplateResult {
   const result: HTMLTemplateResult[] = [];
   const divider = /^\s*(?:={3,}|-{3,})\s*$/;
   let firstParagraph = true;
@@ -103,7 +103,7 @@ function licenseTextToHTML(
     // Didn't get a chance to add the label (no paragraphs in the lines)
     result.push(html`<p>${label}</p>`);
   }
-  return result;
+  return html`<div class="license-text" translate="no">${result}</div>`;
 }
 
 @customElement("about-dialog")
@@ -172,13 +172,15 @@ export class AboutDialog extends LitElement {
         <div class="panel">
           <p>
             A web adaptation of
-            <cite>Simon&nbsp;Tatham’s Portable&nbsp;Puzzle&nbsp;Collection</cite>
-            and Lennard&nbsp;Sprong’s <cite>puzzles-unreleased</cite> additions,
-            by&nbsp;Mike&nbsp;Edmunds
+            <cite translate="no">Simon&nbsp;Tatham’s 
+              Portable&nbsp;Puzzle&nbsp;Collection</cite>
+            and <span translate="no">Lennard&nbsp;Sprong’s</span> 
+            <cite translate="no">puzzles-unreleased</cite> additions,
+            by&nbsp;<span translate="no">Mike&nbsp;Edmunds</span>
           </p>
           <p>
             Version <span class="version">${appVersion}</span><br>
-            Compatible with Portable Puzzle Collection 
+            Compatible with <span translate="no">Portable Puzzle Collection</span> 
             version&nbsp;<span class="version">${puzzlesVersion}</span>
           </p>
           <p>
@@ -192,19 +194,33 @@ export class AboutDialog extends LitElement {
         <wa-details id="credits" name="panel" summary="Credits" open>
           <p>Special thanks to&hellip;</p>
           <ul role="list">
-            <li>Simon Tatham and all the contributors to the official
-              ${this.renderOffsiteLink(sgtPuzzlesLink, "Portable Puzzle Collection")}, 
+            <li><span translate="no">Simon Tatham</span> and all the 
+              contributors to the official
+              ${this.renderOffsiteLink(
+                sgtPuzzlesLink,
+                html`<span translate="no">Portable Puzzle Collection</span>`,
+              )}, 
               for over 20 years of fascinating puzzle solving</li>
-            <li>Lennard Sprong for the
-              ${this.renderOffsiteLink(unreleasedPuzzlesLink, "puzzles-unreleased")} 
-              additions (which actually <em>have</em> been released, at least twice now)</li>
-            <li>Chris Boyle, Greg Hewgill and Kyle Swarner for their fantastic
+            <li><span translate="no">Lennard Sprong</span> for the
+              ${this.renderOffsiteLink(
+                unreleasedPuzzlesLink,
+                html`<span translate="no">puzzles-unreleased</span>`,
+              )} 
+              additions (which actually <em>have</em> been released, 
+              at least twice now)</li>
+            <li><span translate="no">Chris Boyle</span>, 
+              <span translate="no">Greg Hewgill</span>
+              and <span translate="no">Kyle Swarner</span> for their fantastic
               ${this.renderOffsiteLink(androidAppLink, "Android")} and
               ${this.renderOffsiteLink(iOSAppLink, "iOS")} apps, 
-              from which I’ve freely borrowed several clever ideas</li>
-            <li>${this.renderOffsiteLink("https://lucide.dev/", "Lucide")} icons
-              and ${this.renderOffsiteLink("https://webawesome.com", "Web Awesome")}
-              UI components</li>
+              from which I’ve freely borrowed several clever ideas</li> 
+            <li>${this.renderOffsiteLink(
+              "https://lucide.dev/",
+              html`<span translate="no">Lucide</span>`,
+            )} icons and ${this.renderOffsiteLink(
+              "https://webawesome.com",
+              html`<span translate="no">Web Awesome</span>`,
+            )} UI components</li>
             <li>All the other open source software that makes this app possible
               (see the source code link above and the licenses section below)</li>
           </ul>
@@ -234,18 +250,18 @@ export class AboutDialog extends LitElement {
           </div>
           
           <wa-details appearance="plain" icon-placement="start">
-            <div slot="summary">Simon Tatham’s Portable Puzzle Collection</div>
+            <div slot="summary" translate="no">Simon Tatham’s Portable Puzzle Collection</div>
             ${licenseTextToHTML(puzzlesLicenseText)}
           </wa-details>
           <wa-details appearance="plain" icon-placement="start">
-            <div slot="summary">x-sheep/puzzles-unreleased</div>
+            <div slot="summary" translate="no">x-sheep/puzzles-unreleased</div>
             ${licenseTextToHTML(unreleasedLicenseText)}
           </wa-details>
 
           ${this.dependencies?.map(
             ({ name, license, notice }) => html`
               <wa-details appearance="plain" icon-placement="start">
-                <div slot="summary">${name}</div>
+                <div slot="summary" translate="no">${name}</div>
                 ${licenseTextToHTML(notice ?? `${license} license (no license text provided)`)}
               </wa-details>
             `,
@@ -330,6 +346,14 @@ export class AboutDialog extends LitElement {
       .version {
         user-select: all;
       }
+      
+      /* workaround for Chrome translation's added font tags
+       * that seem to ignore the whitespace text nodes between
+       * neighboring inline tags */ 
+      font::before,
+      font::after {
+        content: " ";
+      },
   `,
   ];
 }

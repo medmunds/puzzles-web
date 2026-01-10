@@ -49,6 +49,8 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     ignoreErrors: [
       // Emscripten runtime aborted wasm load on navigation/refresh:
       /RuntimeError:\s*Aborted\s*\(NetworkError.*Build with -sASSERTIONS/i,
+      // Chrome iOS "Translate" bug (in anonymous script):
+      /^RangeError: Maximum call stack size exceeded.*at undefined/,
     ],
     beforeBreadcrumb(breadcrumb, hint) {
       try {
@@ -149,6 +151,10 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 import { installErrorHandlers } from "./utils/errors.ts";
 
 installErrorHandlers();
+
+import { patchLitForExternalDomManipulation } from "./utils/lit.ts";
+
+patchLitForExternalDomManipulation();
 
 // Install our icon library
 import "./icons";
