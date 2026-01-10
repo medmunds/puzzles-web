@@ -95,6 +95,16 @@ export class Drawing implements DrawingImpl<Blitter> {
     this.context.scale(effectiveDpr, effectiveDpr);
   }
 
+  /**
+   * Return a Blob containing the current image of the canvas.
+   *
+   * Any options are passed to OffscreenCanvas.convertToBlob(); if not provided
+   * the result will be type image/png.
+   */
+  public async getImage(options?: ImageEncodeOptions): Promise<Blob> {
+    return this.canvas.convertToBlob(options);
+  }
+
   /*
    * DrawingImpl
    */

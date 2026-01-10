@@ -155,6 +155,20 @@ export class PuzzleViewInteractive extends PuzzleView {
     return button;
   }
 
+  /**
+   * Returns true if the puzzle is probably interested in this keyboard event.
+   */
+  wantsKeyEvent(event: KeyboardEvent): boolean {
+    const isCtrl = hasCtrlKey(event);
+    return (
+      event.key === "Escape" ||
+      event.key === "Copy" ||
+      (event.key === "c" && isCtrl) ||
+      // In general, avoid intercepting browser shortcuts (even if puzzle might handle it):
+      (this.eventKeyToPuzzleKey(event.key) !== undefined && !isCtrl)
+    );
+  }
+
   handleKeyEvent = async (event: KeyboardEvent) => {
     if (!this.puzzle) {
       return;
@@ -164,6 +178,12 @@ export class PuzzleViewInteractive extends PuzzleView {
         event.preventDefault();
         await this.cancelPointerTracking();
       }
+      return;
+    }
+
+    if (event.key === "Copy" || (event.key === "c" && hasCtrlKey(event))) {
+      event.preventDefault();
+      await this.puzzle.copyImage();
       return;
     }
 

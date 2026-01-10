@@ -27,6 +27,7 @@ import gemIcon from "lucide-static/icons/gem.svg";
 import hashIcon from "lucide-static/icons/hash.svg";
 import heartIcon from "lucide-static/icons/heart.svg";
 import historyIcon from "lucide-static/icons/history.svg";
+import imagesIcon from "lucide-static/icons/images.svg";
 import infoIcon from "lucide-static/icons/info.svg";
 import laughIcon from "lucide-static/icons/laugh.svg";
 import octagonAlertIcon from "lucide-static/icons/octagon-alert.svg";
@@ -68,6 +69,7 @@ const defaultIcons: IconMap = {
   "back-to-catalog": boxesIcon,
   "checkpoint-add": shieldCheckIcon,
   "checkpoint-remove": trash2Icon,
+  "copy-image": imagesIcon,
   "favorite": heartIcon,
   "game": boxIcon,
   "game-in-progress": playIcon,

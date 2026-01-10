@@ -512,6 +512,22 @@ export class Puzzle {
     await this.workerPuzzle.setDrawingFontInfo(fontInfo);
   }
 
+  public async getImage(options?: ImageEncodeOptions): Promise<Blob> {
+    return this.workerPuzzle.getImage(options);
+  }
+
+  /**
+   * Place an image of the current puzzle on the clipboard.
+   * This must be called from within a user event handler.
+   * (And in Safari, there can't be any intervening async calls in that handler.)
+   */
+  public copyImage(type: string = "image/png") {
+    // For Safari's "transient user activation" security policy, the call to
+    // clipboard.write must be synchronous (but the data can be a promise).
+    const blobPromise = this.getImage({ type });
+    return navigator.clipboard.write([new ClipboardItem({ [type]: blobPromise })]);
+  }
+
   //
   // Timer state
   //

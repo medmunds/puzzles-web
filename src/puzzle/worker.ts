@@ -301,6 +301,13 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
     this.drawing.setFontInfo(fontInfo);
   }
 
+  async getImage(options?: ImageEncodeOptions): Promise<Blob> {
+    if (!this.drawing) {
+      throw new Error("getImage called with no canvas attached");
+    }
+    return this.drawing.getImage(options);
+  }
+
   //
   // Timer
   //

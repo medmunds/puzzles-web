@@ -11,7 +11,7 @@ import { Screen } from "./screen.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
 import { cssWATweaks } from "./utils/css.ts";
-import { hasCtrlKey, preventDoubleTapZoomOnButtons } from "./utils/events.ts";
+import { preventDoubleTapZoomOnButtons } from "./utils/events.ts";
 import { debounced, sleep } from "./utils/timing.ts";
 
 // Register components
@@ -220,6 +220,10 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     const iconName = this.puzzleData?.unfinished ? "unfinished" : "game";
     const label = this.puzzleData?.name ?? "Game";
     const enableDeveloperCommands = false;
+
+    // clipboard.write is Baseline 2024 (Firefox 6/2024; others ~2020)
+    const supportsClipboardWrite = typeof navigator.clipboard?.write === "function";
+
     return html`
       <wa-dropdown
           placement=${this.orientation === "vertical" ? "bottom" : "right"}
@@ -257,10 +261,21 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
               `
             : nothing
         }
+        <wa-divider></wa-divider>
         <wa-dropdown-item data-command="share">
           <wa-icon slot="icon" name="share"></wa-icon>
           Share
         </wa-dropdown-item>
+        ${
+          supportsClipboardWrite
+            ? html`
+              <wa-dropdown-item data-command="copy-image">
+                <wa-icon slot="icon" name="copy-image"></wa-icon>
+                Copy image
+              </wa-dropdown-item>
+              `
+            : nothing
+        }
         <wa-divider></wa-divider>
         <wa-dropdown-item data-command="load-game">
           <wa-icon slot="icon" name="load-game"></wa-icon>
@@ -329,6 +344,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     super.registerCommandHandlers();
     Object.assign(this.commandMap, {
       "change-type": this.showTypeMenu,
+      "copy-image": () => this.puzzle?.copyImage(),
       "enter-gameid": this.showEnterGameIDDialog,
       "load-game": this.showLoadGameDialog,
       "new-game": () => this.puzzle?.newGame(),
@@ -619,9 +635,8 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   private handleBubbledKeyDown = async (event: KeyboardEvent) => {
     // If a key event arrives at the document when nothing else is focused,
     // focus the puzzle and redirect the event to it.
-    if (event.key === "Tab" || hasCtrlKey(event)) {
+    if (event.key === "Tab") {
       // Don't redirect keyboard navigation
-      // or (possible) browser command shortcut keys
       return;
     }
     const activeElement = document.activeElement;
@@ -629,7 +644,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       // Only redirect keys that are potentially handled by the puzzle.
       // (Don't focus the puzzle on Shift or Alt or NextTrack or FnLock.)
       const puzzleView = this.shadowRoot?.querySelector("puzzle-view-interactive");
-      if (puzzleView?.eventKeyToPuzzleKey(event.key) !== undefined) {
+      if (puzzleView?.wantsKeyEvent(event)) {
         puzzleView.focus();
         await puzzleView.handleKeyEvent(event);
       }
