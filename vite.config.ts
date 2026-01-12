@@ -43,9 +43,10 @@ function securityHeaders(env: Env, cspReportOnly = false): Headers {
     "manifest-src": "'self'",
     "object-src": "'none'",
     // Chromium currently requires 'wasm-unsafe-eval' for WebAssembly.instantiateStreaming
-    "script-src": "'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com",
+    "script-src":
+      "'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com 'report-sample'",
     // Web Awesome uses inline styles in several places (and we do too in one place)
-    "style-src": "'self' 'unsafe-inline'",
+    "style-src": "'self' 'unsafe-inline' 'report-sample'",
     "worker-src": "'self'",
     "base-uri": "'none'",
     // (Change this to 'self' if we rework help-viewer to use an iframe)
