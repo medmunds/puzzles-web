@@ -6,7 +6,7 @@
  * To use, include this head block in each entry page:
  *
  *   <script nomodule>
- *     window.location.href = "/unsupported.html?f=script%20type%3D%22module%22";
+ *     window.location.href = "/unsupported?f=script%20type%3D%22module%22";
  *   </script>
  *   <script type="module" src="%VITE_PREFLIGHT_CHECK%"></script>
  *   <script type="module" src="/src/<page-main>.ts"></script>
