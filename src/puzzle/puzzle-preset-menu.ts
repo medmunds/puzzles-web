@@ -127,8 +127,8 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
       }
       <div class="dropdown-label">
         <div class=${labelContentClasses}>
-          ${this.label}<br>
-          ${this.currentGameTypeLabel}
+          <div>${this.label}</div>
+          <div>${this.currentGameTypeLabel}</div>
         </div>
       </div>
     `;
@@ -307,8 +307,13 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
       .dropdown-label-content {
         width: 100%;
         overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
+        
+        > div {
+          width: 100%;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
   
         text-align: start;
         transform: translateY(0); /* first line: menu label */
