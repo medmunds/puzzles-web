@@ -47,11 +47,13 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNARROW_BORDERS")
 # a single emcc runtime wrapper for all <puzzle>.wasm. (The linker doesn't
 # seem to mind that exports.js doesn't exist.)
 # (See https://github.com/emscripten-core/emscripten/issues/16695.)
+# -sDYNAMIC_EXECUTION=0 is required to avoid CSP script-src 'unsafe-eval'
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} \
 --no-entry \
 -lexports.js \
 -sALLOW_MEMORY_GROWTH=1 \
 -sALLOW_TABLE_GROWTH=1 \
+-sDYNAMIC_EXECUTION=0 \
 -sENVIRONMENT=web,worker \
 -sEXPORT_BINDINGS=1 \
 -sEXPORT_ES6=1 \
