@@ -9,12 +9,104 @@ import { extraPages, renderHandlebars, renderMarkdown } from "./vite-extra-pages
 import { sentryVitePlugin } from "./vite-sentry-plugin"; // from "@sentry/vite-plugin";
 import { wasmSourcemaps } from "./vite-wasm-sourcemaps";
 
+type Env = Record<string, string>;
+type Headers = Record<string, string>;
+
+function getGitSha(env: Env): string {
+  return env.VITE_GIT_SHA
+    ? env.VITE_GIT_SHA
+    : child.execSync("git rev-parse HEAD").toString().trim();
+}
+
 function defaultAppVersion(env: Record<string, string>): string {
   const dateStr = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-  const gitSha = env.VITE_GIT_SHA
-    ? env.VITE_GIT_SHA.slice(0, 7)
-    : child.execSync("git rev-parse --short HEAD").toString().trim();
-  return `${dateStr}.${gitSha || "unknown"}`;
+  const gitSha = getGitSha(env);
+  return `${dateStr}.${gitSha ? gitSha.slice(0, 7) : "unknown"}`;
+}
+
+function securityHeaders(env: Env, cspReportOnly = false): Headers {
+  const headers: Headers = {
+    // Cloudflare defaults to Referrer-Policy: same-origin; we relax that a bit
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Content-Type-Options": "nosniff",
+    // (Change this to "SAMEORIGIN" if we rework help-viewer to use an iframe)
+    "X-Frame-Options": "NONE",
+    // Cloudflare also adds its own Expect-CT and Strict-Transport-Security,
+    // plus the obsolete X-Xss-Protection
+  };
+
+  const csp: Record<string, string> = {
+    "default-src": "'self'",
+    // wa-icon uses fetch on icon urls that vite has inlined as data: uris
+    "connect-src": `'self' data: blob: https://cloudflareinsights.com`,
+    "img-src": "'self' data: blob:",
+    "manifest-src": "'self'",
+    "object-src": "'none'",
+    // Chromium currently requires 'wasm-unsafe-eval' for WebAssembly.instantiateStreaming
+    "script-src": "'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com",
+    // Web Awesome uses inline styles in several places (and we do too in one place)
+    "style-src": "'self' 'unsafe-inline'",
+    "worker-src": "'self'",
+    "base-uri": "'none'",
+    // (Change this to 'self' if we rework help-viewer to use an iframe)
+    "frame-ancestors": "'none'",
+  };
+
+  if (env.VITE_SENTRY_DSN) {
+    const sentryDsnOrigin = new URL(env.VITE_SENTRY_DSN).origin;
+    csp["connect-src"] += ` ${sentryDsnOrigin}`;
+
+    // Provide Sentry with high-entropy UA versions
+    const clientHints = ["Platform-Version", "Full-Version-List", "Model"];
+    headers["Accept-CH"] = clientHints.map((hint) => `Sec-CH-UA-${hint}`).join(", ");
+    headers["Permissions-Policy"] = clientHints
+      .map((hint) => `ch-ua-${hint.toLowerCase()}=("${sentryDsnOrigin}")`)
+      .join(", ");
+  }
+
+  if (env.VITE_CSP_REPORT_URI) {
+    let cspReportUri = env.VITE_CSP_REPORT_URI;
+    if (
+      cspReportUri.includes("sentry_key") &&
+      !cspReportUri.includes("sentry_release")
+    ) {
+      // Sentry CSP reporting allows a release id.
+      // Should match Sentry.init 'release' param (see main.ts).
+      const gitSha = getGitSha(env);
+      if (gitSha) {
+        cspReportUri += `&sentry_release=${encodeURIComponent(gitSha)}`;
+      }
+    }
+    const cspReportOrigin = new URL(cspReportUri).origin;
+    if (!csp["connect-src"].includes(cspReportOrigin)) {
+      // (might already be in there if same as sentryDsnOrigin)
+      csp["connect-src"] += ` ${cspReportOrigin}`;
+    }
+    csp["report-uri"] = cspReportUri;
+    csp["report-to"] = "csp-endpoint";
+
+    headers["Reporting-Endpoints"] = `csp-endpoint="${cspReportUri}"`;
+    // Sentry recommends also setting the Report-To JSON header,
+    // but every browser we support either prefers Reporting-Endpoints
+    // or (Firefox) only uses the report-uri from the CSP.
+  }
+
+  headers[
+    cspReportOnly ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy"
+  ] = Object.entries(csp)
+    .map(([directive, values]) => `${directive} ${values}`)
+    .join("; ");
+
+  // Cloudflare: "Each line in the _headers file has a 2,000 character limit. The entire
+  // line, including spacing, header name, and value, counts towards this limit."
+  for (const [field, value] of Object.entries(headers)) {
+    const length = `  ${field}: ${value}`.length;
+    if (length > 2000) {
+      throw new Error(`_headers line for ${field} too long: ${length} > 2000`);
+    }
+  }
+
+  return headers;
 }
 
 const manualAdditionalHeadTags = `\
@@ -72,9 +164,6 @@ export default defineConfig(async ({ command, mode }) => {
   }
   const analytics_html = env.VITE_ANALYTICS_BLOCK;
   const commonTemplateData = { preflightSrc, analytics_html };
-  const sentryDsnOrigin = env.VITE_SENTRY_DSN
-    ? new URL(env.VITE_SENTRY_DSN).origin
-    : "";
   const createSentryVitePlugin = () =>
     sentryVitePlugin({
       applicationKey: sentryFilterApplicationId,
@@ -121,15 +210,7 @@ export default defineConfig(async ({ command, mode }) => {
       ),
     },
     preview: {
-      headers: sentryDsnOrigin
-        ? {
-            "Accept-CH":
-              "Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model",
-            "Permissions-Policy": ["platform-version", "full-version-list", "model"]
-              .map((perm) => `ch-ua-${perm}=("${sentryDsnOrigin}")`)
-              .join(", "),
-          }
-        : {},
+      headers: securityHeaders(env),
     },
     plugins: [
       wasmSourcemaps(),
@@ -301,7 +382,13 @@ export default defineConfig(async ({ command, mode }) => {
           {
             // Cloudflare Pages HTTP headers
             virtualPages: [
-              { urlPathname: "_headers", data: { puzzleIds, sentryDsnOrigin } },
+              {
+                urlPathname: "_headers",
+                data: {
+                  puzzleIds,
+                  securityHeaders: securityHeaders(env, /*cspReportOnly=*/ true),
+                },
+              },
             ],
             transforms: [renderHandlebars({ file: "_headers.txt.hbs" })],
             entryPoint: false,

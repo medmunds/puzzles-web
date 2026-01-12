@@ -13,6 +13,11 @@
   Cache-Control: public, max-age=60, must-revalidate
 }}
 
+/*
+{{#each securityHeaders}}
+  {{{ @key }}}: {{{ this }}}
+{{/each}}
+
 {{! Favicons, robots.txt, etc. }}
 /:file.png
   Cache-Control: public, max-age=14400, must-revalidate
@@ -36,19 +41,11 @@
 /
   ! Cache-Control
   Cache-Control: public, max-age=60, must-revalidate
-{{#if sentryDsnOrigin}}
-  Accept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model
-  Permissions-Policy: ch-ua-platform-version=("{{sentryDsnOrigin}}"), ch-ua-full-version-list=("{{sentryDsnOrigin}}"), ch-ua-model=("{{sentryDsnOrigin}}")
-{{/if}}
 {{#each puzzleIds}}
 
 /{{{this}}}
   ! Cache-Control
   Cache-Control: public, max-age=60, must-revalidate
-{{#if ../sentryDsnOrigin}}
-  Accept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Model
-  Permissions-Policy: ch-ua-platform-version=("{{../sentryDsnOrigin}}"), ch-ua-full-version-list=("{{../sentryDsnOrigin}}"), ch-ua-model=("{{../sentryDsnOrigin}}")
-{{/if}}
 {{/each}}
 
 /help/*
