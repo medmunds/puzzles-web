@@ -17,6 +17,7 @@ import "@awesome.me/webawesome/dist/components/textarea/textarea.js";
 const ignoreErrors: (string | RegExp)[] = [
   // Emscripten runtime aborted wasm load on navigation/refresh:
   /RuntimeError:\s*Aborted\s*\(NetworkError.*Build with -sASSERTIONS/i,
+  "Network error: Response body loading was aborted",
   // Web Awesome: https://github.com/shoelace-style/webawesome/issues/1905:
   /TypeError.*clientX.*handleDragStop/,
   // Web Awesome: https://github.com/shoelace-style/webawesome/issues/1911:
