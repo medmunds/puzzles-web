@@ -25,7 +25,7 @@ the tips for [other browsers](#other) below.
 ## iOS (Safari) {#ios}
 
 Tap the ::ios-share:: share icon next to the address bar, scroll down through
-the sharing options and choose *Add to Home Screen ::square-plus::.*
+the sharing options and choose *Add to Home Screen ::ios-add-to-home-screen::.*
 
 The same steps often work in other iOS web browsers, but if not try installing
 from Safari.

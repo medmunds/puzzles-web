@@ -113,3 +113,67 @@ tr:first-child th {
     background-color: var(--wa-color-neutral-fill-quiet);
   }
 }
+
+/* Custom style for puzzles.md */
+table.puzzles-list td:not(:last-child) {
+  white-space: nowrap;
+}
+
+/* Icon images */
+.icon-checkpoint-remove {
+  --icon: url(/node_modules/lucide-static/icons/trash-2.svg);
+}
+.icon-edge-app-available {
+  --icon: url(/src/assets/edge-app-available.svg);
+}
+.icon-ellipsis {
+  --icon: url(/node_modules/lucide-static/icons/ellipsis.svg);
+}
+.icon-ellipsis-vertical {
+  --icon: url(/node_modules/lucide-static/icons/ellipsis-vertical.svg);
+}
+.icon-experimental {
+  --icon: url(/node_modules/lucide-static/icons/flask-conical.svg);
+}
+.icon-firefox-web-apps {
+  --icon: url(/src/assets/firefox-web-apps.svg);
+}
+.icon-game-in-progress {
+  --icon: url(/node_modules/lucide-static/icons/play.svg);
+}
+.icon-history {
+  --icon: url(/node_modules/lucide-static/icons/history.svg);
+}
+.icon-install-desktop {
+  --icon: url(/node_modules/@material-design-icons/svg/outlined/install_desktop.svg);
+}
+.icon-ios-share {
+  --icon: url(/node_modules/@material-design-icons/svg/outlined/ios_share.svg);
+}
+.icon-ios-add-to-home-screen {
+  --icon: url(/node_modules/lucide-static/icons/square-plus.svg);
+}
+.icon-load-game {
+  --icon: url(/node_modules/lucide-static/icons/upload.svg);
+}
+.icon-mouse-left-button {
+  --icon: url(/src/assets/mouse-left-button.svg);
+}
+.icon-mouse-right-button {
+  --icon: url(/src/assets/mouse-right-button.svg);
+}
+.icon-puzzle-type {
+  --icon: url(/node_modules/lucide-static/icons/swatch-book.svg);
+}
+.icon-redo {
+  --icon: url(/node_modules/lucide-static/icons/redo-2.svg);
+}
+.icon-save-game {
+  --icon: url(/node_modules/lucide-static/icons/download.svg);
+}
+.icon-share {
+  --icon: url(/node_modules/lucide-static/icons/share-2.svg);
+}
+.icon-undo {
+  --icon: url(/node_modules/lucide-static/icons/undo-2.svg);
+}

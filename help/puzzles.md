@@ -3,7 +3,6 @@
 The puzzles in this collection are listed below. (Click the name to play.)
 
 <!-- this table is manually generated for now -->
-<style> td:not(:last-child) { white-space: nowrap; } </style>
 
 | Puzzle                   | Instructions                                 | Similar/related puzzles[\*](#tm)                                                | 
 |--------------------------|----------------------------------------------|---------------------------------------------------------------------------------|
@@ -57,7 +56,9 @@ The puzzles in this collection are listed below. (Click the name to play.)
 | [Undead](../undead)      | [help](undead)   - [manual](manual/undead)   | Haunted Mirror Maze, Spukschloss                                                |
 | [Unequal](../unequal)    | [help](unequal)  - [manual](manual/unequal)  | Adjacent, Futoshiki (ふと指揮)                                                      |
 | [Unruly](../unruly)      | [help](unruly)   - [manual](manual/unruly)   | Tohu-Wa-Vohu, Binairo, Tic-Tac-Logic                                            |
-| [Untangle](../untangle)  | [help](untangle) - [manual](manual/untangle) | Planarity                                                                       |
+| [Untangle](../untangle)  | [help](untangle) - [manual](manual/untangle) | Planarity                                                                       | 
+
+{.puzzles-list}
 
 
 <small>* In some regions, names of similar/related puzzles may be trademarks 

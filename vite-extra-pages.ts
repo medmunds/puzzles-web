@@ -790,33 +790,6 @@ export const renderMarkdown = (
         ? new MarkdownIt(config)
         : new MarkdownIt(config);
 
-  // Remap logical icon names to Lucide names. See src/icons.ts.
-  // (Only a few that we happen to use in the help docs.)
-  const logicalIconNames: Record<string, string> = {
-    "checkpoint-add": "shield-check",
-    "checkpoint-remove": "trash-2",
-    experimental: "flask-conical",
-    "game-in-progress": "play",
-    "generic-puzzle": "box",
-    history: "history",
-    "mouse-left-button": "/src/assets/mouse-left-button.svg",
-    "mouse-right-button": "/src/assets/mouse-right-button.svg",
-    "puzzle-type": "swatch-book",
-    redo: "redo-2",
-    "save-game": "download",
-    "load-game": "upload",
-    share: "share-2",
-    "show-solution": "sparkles",
-    undo: "undo-2",
-    unfinished: "traffic-cone",
-    // A few custom icons for the install page
-    "firefox-web-apps": "/src/assets/firefox-web-apps.svg",
-    "edge-app-available": "/src/assets/edge-app-available.svg",
-    "install-desktop":
-      "/node_modules/@material-design-icons/svg/outlined/install_desktop.svg",
-    "ios-share": "/node_modules/@material-design-icons/svg/outlined/ios_share.svg",
-  } as const;
-
   md.use(mditPluginIcon, {
     render: (raw) => {
       const parts = raw.split("|");
@@ -824,16 +797,18 @@ export const renderMarkdown = (
         return `::${escapeHtml(raw)}::`; // ???
       }
       const iconName = parts.shift()?.trim() ?? "";
-      const iconId = logicalIconNames[iconName] ?? iconName;
-      const src = iconId.startsWith("/")
-        ? iconId
-        : `/node_modules/lucide-static/icons/${iconId}.svg`;
-      const style = `style="--icon: url('${escapeHtml(src)}')"`;
-      const label = parts.length > 0 ? parts.join("|").trim() : iconName;
-      const ariaLabel = label ? `aria-label="${escapeHtml(label)}"` : "";
+      if (!iconName) {
+        throw new Error(`Invalid empty icon name in: '${raw}'`);
+      }
+      const iconClass = `icon-${iconName}`;
+      // TODO: search for iconClass in help.css; error if not found
+      const label = parts.length > 0 ? parts.join("|").trim() : "";
+      const aria = label
+        ? `role="img" aria-label="${escapeHtml(label)}"`
+        : `aria-hidden="true"`;
       // Use an image mask (baseline 2023) to render icon in currentColor
       // (for dark mode, etc.). See corresponding rule in help.css.
-      return `<span class="icon" role="img" ${ariaLabel} ${style}></span>`;
+      return `<span class="icon ${iconClass}" ${aria}></span>`;
     },
   });
 
