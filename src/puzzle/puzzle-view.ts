@@ -6,6 +6,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
+import { styleMap } from "lit/directives/style-map.js";
 import { coordsToColour } from "../utils/colour.ts";
 import { almostEqual } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
@@ -152,7 +153,9 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     if (!this.puzzle?.wantsStatusbar) {
       return nothing;
     }
-    const style = this.canvasSize ? `max-width: ${this.canvasSize?.w}px` : nothing;
+    const style = this.canvasSize
+      ? styleMap({ "max-width": `${this.canvasSize.w}px` })
+      : nothing;
     return html`
       <div part="statusbar" role="status" style=${style}>${this.puzzle?.statusbarText}</div>
     `;
