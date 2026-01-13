@@ -55,7 +55,7 @@ rm -rf "${DIST_DIR_ICONS}"/*
 #   puzzle-128d24.png: resized ibase (128x128, 24bit)
 #   puzzle-web.png: resized and centered base with excess borders minimized (150x150, 24bit)
 #   puzzle-banner.jpg: angled and cropped (240x130, 24bit)
-# cp "${BUILD_DIR}"/icons/*-base.png "${DIST_DIR_ICONS}/"
+cp "${BUILD_DIR}"/icons/*-base.png "${DIST_DIR_ICONS}/"
 # cp "${BUILD_DIR}"/icons/*-ibase.png "${DIST_DIR_ICONS}/"
 #cp "${BUILD_DIR}"/icons/*-64d24.png "${DIST_DIR_ICONS}/"
 #cp "${BUILD_DIR}"/icons/*-128d24.png "${DIST_DIR_ICONS}/"

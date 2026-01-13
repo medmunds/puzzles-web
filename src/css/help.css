@@ -24,6 +24,16 @@ h6 {
   margin-block-start: var(--wa-space-m);
 }
 
+/* Screenshots from build insertPuzzleImage */
+img.screenshot {
+  max-width: min(15rem, 50%);
+  float: inline-end;
+  margin-inline-start: var(--wa-space-l);
+  margin-block-end: var(--wa-space-m);
+  border: var(--wa-border-width-s) solid var(--wa-color-neutral-border-normal);
+  border-radius: var(--wa-border-radius-m);
+}
+
 /* Loosely adapted from web-awesome native.css */
 kbd {
   display: inline-block;

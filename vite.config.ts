@@ -5,7 +5,12 @@ import license from "rollup-plugin-license";
 import { build, defineConfig, loadEnv, type UserConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { puzzleIds, puzzles } from "./src/assets/puzzles/catalog.json";
-import { extraPages, renderHandlebars, renderMarkdown } from "./vite-extra-pages";
+import {
+  extraPages,
+  renderHandlebars,
+  renderMarkdown,
+  type Transform,
+} from "./vite-extra-pages";
 import { sentryVitePlugin } from "./vite-sentry-plugin"; // from "@sentry/vite-plugin";
 import { wasmSourcemaps } from "./vite-wasm-sourcemaps";
 
@@ -113,6 +118,29 @@ function securityHeaders(env: Env, cspReportOnly = false): Headers {
 const manualAdditionalHeadTags = `\
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="/src/css/help-page.css">`;
+
+/**
+ * If this is a help or manual page for a known puzzleId, and the icons build produced
+ * src/assets/icons/<puzzleId>-base.png, insert that screenshot as a floating <img>
+ * just inside the end of the <h1>.
+ */
+const insertPuzzleScreenshot: Transform = (data) => {
+  let { html, urlPathname, ...rest } = data;
+  if (typeof html === "string" && typeof urlPathname === "string") {
+    const puzzleId = /([^/]+)(\.html)?$/.exec(urlPathname)?.[1];
+    const imagePath =
+      puzzleId && puzzleIds.includes(puzzleId)
+        ? `src/assets/icons/${puzzleId}-base.png`
+        : null;
+    if (imagePath && fs.existsSync(imagePath)) {
+      html = html.replace(
+        "</h1>",
+        `<img class="screenshot" src="/${imagePath}" alt="Puzzle screenshot"></h1>`,
+      );
+    }
+  }
+  return { html, urlPathname, ...rest };
+};
 
 // Arbitrary metadata to identify own stack frames.
 // Used as Sentry.thirdPartyErrorFilterIntegration filterKeys
@@ -340,6 +368,7 @@ export default defineConfig(async ({ command, mode }) => {
                 };
               },
               renderHandlebars({ file: "help/_overview.html.hbs" }),
+              insertPuzzleScreenshot,
             ],
           },
           {
@@ -363,6 +392,7 @@ export default defineConfig(async ({ command, mode }) => {
                 typographer: true,
               }),
               renderHandlebars({ file: "help/_unreleased.html.hbs" }),
+              insertPuzzleScreenshot,
             ],
           },
           {
@@ -380,6 +410,7 @@ export default defineConfig(async ({ command, mode }) => {
                   .replace("</head>", `${manualAdditionalHeadTags}\n</head>`)
                   .replace("</body>", `${analytics_html}</body>`),
               }),
+              insertPuzzleScreenshot,
             ],
           },
           {
