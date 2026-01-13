@@ -348,12 +348,12 @@ export default defineConfig(async ({ command, mode }) => {
             sources: "puzzles/unreleased/docs/*.md",
             resolve: { url: "help/", path: "puzzles/unreleased/docs/" },
             transforms: [
-              // In markdown source, make the image standalone-only
+              // In markdown source, strip the raw.githubusercontent image
               ({ source, ...data }) => ({
                 ...commonTemplateData,
                 source: String(source).replace(
-                  /^(\s*!\[]\(.*\))$/m,
-                  "$1 {.standalone-only}",
+                  /!\[.*]\(https:\/\/raw\.githubusercontent\.com.*\)/m,
+                  "",
                 ),
                 ...data,
               }),
