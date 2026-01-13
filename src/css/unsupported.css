@@ -1,0 +1,15 @@
+/* TODO: Replace common.css with something minimal
+     (that also avoids --custom-properties) */
+@import url("common.css");
+
+body {
+  padding: 2em;
+}
+
+section {
+  margin-block-start: 2em;
+}
+
+section.warning {
+  display: inline-block;
+}
