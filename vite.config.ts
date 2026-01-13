@@ -413,7 +413,7 @@ export default defineConfig(async ({ command, mode }) => {
         filename: "sw.ts",
         injectManifest: {
           // enableWorkboxModulesLogs: true, // see workbox logging in production
-          globIgnores: ["404.html"],
+          globIgnores: ["404.html", "**/unsupported*.{html,css,js}"],
           globPatterns: [
             // Include all help files, icons, etc.
             // But include wasm's only for the intended puzzles (skip nullgame, etc.)
