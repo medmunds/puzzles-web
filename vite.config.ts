@@ -316,8 +316,10 @@ export default defineConfig(async ({ command, mode }) => {
             resolve: { url: "help/", path: "puzzles/html/" },
             transforms: [
               ({ source, ...data }) => {
-                // first line of fragment is (bare) title; remainder is html body
-                const [title, ...lines] = String(source).split("\n");
+                // first line of fragment is (bare) title, with optional leading `directive:`;
+                // remainder is html body
+                let [title, ...lines] = String(source).split("\n");
+                title = title.replace(/^[^:]*:\s*/, ""); // group.html, rect.html
                 const body_html = lines.join("\n");
                 // TODO: add warning notice for unfinished puzzles
                 // manpage (relative to the overview page) if manual page exists
