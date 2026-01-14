@@ -1,11 +1,13 @@
 import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import { consume } from "@lit/context";
+import { ResizeController } from "@lit-labs/observers/resize-controller.js";
 import { SignalWatcher, signal } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { cssWATweaks } from "../utils/css.ts";
+import { equalSet } from "../utils/equal.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { ConfigDescription, ConfigItem, ConfigValues } from "./types.ts";
@@ -44,6 +46,9 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
   @property({ type: Boolean })
   autosubmit = false;
 
+  @property({ type: Number, attribute: "choices-button-group-limit" })
+  choicesButtonGroupLimit = 5;
+
   /**
    * The title for the dialog, per the config
    */
@@ -61,6 +66,11 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
 
   @state()
   protected changes: ConfigValues = {};
+
+  // Ids of choices sets where a horizontal radio-group fits.
+  // If not, show a select menu instead.
+  @state()
+  private showAsButtonGroup = new Set<string>();
 
   @state()
   protected error?: string;
@@ -82,9 +92,31 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
     this.error = undefined;
   }
 
+  override connectedCallback() {
+    super.connectedCallback();
+    this.updateResizeControllerTarget();
+  }
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.observedForm) {
+      this.resizeController.unobserve(this.observedForm);
+      this.observedForm = undefined;
+    }
+  }
+
   protected override async willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("puzzle") && this.puzzle) {
       await this.loadConfig();
+    }
+  }
+
+  protected override updated(changedProperties: Map<string, unknown>) {
+    this.updateResizeControllerTarget();
+    if (
+      changedProperties.has("config") ||
+      changedProperties.has("choicesButtonGroupLimit")
+    ) {
+      this.updateShowAsButtonGroup();
     }
   }
 
@@ -104,7 +136,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
       case "string":
         return html`
           <wa-input
-            id=${id}
+            name=${id}
             inputmode=${isNumeric(value) ? "decimal" : "text"}
             label=${config.name}
             value=${value}
@@ -116,47 +148,23 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
       case "boolean":
         return html`
           <wa-checkbox 
-            id=${id}
+            name=${id}
             ?checked=${value}
             @change=${this.updateCheckboxValue}
           >${config.name}</wa-checkbox>
         `;
 
-      case "choices":
-        if (config.choicenames.length <= 4) {
-          // Render small option sets as a radio button group rather than a select popup.
-          // Use a horizontal button group for short options, otherwise vertical radio buttons.
-          const totalChars = config.choicenames.reduce(
-            (sum, name) => sum + name.length,
-            0,
-          );
-          const isShort = totalChars < 30;
-
-          // Bind to .value (property) rather than value (attribute) to work
-          // around a wa-radio-group bug where attribute changes aren't rendered.
-          // https://github.com/shoelace-style/webawesome/issues/1273
-          return html`
-            <wa-radio-group
-              id=${id}
-              label=${config.name}
-              .value=${value}
-              orientation=${isShort ? "horizontal" : "vertical"}
-              @change=${this.updateSelectValue}
-            >
-              ${config.choicenames.map(
-                (choice, value) => html`
-                  <wa-radio 
-                    value=${value} 
-                    appearance=${isShort ? "button" : nothing}
-                  >${choice}</wa-radio>
-                `,
-              )}
-            </wa-radio-group>
-          `;
-        }
-        return html`
+      case "choices": {
+        // Render choices as a select menu, or as a horizontal radio button group
+        // for small numbers of choices if the button group fits one one line.
+        // There's no way to know if it fits until it's rendered, so always render
+        // both and use a resize observer to update showButtonGroup state so that
+        // only one is visible.
+        const showButtonGroup = this.showAsButtonGroup.has(id);
+        const select = html`
           <wa-select
-            id=${id}
+            name=${id}
+            class=${showButtonGroup ? "hidden" : nothing}
             label=${config.name}
             value=${value}
             @change=${this.updateSelectValue}
@@ -169,6 +177,37 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
           </wa-select>
         `;
 
+        if (
+          config.choicenames.length > this.choicesButtonGroupLimit &&
+          !showButtonGroup
+        ) {
+          return select;
+        }
+
+        // Bind to .value (property) rather than value (attribute) to work
+        // around a wa-radio-group bug where attribute changes aren't rendered.
+        // https://github.com/shoelace-style/webawesome/issues/1273
+        return html`
+          <div class="choices">
+            <wa-radio-group
+              name=${id}
+              class=${showButtonGroup ? nothing : "hidden"}
+              label=${config.name}
+              .value=${value}
+              orientation="horizontal"
+              @change=${this.updateSelectValue}
+            >
+              ${config.choicenames.map(
+                (choice, value) => html`
+                  <wa-radio value=${value} appearance="button">${choice}</wa-radio>
+                `,
+              )}
+            </wa-radio-group>
+            ${select}
+          </div>
+        `;
+      }
+
       default:
         // @ts-expect-error: item.type never
         throw new Error(`Unknown config item type ${item.type}`);
@@ -180,12 +219,15 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
     // won't update input element state. Flush current values into item properties.
     for (const [id, { type }] of Object.entries(this.config?.items ?? [])) {
       const value = this.changes[id] ?? this.values[id];
-      const element = this.shadowRoot?.querySelector<HTMLInputElement>(`#${id}`);
-      if (element && value !== undefined) {
-        if (type === "boolean") {
-          element.checked = Boolean(value);
-        } else {
-          element.value = String(value);
+      if (value !== undefined) {
+        for (const element of this.shadowRoot?.querySelectorAll<HTMLInputElement>(
+          `[name="${id}"]`,
+        ) ?? []) {
+          if (type === "boolean") {
+            element.checked = Boolean(value);
+          } else {
+            element.value = String(value);
+          }
         }
       }
     }
@@ -198,7 +240,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
 
   private async updateTextValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    this.changes[target.id] = target.value; // doesn't force redraw
+    this.changes[target.name] = target.value; // doesn't force redraw
     if (this.autosubmit) {
       await this.submit();
     }
@@ -206,7 +248,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
 
   private async updateCheckboxValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    this.changes[target.id] = target.checked; // doesn't force redraw
+    this.changes[target.name] = target.checked; // doesn't force redraw
     if (this.autosubmit) {
       await this.submit();
     }
@@ -214,7 +256,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
 
   private async updateSelectValue(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    this.changes[target.id] = Number.parseInt(target.value, 10); // doesn't force redraw
+    this.changes[target.name] = Number.parseInt(target.value, 10); // doesn't force redraw
     if (this.autosubmit) {
       await this.submit();
     }
@@ -265,6 +307,52 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
     this.resetFormItemValues();
   }
 
+  //
+  // showAsButtonGroup logic and resize observer
+  //
+
+  protected updateShowAsButtonGroup = (entries?: ResizeObserverEntry[]) => {
+    // Update showButtonGroup state to indicate which
+    // wa-radio-group elements fit without wrapping.
+    const entry = entries?.find((entry) => entry.target === this.observedForm);
+    const availableWidth =
+      entry?.contentRect.width ?? this.observedForm?.clientWidth ?? 0;
+
+    const idsThatFit = new Set<string>();
+    const radioGroups = this.shadowRoot?.querySelectorAll<
+      HTMLElementTagNameMap["wa-radio-group"]
+    >(".choices wa-radio-group");
+    for (const radioGroup of radioGroups ?? []) {
+      const width = radioGroup.clientWidth;
+      if (radioGroup.name && width > 0 && width <= availableWidth) {
+        idsThatFit.add(radioGroup.name);
+      }
+    }
+    if (!equalSet(this.showAsButtonGroup, idsThatFit)) {
+      this.showAsButtonGroup = idsThatFit;
+    }
+  };
+
+  protected observedForm?: Element;
+  protected resizeController = new ResizeController(this, {
+    target: null, // Initialized to form after render
+    callback: this.updateShowAsButtonGroup,
+  });
+
+  protected updateResizeControllerTarget() {
+    const currentForm = this.shadowRoot?.querySelector('[part="form"]');
+    if (currentForm !== this.observedForm) {
+      if (this.observedForm) {
+        this.resizeController.unobserve(this.observedForm);
+        this.observedForm = undefined;
+      }
+      if (currentForm && this.isConnected) {
+        this.resizeController.observe(currentForm);
+        this.observedForm = currentForm;
+      }
+    }
+  }
+
   static styles = [
     cssWATweaks,
     css`
@@ -284,9 +372,33 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
         color: var(--wa-color-danger-on-normal);
         margin-bottom: var(--item-spacing);
       }
+      
+      .choices {
+        position: relative;
+        
+        wa-radio-group {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+      }
+      .hidden {
+        visibility: hidden;
+      }
+
+      /* Prevent radio-group and radio labels from wrapping */
+      wa-radio-group::part(form-control-input) {
+        flex-wrap: nowrap;
+      }
+      wa-radio::part(label) {
+        white-space: nowrap;
+      }
     `,
   ];
 }
+
+// PuzzleConfigForm calculates sizes that affect display after rendering
+PuzzleConfigForm.disableWarning?.("change-in-update");
 
 /**
  * Form for editing custom game params (custom puzzle type)
