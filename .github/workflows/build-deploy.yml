@@ -168,6 +168,12 @@ jobs:
           name: dist
           path: dist
 
+      - name: Upload bundle size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-stats
+          path: dist-stats.html
+
   deploy:
     name: Deploy to Cloudflare Pages
     needs: [build-app]
