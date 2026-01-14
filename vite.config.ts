@@ -255,7 +255,6 @@ export default defineConfig(async ({ command, mode }) => {
   return {
     appType: "mpa",
     build: {
-      assetsInlineLimit: 5120, // default 4096; this covers a few icons above that
       rollupOptions: {
         input: [
           // See also extraPages plugin below, which adds index, puzzle and help page inputs

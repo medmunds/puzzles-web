@@ -45,21 +45,25 @@ export class CatalogCard extends LitElement {
   private icon2x?: string;
 
   @state()
+  private iconLoaded = false;
+
+  @state()
   private iconMissing = false;
 
   protected override willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("puzzleId")) {
       const icon1x = new URL(
-        `./assets/icons/${this.puzzleId}-64d8.png`,
+        `./assets/icons/${this.puzzleId}-64d8.png?no-inline`,
         import.meta.url,
       ).href;
       const icon2x = new URL(
-        `./assets/icons/${this.puzzleId}-128d8.png`,
+        `./assets/icons/${this.puzzleId}-128d8.png?no-inline`,
         import.meta.url,
       ).href;
       // Vite's dynamic import generates ".../undefined" if no matching file
       this.icon1x = icon1x.endsWith("/undefined") ? undefined : icon1x;
       this.icon2x = icon2x.endsWith("/undefined") ? undefined : icon2x;
+      this.iconLoaded = false;
     }
   }
 
@@ -71,10 +75,13 @@ export class CatalogCard extends LitElement {
 
     return html`
       <img 
-          part="icon" 
+          part="icon"
+          class=${this.iconLoaded ? nothing : "loading"}
           srcset="${this.icon1x}, ${this.icon2x} 2x" 
           src=${this.icon2x}
           alt=""
+          loading="lazy"
+          @load=${this.handleIconLoaded}
           @error=${this.handleIconError}
       >`;
   }
@@ -129,6 +136,10 @@ export class CatalogCard extends LitElement {
         detail: { puzzleId: this.puzzleId, isFavorite: this.favorite },
       }),
     );
+  }
+
+  private handleIconLoaded() {
+    this.iconLoaded = true;
   }
 
   private handleIconError() {
@@ -222,6 +233,12 @@ export class CatalogCard extends LitElement {
         &:is(wa-icon)::part(svg) {
           width: unset;
         }
+
+        opacity: 1;
+        &.loading {
+          opacity: 0;
+        }
+        transition: opacity var(--wa-transition-fast) var(--wa-transition-easing);
       }
   
       [part="title"] {
