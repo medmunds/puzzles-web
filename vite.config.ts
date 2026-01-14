@@ -4,6 +4,7 @@ import * as path from "node:path";
 import license from "rollup-plugin-license";
 import { build, defineConfig, loadEnv, type UserConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import Sitemap from "vite-plugin-sitemap";
 import { puzzleIds, puzzles } from "./src/assets/puzzles/catalog.json";
 import {
   extraPages,
@@ -490,6 +491,24 @@ export default defineConfig(async ({ command, mode }) => {
         },
       }),
       createSentryVitePlugin(), // Must be last plugin
+      Sitemap({
+        // readable: true, // formatted XML
+        hostname: canonicalBaseUrl ? canonicalBaseUrl.replace(/\/$/, "") : undefined,
+        changefreq: "weekly",
+        generateRobotsTxt: true,
+        exclude: [
+          // Skip 404.html and unsupported.html
+          "/404",
+          "/unsupported",
+          // vite-plugin-sitemap clean urls bug: .../docindex.html becomes .../doc.
+          // Strip it here, add it back in manually below:
+          "/help/manual/doc",
+        ],
+        dynamicRoutes: [
+          // See bug above:
+          "/help/manual/docindex",
+        ],
+      }),
     ],
     worker: {
       plugins: () => [createSentryVitePlugin()],

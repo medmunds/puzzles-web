@@ -1,2 +1,7 @@
+###
+### Unused in "vite build".
+### dist/robots.txt is overwritten (completely) by vite-plugin-sitemap.
+###
+
 User-agent: *
 Allow: /
