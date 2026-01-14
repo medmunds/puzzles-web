@@ -2,6 +2,7 @@ import * as child from "node:child_process";
 import fs from "node:fs";
 import * as path from "node:path";
 import license from "rollup-plugin-license";
+import { visualizer } from "rollup-plugin-visualizer";
 import { build, defineConfig, loadEnv, type UserConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import Sitemap from "vite-plugin-sitemap";
@@ -290,6 +291,12 @@ export default defineConfig(async ({ command, mode }) => {
       headers: securityHeaders(env),
     },
     plugins: [
+      visualizer({
+        filename: "dist-stats.html",
+        gzipSize: true,
+        brotliSize: true,
+        title: "Puzzles Bundle Analysis",
+      }),
       wasmSourcemaps(),
       license({
         thirdParty: {
