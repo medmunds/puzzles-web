@@ -29,9 +29,9 @@ const defaultSettings = {
   autoUpdate: null,
   favoritePuzzles: new Set<PuzzleId>([
     "keen",
-    "loopy",
     "mines",
     "net",
+    "samegame",
     "solo",
     "untangle",
   ]),
