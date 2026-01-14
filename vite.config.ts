@@ -262,6 +262,11 @@ export default defineConfig(async ({ command, mode }) => {
           "unsupported.html",
         ],
         output: {
+          manualChunks: (id) => {
+            if (id.includes("node_modules/@sentry")) {
+              return "sentry";
+            }
+          },
           validate: true,
         },
       },
