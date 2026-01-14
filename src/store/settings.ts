@@ -315,7 +315,9 @@ class Settings {
   ) {
     this.saveCommonSetting(name, value).catch((error: Error) => {
       console.error(error);
-      Sentry.captureException(error);
+      if (import.meta.env.VITE_SENTRY_DSN) {
+        Sentry.captureException(error);
+      }
     });
   }
 

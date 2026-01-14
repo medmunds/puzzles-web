@@ -28,7 +28,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     return parts.join("");
   };
 
-  const integrations = [Sentry.browserTracingIntegration(), wasmIntegration()];
+  const integrations = [wasmIntegration()];
   if (import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID) {
     integrations.push(
       Sentry.thirdPartyErrorFilterIntegration({
