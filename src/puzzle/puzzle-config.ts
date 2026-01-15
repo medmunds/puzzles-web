@@ -4,7 +4,8 @@ import { ResizeController } from "@lit-labs/observers/resize-controller.js";
 import { SignalWatcher, signal } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, queryAll, state } from "lit/decorators.js";
+import { ref } from "lit/directives/ref.js";
 import { when } from "lit/directives/when.js";
 import { cssWATweaks } from "../utils/css.ts";
 import { equalSet } from "../utils/equal.ts";
@@ -47,7 +48,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
   autosubmit = false;
 
   @property({ type: Number, attribute: "choices-button-group-limit" })
-  choicesButtonGroupLimit = 5;
+  choicesButtonGroupLimit = 8;
 
   /**
    * The title for the dialog, per the config
@@ -92,18 +93,6 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
     this.error = undefined;
   }
 
-  override connectedCallback() {
-    super.connectedCallback();
-    this.updateResizeControllerTarget();
-  }
-  override disconnectedCallback() {
-    super.disconnectedCallback();
-    if (this.observedForm) {
-      this.resizeController.unobserve(this.observedForm);
-      this.observedForm = undefined;
-    }
-  }
-
   protected override async willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("puzzle") && this.puzzle) {
       await this.loadConfig();
@@ -111,7 +100,6 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
   }
 
   protected override updated(changedProperties: Map<string, unknown>) {
-    this.updateResizeControllerTarget();
     if (
       changedProperties.has("config") ||
       changedProperties.has("choicesButtonGroupLimit")
@@ -122,7 +110,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
 
   protected override render() {
     return html`
-      <form part="form" @submit=${this.submit}>
+      <form part="form" @submit=${this.submit} ${ref(this.formRefChanged)}>
         ${when(this.error, () => html`<div part="error">${this.error}</div>`)}
 
         ${Object.entries(this.config?.items ?? {}).map(([id, config]) => this.renderConfigItem(id, config))}
@@ -311,18 +299,15 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
   // showAsButtonGroup logic and resize observer
   //
 
+  @queryAll("wa-radio-group")
+  protected radioGroups?: HTMLElementTagNameMap["wa-radio-group"][];
+
   protected updateShowAsButtonGroup = (entries?: ResizeObserverEntry[]) => {
     // Update showButtonGroup state to indicate which
     // wa-radio-group elements fit without wrapping.
-    const entry = entries?.find((entry) => entry.target === this.observedForm);
-    const availableWidth =
-      entry?.contentRect.width ?? this.observedForm?.clientWidth ?? 0;
-
+    const availableWidth = this.getFormContentWidth(entries);
     const idsThatFit = new Set<string>();
-    const radioGroups = this.shadowRoot?.querySelectorAll<
-      HTMLElementTagNameMap["wa-radio-group"]
-    >(".choices wa-radio-group");
-    for (const radioGroup of radioGroups ?? []) {
+    for (const radioGroup of this.radioGroups ?? []) {
       const width = radioGroup.clientWidth;
       if (radioGroup.name && width > 0 && width <= availableWidth) {
         idsThatFit.add(radioGroup.name);
@@ -339,18 +324,39 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
     callback: this.updateShowAsButtonGroup,
   });
 
-  protected updateResizeControllerTarget() {
-    const currentForm = this.shadowRoot?.querySelector('[part="form"]');
-    if (currentForm !== this.observedForm) {
-      if (this.observedForm) {
-        this.resizeController.unobserve(this.observedForm);
-        this.observedForm = undefined;
-      }
-      if (currentForm && this.isConnected) {
-        this.resizeController.observe(currentForm);
-        this.observedForm = currentForm;
-      }
+  private formRefChanged = (element?: Element) => {
+    if (this.observedForm) {
+      this.resizeController.unobserve(this.observedForm);
     }
+    this.observedForm = element;
+    if (this.observedForm) {
+      this.resizeController.observe(this.observedForm);
+    }
+  };
+
+  protected getFormContentWidth(entries?: ResizeObserverEntry[]): number {
+    if (!this.observedForm) {
+      return 0;
+    }
+
+    const observedFormEntry = entries?.find(
+      (entry) => entry.target === this.observedForm,
+    );
+    if (observedFormEntry) {
+      return observedFormEntry.contentRect.width;
+    }
+
+    const style = getComputedStyle(this.observedForm);
+    const inlinePadding =
+      Number.parseFloat(style.paddingInlineStart) +
+      Number.parseFloat(style.paddingInlineEnd);
+    if (Number.isNaN(inlinePadding)) {
+      console.warn(
+        `Parse paddingInline failed: start='${style.paddingInlineStart}' end='${style.paddingInlineEnd}'`,
+      );
+      return 0; // uses wa-select, which should work at any width
+    }
+    return this.observedForm.clientWidth - inlinePadding;
   }
 
   static styles = [
@@ -378,8 +384,8 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
         
         wa-radio-group {
           position: absolute;
-          top: 0;
-          left: 0;
+          inset-block-start: 0;
+          inset-inline-start: 0;
         }
       }
       .hidden {
