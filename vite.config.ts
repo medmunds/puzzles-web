@@ -46,13 +46,17 @@ function securityHeaders(env: Env, cspReportOnly = false): Headers {
     "default-src": "'self'",
     // wa-icon uses fetch on icon urls that vite has inlined as data: uris
     "connect-src": `'self' data: blob: https://cloudflareinsights.com`,
+    // Some accessibility extensions (and some browser anti-fingerprinting mechanisms)
+    // use data: fonts.
+    "font-src": "'self' data:",
     "img-src": "'self' data: blob:",
     "manifest-src": "'self'",
     "object-src": "'none'",
     // Chromium currently requires 'wasm-unsafe-eval' for WebAssembly.instantiateStreaming
     "script-src":
       "'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com 'report-sample'",
-    // Web Awesome uses inline styles in several places (and we do too in one place)
+    // Web Awesome uses inline styles in progress-ring and slider:
+    // https://github.com/shoelace-style/webawesome/issues/1937
     "style-src": "'self' 'unsafe-inline' 'report-sample'",
     "worker-src": "'self'",
     "base-uri": "'none'",
