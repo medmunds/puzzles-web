@@ -9,7 +9,7 @@ Components:
 - puzzle-view: displays the puzzle and status bar, but doesn't handle user input
   - provides the on-screen canvas for the puzzle drawing API
 - puzzle-view-interactive: a subclass of puzzle-view that adds mouse, touch, and keyboard handling
-- puzzle-preset-menu: implements a "Type" menu as described in section 2.3 of the puzzles documentation
+- puzzle-type-menu: implements a "Type" menu as described in section 2.3 of the puzzles documentation
 - puzzle-keys: implements a virtual keyboard, undo/redo buttons, and other helpful UI controls
 - puzzle-config: implements an extensible dialog for custom game types and preferences
 

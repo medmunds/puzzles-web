@@ -27,7 +27,7 @@ import "./dynamic-content.ts";
 import "./puzzle/puzzle-context.ts";
 import "./puzzle/puzzle-history.ts";
 import "./puzzle/puzzle-keys.ts";
-import "./puzzle/puzzle-preset-menu.ts";
+import "./puzzle/puzzle-type-menu.ts";
 import "./puzzle/puzzle-view-interactive.ts";
 import "./puzzle/puzzle-end-notification.ts";
 
@@ -139,13 +139,13 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         <main>
           <header>
             ${this.renderGameMenu()}
-            <puzzle-preset-menu 
+            <puzzle-type-menu 
                 appearance="plain" 
                 variant="brand"
                 placement=${this.orientation === "vertical" ? "bottom" : "right"}
                 ?without-icon=${this.size === "small" && this.orientation === "vertical"}
                 ?without-label=${this.orientation === "horizontal"}
-            ></puzzle-preset-menu>
+            ></puzzle-type-menu>
             <wa-button
                 appearance="plain" variant="brand"
                 href=${helpUrl(this.puzzleId).href} 
@@ -519,7 +519,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   private async showTypeMenu() {
     // (from the button in the puzzle-end-notification)
     await this.shadowRoot?.querySelector("puzzle-end-notification")?.hide();
-    this.shadowRoot?.querySelector("puzzle-preset-menu")?.show();
+    this.shadowRoot?.querySelector("puzzle-type-menu")?.show();
   }
 
   private async handlePuzzleLoaded(event: PuzzleEvent) {
@@ -736,13 +736,13 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           }
         }
 
-        puzzle-preset-menu {
+        puzzle-type-menu {
           flex: 0 1 auto;
           min-width: 1rem;
         }
 
         wa-button::part(base),
-        puzzle-preset-menu::part(trigger-base) {
+        puzzle-type-menu::part(trigger-base) {
           color: var(--wa-color-text-normal);
         }
       }

@@ -19,8 +19,8 @@ import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "./puzzle-config.ts";
 
-@customElement("puzzle-preset-menu")
-export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
+@customElement("puzzle-type-menu")
+export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
   @consume({ context: puzzleContext, subscribe: true })
   @state()
   private puzzle?: Puzzle;
@@ -330,6 +330,6 @@ export class PuzzlePresetMenu extends SignalWatcher(LitElement) {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "puzzle-preset-menu": PuzzlePresetMenu;
+    "puzzle-type-menu": PuzzleTypeMenu;
   }
 }
