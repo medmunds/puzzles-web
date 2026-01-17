@@ -1,9 +1,11 @@
 import * as Sentry from "@sentry/browser";
 import Dexie, { type EntityTable, type Table } from "dexie";
-import type { ConfigValues, GameStatus } from "../puzzle/types.ts";
-
-export type PuzzleId = string;
-export type EncodedParams = string;
+import type {
+  ConfigValues,
+  EncodedParams,
+  GameStatus,
+  PuzzleId,
+} from "../puzzle/types.ts";
 
 // Settings shared by all puzzles
 export interface CommonSettings {

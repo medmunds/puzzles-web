@@ -34,6 +34,9 @@ export type {
   Size,
 } from "../assets/puzzles/emcc-runtime";
 
+export type PuzzleId = string;
+export type EncodedParams = string;
+
 export type ConfigDescription = ReturnType<Frontend["getPreferencesConfig"]>;
 export type ConfigItem = ReturnType<Frontend["getPreferencesConfig"]>["items"]["any"];
 export type ConfigValues = ReturnType<Frontend["getPreferences"]>;

@@ -1,11 +1,10 @@
 import { type Signal, signal } from "@lit-labs/signals";
 import * as Sentry from "@sentry/browser";
-import type { ConfigValues } from "../puzzle/types.ts";
+import type { ConfigValues, PuzzleId } from "../puzzle/types.ts";
 import { equalSet } from "../utils/equal.ts";
 import {
   type CommonSettings,
   db,
-  type PuzzleId,
   type PuzzleSettings,
   type SettingsRecord,
 } from "./db.ts";

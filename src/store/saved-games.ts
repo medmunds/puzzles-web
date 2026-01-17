@@ -1,11 +1,11 @@
 import type { Puzzle } from "../puzzle/puzzle.ts";
+import type { PuzzleId } from "../puzzle/types.ts";
 import { equalSet } from "../utils/equal.ts";
 import { liveQuerySignal } from "../utils/signals.ts";
 import {
   db,
   PUZZLE_ID_MAX,
   PUZZLE_ID_MIN,
-  type PuzzleId,
   type SavedGameMetadata,
   SaveType,
   TIMESTAMP_MAX,
