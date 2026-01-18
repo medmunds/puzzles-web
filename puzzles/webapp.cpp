@@ -37,11 +37,21 @@ std::string slugify(const std::string& text) {
         if (c > 127) {
             fatal("slugify: non-ASCII character: 0x%02X", c);
         }
-        if (std::isalnum(c)) {
+        if (c == '(' && !slug.empty()) {
+            // Slugify "Size (s*s)" as "size" not "size-s-s"
+            break;
+        }
+        if (std::isalnum(c) || c == '%') {
             if (last_was_delimiter && !slug.empty()) {
                 slug += '-';
             }
-            slug += static_cast<char>(std::tolower(c));
+            if (c == '%') {
+                // For Bridges (e.g.,) slugify "Expansion factor (%age)" to
+                // "expansion-factor-percentage" not "expansion-factor-age"
+                slug.append("percent");
+            } else {
+                slug += static_cast<char>(std::tolower(c));
+            }
             last_was_delimiter = false;
         } else {
             last_was_delimiter = true;
