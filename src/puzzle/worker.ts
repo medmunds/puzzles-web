@@ -198,6 +198,10 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
     return this.frontend.setCustomParams(values);
   }
 
+  decodeCustomParams(params: string): ConfigValues | string {
+    return this.frontend.decodeCustomParams(params);
+  }
+
   encodeCustomParams(values: ConfigValues): string {
     return this.frontend.encodeCustomParams(values);
   }

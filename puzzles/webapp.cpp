@@ -875,6 +875,12 @@ public:
     explicit wrapped_game_params(const game *game, const allocated_config_item_ptr &items)
         : m_game(game), m_params(game->custom_params(items.get())) {}
 
+    // Custom params from encoded params string
+    explicit wrapped_game_params(const game *game, const char *encoded_params)
+        : m_game(game), m_params(game->default_params()) {
+        m_game->decode_params(m_params, encoded_params);
+    }
+
     // Params from midend_get_params
     // (the params used for new games, not necessarily the current game's params)
     explicit wrapped_game_params(midend *me)
@@ -952,6 +958,7 @@ struct PresetMenuEntry {
 EMSCRIPTEN_DECLARE_VAL_TYPE(ConfigDescription);
 EMSCRIPTEN_DECLARE_VAL_TYPE(ConfigValues);
 EMSCRIPTEN_DECLARE_VAL_TYPE(ConfigValuesIn);
+EMSCRIPTEN_DECLARE_VAL_TYPE(ConfigValuesOrErrorString);
 
 EMSCRIPTEN_DECLARE_VAL_TYPE(ActivateTimerFunc);
 EMSCRIPTEN_DECLARE_VAL_TYPE(DeactivateTimerFunc);
@@ -1392,6 +1399,27 @@ public:
         return set_config_values(CFG_SETTINGS, values);
     }
 
+    // Return ConfigValues (compatible with the getCustomParamsConfig()
+    // description) resulting from decoding encoded params, or null if
+    // the encoded params are invalid. Makes no changes to the midend
+    // or current game state.
+    [[nodiscard]] ConfigValuesOrErrorString decodeCustomParams(
+        const std::string &encodedParams
+    ) const {
+        // midend_set_encoded_params without the "set"
+        const auto ourgame = midend_which_game(me());
+
+        wrapped_game_params params(ourgame, encodedParams.c_str());
+        if (const auto error = params.validate()) {
+            return val(error.as_string()).as<ConfigValuesOrErrorString>();
+        }
+
+        const auto config_values = config_values_from_config(
+            params.as_config_items().get(), true
+        );
+        return val(config_values).as<ConfigValuesOrErrorString>();
+    }
+
     // Return encoded params representing values or "#ERROR:..." if result
     // is invalid. Makes no changes to the midend or current game state.
     [[nodiscard]] std::string encodeCustomParams(
@@ -1570,6 +1598,7 @@ EMSCRIPTEN_BINDINGS(frontend) {
     })");
     register_type<ConfigValues>("Record<string, string | boolean | number>");
     register_type<ConfigValuesIn>("Record<string, string | boolean | number | undefined | null>");
+    register_type<ConfigValuesOrErrorString>("Record<string, string | boolean | number> | string");
 
     register_type<ActivateTimerFunc>("() => void");
     register_type<DeactivateTimerFunc>("() => void");
@@ -1615,6 +1644,7 @@ EMSCRIPTEN_BINDINGS(frontend) {
         .function("getCustomParamsConfig", &frontend::getCustomParamsConfig)
         .function("getCustomParams()", &frontend::getCustomParams)
         .function("setCustomParams(values)", &frontend::setCustomParams)
+        .function("decodeCustomParams(params)", &frontend::decodeCustomParams)
         .function("encodeCustomParams(values)", &frontend::encodeCustomParams)
         .function("newGameFromId(id)", &frontend::newGameFromId)
         .property("currentGameId", &frontend::getCurrentGameId)

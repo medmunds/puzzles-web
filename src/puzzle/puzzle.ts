@@ -324,6 +324,10 @@ export class Puzzle {
     return this.workerPuzzle.setCustomParams(values);
   }
 
+  public async decodeCustomParams(params: string): Promise<ConfigValues | string> {
+    return this.workerPuzzle.decodeCustomParams(params);
+  }
+
   public async encodeCustomParams(values: ConfigValues): Promise<string> {
     return this.workerPuzzle.encodeCustomParams(values);
   }
