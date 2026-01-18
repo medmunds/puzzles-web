@@ -6,6 +6,7 @@ import {
   uninstallWorkerErrorReceivers,
 } from "../utils/errors.ts";
 import { nextAnimationFrame } from "../utils/timing.ts";
+import { puzzleAugmentations } from "./augmentation.ts";
 import { puzzleDataMap } from "./catalog.ts";
 import type {
   ChangeNotification,
@@ -293,9 +294,26 @@ export class Puzzle {
     return this.workerPuzzle.setParams(params);
   }
 
-  public async getParamsDescription(params: string): Promise<string | undefined> {
+  public async getParamsDescription(params: string): Promise<string> {
+    // First try preset names
     const presets = await this.getPresets(true);
-    return presets.find((preset) => preset.params === params)?.title;
+    const preset = presets.find((preset) => preset.params === params);
+    if (preset) {
+      return preset.title;
+    }
+
+    // Next try augmentations
+    const augmentation = puzzleAugmentations[this.puzzleId];
+    if (augmentation?.describeConfig) {
+      const config = await this.decodeCustomParams(params);
+      if (typeof config === "string") {
+        return `ERROR: '${params}': ${config}`;
+      }
+      return augmentation.describeConfig(config);
+    }
+
+    // Give up
+    return "Custom type";
   }
 
   public async getPresets(flat = false): Promise<PresetMenuEntry[]> {

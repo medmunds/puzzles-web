@@ -50,17 +50,16 @@ export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
   @state()
   private presets: PresetMenuEntry[] = [];
 
+  // Params for the current game
+  @state()
+  private currentParams?: string;
+
+  // Description of currentParams
+  @state()
+  private currentGameTypeLabel = "";
+
   @property({ type: Boolean })
   open = false;
-
-  // Description of the params for the current game (or "Custom" if unknown).
-  get currentGameTypeLabel(): string {
-    // (This should be computed, but lit-labs/signals @computed
-    // doesn't react to changes in Lit's reactive @state.)
-    const params = this.puzzle?.currentParams ?? "";
-    const menuEntry = this.presets.find((preset) => preset.params === params);
-    return menuEntry?.title ?? "Custom type";
-  }
 
   private customDialog?: PuzzleCustomParamsDialog;
 
@@ -75,6 +74,14 @@ export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
   override async willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("puzzle")) {
       await this.loadPresets();
+    }
+    const currentParams = this.puzzle?.currentParams;
+    if (currentParams !== this.currentParams) {
+      this.currentGameTypeLabel =
+        this.puzzle && currentParams
+          ? await this.puzzle.getParamsDescription(currentParams)
+          : "";
+      this.currentParams = currentParams;
     }
   }
 
