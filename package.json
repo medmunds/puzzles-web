@@ -25,7 +25,8 @@
     "comlink": "^4.4.2",
     "dexie": "^4.2.1",
     "lit": "^3.3.1",
-    "lucide-static": "^0.562.0"
+    "lucide-static": "^0.562.0",
+    "signal-utils": "^0.21.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",

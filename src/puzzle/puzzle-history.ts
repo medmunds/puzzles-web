@@ -3,8 +3,10 @@ import { consume } from "@lit/context";
 import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
-import timelineArrowSvg from "../assets/timeline-arrow.svg";
-import timelineDotSvg from "../assets/timeline-dot.svg";
+import { styleMap } from "lit/directives/style-map.js";
+import timelineArrowSvg from "../assets/timeline-arrow.svg?inline";
+import timelineDotSvg from "../assets/timeline-dot.svg?inline";
+import { currentColorScheme } from "../color-scheme.ts";
 import { cssWATweaks } from "../utils/css.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
@@ -23,20 +25,21 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
   @state()
   private puzzle?: Puzzle;
 
+  @state()
+  private timelineImageStyles: Record<string, string> = {};
+
+  @state()
+  protected renderedColorScheme = "";
+
   @query("wa-dropdown")
   private dropdown?: HTMLElementTagNameMap["wa-dropdown"];
-
-  private dynamicStyleSheet?: CSSStyleSheet;
 
   private updateSVGDataUrls() {
     // Build --timeline-arrow-image and --timeline-dot-image
     // using color properties.
-    const timelineColor = getComputedStyle(this)
-      .getPropertyValue("--timeline-color")
-      .trim();
-    const backgroundColor = getComputedStyle(this)
-      .getPropertyValue("--background-color")
-      .trim();
+    const computedStyle = getComputedStyle(this);
+    const timelineColor = computedStyle.getPropertyValue("--timeline-color").trim();
+    const backgroundColor = computedStyle.getPropertyValue("--background-color").trim();
 
     const encodedTimelineColor = encodeURIComponent(timelineColor);
     const encodedBackgroundColor = encodeURIComponent(backgroundColor);
@@ -48,30 +51,22 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
       .replace("grey", encodedTimelineColor)
       .replace("white", encodedBackgroundColor);
 
-    if (!this.dynamicStyleSheet) {
-      if (!this.shadowRoot) {
-        throw new Error("Missing shadowRoot");
-      }
-      this.dynamicStyleSheet = new CSSStyleSheet();
-      this.shadowRoot.adoptedStyleSheets = [
-        ...this.shadowRoot.adoptedStyleSheets,
-        this.dynamicStyleSheet,
-      ];
-    }
-
-    const dynamicCSS = `
-      :host {
-        --timeline-arrow-image: url("${arrowImage}");
-        --timeline-dot-image: url("${dotImage}");
-      }
-    `;
-    this.dynamicStyleSheet.replaceSync(dynamicCSS);
+    this.timelineImageStyles = {
+      "--timeline-arrow-image": `url("${arrowImage}")`,
+      "--timeline-dot-image": `url("${dotImage}")`,
+    };
   }
 
-  protected override firstUpdated() {
-    // TODO: also need to updateSVGDataUrls on certain css changes
-    //   (e.g., dark mode)
-    this.updateSVGDataUrls();
+  protected override willUpdate() {
+    this.renderedColorScheme = currentColorScheme.get();
+  }
+
+  protected override updated(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has("renderedColorScheme")) {
+      // Wait for one frame to ensure documentElement class toggle has
+      // propagated to our computed styles.
+      requestAnimationFrame(() => this.updateSVGDataUrls());
+    }
   }
 
   protected override render() {
@@ -112,7 +107,9 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
           </wa-button>
         </header>
         
-        <div id="list">${this.renderHistoryItems()}</div>
+        <div id="list" style=${styleMap(this.timelineImageStyles)}>
+          ${this.renderHistoryItems()}
+        </div>
 
         <wa-divider></wa-divider>
         <wa-dropdown-item @click=${this.handleSaveCheckpoint}>
@@ -298,7 +295,7 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
     css`
       :host {
         --timeline-color: var(--wa-color-neutral-border-normal);
-        --background-color: var(--wa-color-surface-default);
+        --background-color: var(--wa-color-surface-raised); /* match wa-dropdown */
         --dot-size: 5px;
       }
       

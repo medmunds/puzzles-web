@@ -19,9 +19,8 @@
     <link rel="canonical" href="{{ canonicalUrl }}">
   {{/if}}
     <link rel="stylesheet" href="/src/css/puzzle.css">
-    <script nomodule>
-      window.location.href = "/unsupported?f=script%20type%3D%22module%22";
-    </script>
+    <script nomodule>{{{ noModuleHeadScript }}}</script>
+    <script>{{{ colorSchemeInitScript }}}</script>
     <script type="module" crossorigin src="{{ preflightSrc }}"></script>
     <script type="module" src="/src/puzzle-page.ts"></script>
   </head>

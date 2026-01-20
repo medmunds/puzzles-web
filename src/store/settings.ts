@@ -26,6 +26,7 @@ export const isSerializedSettings = (obj: unknown): obj is SerializedSettings =>
 const defaultSettings = {
   allowOfflineUse: null,
   autoUpdate: null,
+  colorScheme: "light", // change to "system" when dark mode no longer experimental
   favoritePuzzles: new Set<PuzzleId>([
     "keen",
     "mines",
@@ -54,6 +55,9 @@ class Settings {
   // Reactive signals for individual settings
   private _allowOfflineUse = signal<boolean | null>(defaultSettings.allowOfflineUse);
   private _autoUpdate = signal<boolean | null>(defaultSettings.autoUpdate);
+  private _colorScheme = signal<"light" | "dark" | "system">(
+    defaultSettings.colorScheme,
+  );
   private _favoritePuzzles = signal<ReadonlySet<PuzzleId>>(
     defaultSettings.favoritePuzzles,
   );
@@ -115,6 +119,7 @@ class Settings {
     if (commonSettings) {
       update(this._allowOfflineUse, commonSettings.allowOfflineUse);
       update(this._autoUpdate, commonSettings.autoUpdate);
+      update(this._colorScheme, commonSettings.colorScheme);
       if (commonSettings.favoritePuzzles !== undefined) {
         const favoritePuzzles = new Set(commonSettings.favoritePuzzles);
         if (!equalSet(favoritePuzzles, this._favoritePuzzles.get())) {
@@ -155,6 +160,21 @@ class Settings {
   }
 
   // Accessors for reactive signals
+  get colorScheme(): "light" | "dark" | "system" {
+    return this._colorScheme.get();
+  }
+  set colorScheme(value: "light" | "dark" | "system") {
+    this._colorScheme.set(value);
+    this.saveCommonSettingOrLogError("colorScheme", value);
+    // Also track in localStorage: see color-scheme-init.ts
+    try {
+      localStorage.setItem("colorScheme", value);
+    } catch {
+      // privacy manager -- they'll get a flash of light mode
+      // until script and settings load.
+    }
+  }
+
   get favoritePuzzles(): ReadonlySet<PuzzleId> {
     return this._favoritePuzzles.get();
   }

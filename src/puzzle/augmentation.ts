@@ -1,10 +1,9 @@
+import type { ConfigValues, PuzzleId } from "./types.ts";
+
 /**
  * Additional puzzle-specific metadata and functionality
  * that isn't (currently) possible in the C code
  */
-
-import type { ConfigValues, PuzzleId } from "./types.ts";
-
 export interface PuzzleAugmentations {
   /**
    * Construct a human-readable description of the given puzzle configuration.
@@ -14,6 +13,35 @@ export interface PuzzleAugmentations {
    * between puzzles.) Use British spelling to match the existing presets.
    */
   describeConfig?: (config: ConfigValues) => string;
+
+  /**
+   * Index of palette color used as background. (Default 0.)
+   */
+  paletteBgIndex?: number;
+
+  darkMode?: {
+    /**
+     * Palette indexes that need special handling in automatic dark mode
+     * generation. Set to:
+     * - `false` to leave the puzzle's light-mode palette color unchanged
+     *   in dark mode (e.g., for semantic "black" or "white")
+     * - a number to scale the lightness of the calculated dark mode color
+     * - an OKLCH color tuple to specify a fixed color
+     */
+    paletteOverrides?: Record<number, false | number | [number, number, number]>;
+
+    /**
+     * Pairs of palette index to swap after automatic dark mode generation.
+     * Applied after any paletteOverrides.
+     *
+     * This is useful for puzzles that use game_mkhighlight to create a 3D
+     * effect, where the inverted dark mode lightness results in swapping
+     * embossed and inset appearances. (Not all uses of game_mkhighlight
+     * should be swapped. E.g., cursor and selection indicators are usually
+     * better left as is.)
+     */
+    paletteSwaps?: [number, number][];
+  };
 }
 
 export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
@@ -33,15 +61,24 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter("{width}x{height}, {no-of-balls}", {
       "no-of-balls": (value) => (String(value) === "1" ? "1 ball" : `${value} balls`),
     }),
+    darkMode: {
+      paletteSwaps: [[5, 6]], // 3D
+    },
   },
   boats: {
     describeConfig: configFormatter(
       "{width}x{height}, size {fleet-size} {difficulty:Easy|Normal|Tricky|Hard}{remove-numbers:|, hidden clues}",
       // Not shown: fleet-configuration
     ),
+    darkMode: {
+      paletteOverrides: { 4: 0.6 }, // darken the water
+    },
   },
   bricks: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Normal|Tricky}"),
+    darkMode: {
+      paletteOverrides: { 0: [0.4, 0, 0], 2: [0.6, 0, 0], 4: [0.1, 0, 0] }, // bg, no-brick, brick
+    },
   },
   bridges: {
     describeConfig: configFormatter(
@@ -77,6 +114,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   fifteen: {
     describeConfig: configFormatter("{width}x{height}"),
+    darkMode: {
+      paletteSwaps: [[2, 3]], // 3D
+    },
   },
   filling: {
     describeConfig: configFormatter("{width}x{height}"),
@@ -92,19 +132,33 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
           Number(value) > 0 ? `, ${value} extra moves` : "",
       },
     ),
+    darkMode: {
+      paletteOverrides: { 1: false }, // keep black lines between regions
+      paletteSwaps: [[12, 13]], // 3D
+    },
   },
   galaxies: {
     describeConfig: configFormatter(
       "{width}x{height} {difficulty:Normal|Unreasonable}",
     ),
+    darkMode: {
+      paletteOverrides: { 6: 0.8 }, // edges
+    },
   },
   guess: {
     describeConfig: configFormatter(
       "{pegs-per-guess}x{guesses}, {colours} colours{allow-blanks:| + blank}{allow-duplicates:, no duplicates|}",
     ),
+    darkMode: {
+      paletteOverrides: { 16: false, 17: false }, // black and white pegs
+    },
   },
   inertia: {
     describeConfig: configFormatter("{width}x{height}"),
+    darkMode: {
+      paletteOverrides: { 6: false }, // black mine
+      paletteSwaps: [[2, 3]], // 3D
+    },
   },
   keen: {
     describeConfig: configFormatter(
@@ -119,8 +173,11 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         "percentage-of-black-squares": (value) =>
           String(value) === "20" ? "" : `, ${value}% black squares`,
       },
+      // Not shown: symmetry
     ),
-    // Not shown: symmetry
+    darkMode: {
+      paletteOverrides: { 2: [0.5, 0, 0], 3: [0.95, 0, 0] }, // black, white
+    },
   },
   loopy: {
     describeConfig: configFormatter(
@@ -148,6 +205,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         ],
       },
     ),
+    darkMode: {
+      paletteOverrides: { 2: 0.6 }, // darken line-unknown
+    },
   },
   magnets: {
     describeConfig: configFormatter(
@@ -163,6 +223,13 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{width}x{height}, {mines} mines{ensure-solubility:, risky|}",
     ),
+    darkMode: {
+      paletteOverrides: { 0: [0.2, 0, 0], 10: false, 14: 0.8 }, // bg, black mine, white flag base
+      paletteSwaps: [
+        [0, 1], // cleared/uncleared background
+        [16, 17], // 3D edges
+      ],
+    },
   },
   mosaic: {
     // Note: settings config lists "Height" before "Width"
@@ -170,6 +237,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       "Size: {width}x{height}",
       // Not shown: aggressive-generation-longer
     ),
+    darkMode: {
+      paletteOverrides: { 1: 0.6 }, // unmarked tiles
+    },
   },
   net: {
     describeConfig: configFormatter(
@@ -209,14 +279,24 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{width} x {height}, regions of size {region-size}",
     ),
+    darkMode: {
+      // Palisade grid/clue/line-yes all share palette index 2
+      paletteOverrides: { 3: 0.6 }, // darken line-maybe
+    },
   },
   pattern: {
     describeConfig: configFormatter("{width}x{height}"),
+    darkMode: {
+      paletteOverrides: { 1: false, 2: false }, // white and black squares
+    },
   },
   pearl: {
     describeConfig: configFormatter(
       "{width}x{height} {difficulty:Easy|Tricky}{allow-unsoluble:|, ambiguous}",
     ),
+    darkMode: {
+      paletteOverrides: { 0: 1.15, 3: false, 4: false }, // lighten bg, preserve black, white
+    },
   },
   pegs: {
     // Note: Cross and Octagon currently allow only specific sizes, all covered
@@ -227,6 +307,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   range: {
     describeConfig: configFormatter("{width}x{height}"),
+    // Range reuses palette colors: black = text = grid.
+    // Strict inverted dark mode is fine. (You place white squares rather than black.)
   },
   rect: {
     describeConfig: configFormatter(
@@ -257,6 +339,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       "{width}x{height}, {no-of-colours} colours{ensure-solubility:, ambiguous|}",
       // Not shown: scoring-system
     ),
+    darkMode: {
+      paletteSwaps: [[12, 13]], // 3D
+    },
   },
   signpost: {
     describeConfig: configFormatter(
@@ -271,9 +356,27 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       "{width}x{height}",
       // Not shown: number-of-shuffling-moves
     ),
+    darkMode: {
+      paletteSwaps: [[2, 3]], // 3D
+    },
   },
   slant: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Hard}"),
+  },
+  slide: {
+    darkMode: {
+      paletteSwaps: [
+        [1, 2], // 3D
+        [4, 5], // 3D dragging
+        [7, 8], // main block 3D
+        [10, 11], // main block 3D dragging
+      ],
+    },
+  },
+  sokoban: {
+    darkMode: {
+      paletteSwaps: [[9, 10]], // 3D
+    },
   },
   solo: {
     describeConfig: (config) => {
@@ -301,6 +404,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       return `${dimensions} ${fullDifficulty}${isX ? " X" : ""}`;
       // Not shown: symmetry
     },
+    darkMode: {
+      paletteOverrides: { 2: 0.8 }, // darken grid
+    },
   },
   spokes: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Tricky|Hard}"),
@@ -321,6 +427,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   tents: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Tricky}"),
+    darkMode: {
+      paletteOverrides: { 2: 0.5 }, // darken grass
+    },
   },
   towers: {
     describeConfig: configFormatter(
@@ -357,6 +466,13 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       return `${config.width}x${config.height}${description}${blockSizeDescription}`;
       // Not shown: number-of-shuffling-moves
     },
+    darkMode: {
+      paletteSwaps: [
+        [2, 4], // highlight/lowlight 3D
+        [3, 5], // gentle highlight/lowlight
+        [6, 7], // highcursor/lowcursor
+      ],
+    },
   },
   undead: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Normal|Tricky}"),
@@ -370,9 +486,14 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{width}x{height} {difficulty:Trivial|Easy|Normal}{unique-rows-and-columns:|, unique}",
     ),
+    darkMode: {
+      // preserve "black" and "white" plus their 3D effects
+      paletteOverrides: { 3: false, 4: false, 5: false, 6: false, 7: false, 8: false },
+    },
   },
   untangle: {
     describeConfig: configFormatter("{number-of-points} points"),
+    paletteBgIndex: 1,
   },
 };
 

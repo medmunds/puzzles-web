@@ -12,6 +12,7 @@ export interface CommonSettings {
   // App level settings
   allowOfflineUse?: boolean;
   autoUpdate?: boolean;
+  colorScheme?: "light" | "dark" | "system";
 
   // Catalog-level settings
   favoritePuzzles?: PuzzleId[];

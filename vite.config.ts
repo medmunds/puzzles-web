@@ -1,4 +1,5 @@
 import * as child from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import * as path from "node:path";
 import license from "rollup-plugin-license";
@@ -31,7 +32,12 @@ function defaultAppVersion(env: Record<string, string>): string {
   return `${dateStr}.${gitSha ? gitSha.slice(0, 7) : "unknown"}`;
 }
 
-function securityHeaders(env: Env, cspReportOnly = false): Headers {
+function securityHeaders(options: {
+  env: Env;
+  reportOnly?: boolean;
+  extraScriptSrc?: string[];
+}): Headers {
+  const { env, reportOnly = false, extraScriptSrc = [] } = options;
   const headers: Headers = {
     // Cloudflare defaults to Referrer-Policy: same-origin; we relax that a bit
     "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -52,9 +58,14 @@ function securityHeaders(env: Env, cspReportOnly = false): Headers {
     "img-src": "'self' data: blob:",
     "manifest-src": "'self'",
     "object-src": "'none'",
-    // Chromium currently requires 'wasm-unsafe-eval' for WebAssembly.instantiateStreaming
-    "script-src":
-      "'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com 'report-sample'",
+    "script-src": [
+      "'self'",
+      // Chromium currently requires 'wasm-unsafe-eval' for WebAssembly.instantiateStreaming
+      "'wasm-unsafe-eval'",
+      "https://static.cloudflareinsights.com",
+      ...extraScriptSrc,
+      "'report-sample'",
+    ].join(" "),
     // Web Awesome uses inline styles in progress-ring and slider:
     // https://github.com/shoelace-style/webawesome/issues/1937
     "style-src": "'self' 'unsafe-inline' 'report-sample'",
@@ -104,7 +115,7 @@ function securityHeaders(env: Env, cspReportOnly = false): Headers {
   }
 
   headers[
-    cspReportOnly ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy"
+    reportOnly ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy"
   ] = Object.entries(csp)
     .map(([directive, values]) => `${directive} ${values}`)
     .join("; ");
@@ -125,7 +136,13 @@ function securityHeaders(env: Env, cspReportOnly = false): Headers {
  * Clean up and augment the halibut-generated html
  */
 const cleanupHalibutHtml =
-  (analytics_html?: string): Transform =>
+  ({
+    analytics_html,
+    colorSchemeInitScript,
+  }: {
+    analytics_html?: string;
+    colorSchemeInitScript?: string;
+  }): Transform =>
   ({ source, ...data }) => {
     if (typeof source !== "string") {
       throw new Error("cleanupHalibutHtml expected string 'source'");
@@ -134,7 +151,10 @@ const cleanupHalibutHtml =
     const additionalHeadContent = [
       '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
       '<link rel="stylesheet" href="/src/css/help-page.css">',
-    ].join("\n");
+      colorSchemeInitScript ? `<script>${colorSchemeInitScript}</script>` : undefined,
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     let html = source
       .replace(/<!DOCTYPE[^>]*>/m, "<!doctype html>")
@@ -236,16 +256,66 @@ async function buildProductionPreflightModule() {
   return `/preflight/${generatedFile}`; // url, not file path
 }
 
+// Build src/color-scheme-init.ts and return the contents for an inline head script.
+async function buildColorSchemeInitScript() {
+  const result = await build({
+    configFile: false,
+    build: {
+      lib: {
+        entry: "src/color-scheme-init.ts",
+        formats: ["iife"],
+        name: "colorSchemeInit",
+      },
+      rollupOptions: {
+        output: { strict: false },
+      },
+      emptyOutDir: false,
+      write: false,
+      sourcemap: false,
+      target: "es2022",
+    },
+  });
+  if (!Array.isArray(result) || result.length !== 1 || result[0].output.length !== 1) {
+    // result should be a single-entry RollupOutput[] array containing
+    // one output entry: the built iife
+    console.log(result);
+    throw new Error("buildColorSchemeInitScript unexpected build result");
+  }
+  return result[0].output[0].code.trim();
+}
+
+/**
+ * Return the CSP script-src item needed to allow inlineCode by hash.
+ * (Should also works for style-src, font-src, etc.)
+ */
+function cspHashSrc(inlineCode: string) {
+  const hash = crypto.createHash("sha256").update(inlineCode).digest("base64");
+  return `'sha256-${hash}'`;
+}
+
 export default defineConfig(async ({ command, mode }) => {
   const env = loadEnv(mode, process.cwd());
   const preflightSrc =
     command === "build" ? await buildProductionPreflightModule() : "/src/preflight.ts";
+
+  const noModuleHeadScript = `location.href="/unsupported?f=${encodeURIComponent('<script type="module">')}";`;
+  const colorSchemeInitScript = await buildColorSchemeInitScript();
+  const extraScriptSrc = [
+    cspHashSrc(colorSchemeInitScript),
+    cspHashSrc(noModuleHeadScript),
+  ];
+
   let canonicalBaseUrl = env.VITE_CANONICAL_BASE_URL;
   if (canonicalBaseUrl && !canonicalBaseUrl.endsWith("/")) {
     canonicalBaseUrl += "/";
   }
   const analytics_html = env.VITE_ANALYTICS_BLOCK;
-  const commonTemplateData = { preflightSrc, analytics_html };
+  const commonTemplateData = {
+    preflightSrc,
+    analytics_html,
+    colorSchemeInitScript,
+    noModuleHeadScript,
+  };
   const createSentryVitePlugin = () =>
     sentryVitePlugin({
       applicationKey: sentryFilterApplicationId,
@@ -296,7 +366,7 @@ export default defineConfig(async ({ command, mode }) => {
       ),
     },
     preview: {
-      headers: securityHeaders(env),
+      headers: securityHeaders({ env, extraScriptSrc }),
     },
     plugins: [
       visualizer({
@@ -461,7 +531,10 @@ export default defineConfig(async ({ command, mode }) => {
             // Puzzle manual, generated by emcc build process
             sources: "src/assets/puzzles/manual/**/*.html",
             resolve: { url: "help/manual/", path: "src/assets/puzzles/manual/" },
-            transforms: [cleanupHalibutHtml(analytics_html), insertPuzzleScreenshot],
+            transforms: [
+              cleanupHalibutHtml(commonTemplateData),
+              insertPuzzleScreenshot,
+            ],
           },
           {
             // Cloudflare Pages HTTP headers
@@ -470,7 +543,11 @@ export default defineConfig(async ({ command, mode }) => {
                 urlPathname: "_headers",
                 data: {
                   puzzleIds,
-                  securityHeaders: securityHeaders(env, /*cspReportOnly=*/ true),
+                  securityHeaders: securityHeaders({
+                    env,
+                    extraScriptSrc,
+                    reportOnly: true,
+                  }),
                 },
               },
             ],

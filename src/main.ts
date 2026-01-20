@@ -170,3 +170,8 @@ if (document.readyState === "complete") {
     await pwaManager.initialize();
   });
 }
+
+// Use user's preferred color scheme
+import { initializeColorScheme } from "./color-scheme.ts";
+
+void initializeColorScheme();

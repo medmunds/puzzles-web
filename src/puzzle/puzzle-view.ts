@@ -1,20 +1,27 @@
 import { consume } from "@lit/context";
 import { ResizeController } from "@lit-labs/observers/resize-controller.js";
 import { SignalWatcher } from "@lit-labs/signals";
-import { ColorSpace, to as convert, display, OKLCH, parse, sRGB } from "colorjs.io/fn";
 import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { styleMap } from "lit/directives/style-map.js";
-import { almostEqual } from "../utils/math.ts";
+import { currentColorScheme } from "../color-scheme.ts";
+import {
+  colourToOKLCH,
+  cssColorToOKLCH,
+  darkModeColor,
+  isGrayChroma,
+  oklchToColour,
+  oklchToCSSColor,
+  tintGrays,
+} from "../utils/color.ts";
+import { clamp } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
+import { puzzleAugmentations } from "./augmentation.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { FontInfo, Size } from "./types.ts";
-
-ColorSpace.register(sRGB);
-ColorSpace.register(OKLCH);
 
 /**
  * The `<puzzle-view>` component renders a puzzle using the drawing API.
@@ -49,6 +56,9 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   @state()
   protected renderedPuzzleParams?: string;
 
+  @state()
+  protected renderedColorScheme?: string;
+
   @query("[part=content]")
   protected contentPart?: HTMLElement;
 
@@ -70,6 +80,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     // If they have changed, this will cause "effects" via updated().
     this.renderedPuzzleGameId = this.puzzle?.currentGameId;
     this.renderedPuzzleParams = this.puzzle?.currentParams;
+    this.renderedColorScheme = currentColorScheme.get();
   }
 
   protected override async updated(changedProperties: Map<string, unknown>) {
@@ -83,6 +94,10 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     } else if (this.puzzle && this.canvasReady) {
       let needsResize = false;
       let needsRedraw = false;
+
+      if (changedProperties.has("renderedColorScheme")) {
+        await this.updateColorPalette(); // forces redraw
+      }
 
       if (
         changedProperties.has("maxScale") ||
@@ -364,48 +379,72 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       throw new Error("updateColorPalette called before puzzle ready");
     }
 
-    // Get our content's (original) CSS background color, as RGB.
-    this.contentPart.style.removeProperty("--background-color"); // undo any earlier local style override
-    const bgcolor = window.getComputedStyle(this.contentPart).backgroundColor;
-    const bgrgb = convert(parse(bgcolor), "srgb");
+    // (Access reactive data before any async calls)
+    const isDarkMode = currentColorScheme.get() === "dark";
 
-    // The puzzle will generate a palette from a default background color, but
-    // it works in RGB space and the results can be ugly for non-gray backgrounds.
-    // Instead, convert our bgcolor to a gray of equivalent lightness (working
-    // in OKLCH space), and generate a desired puzzle palette based on that gray...
-    const [bgl, bgc, bgh] = convert(bgrgb, "oklch").coords;
-    const darkMode = bgl < 0.5;
-    const bggray = convert(
-      { space: "oklch", coords: [darkMode ? 1.0 - bgl : bgl, 0, 0] },
-      "srgb",
-    );
-    const defaultBackgroundColour = bggray.coords;
-    const puzzlePalette = await this.puzzle.getColourPalette(defaultBackgroundColour);
+    const { paletteBgIndex = 0, darkMode } =
+      puzzleAugmentations[this.puzzle.puzzleId] ?? {};
 
-    // ... then remap any grays (chroma 0) in the puzzle palette to corresponding
-    // shades of our background color (still working in OKLCH space).
-    const palette = puzzlePalette.map(([r, g, b]) => {
-      let [l, c, h] = convert({ space: "srgb", coords: [r, g, b] }, "oklch").coords;
-      if (almostEqual(c, 0)) {
-        c = bgc; // TODO: maybe don't tint pure white? l < 1.0 ? bgc : c;
-        h = bgh;
+    // Get our content's (original) CSS background and foreground colors
+    this.contentPart.style.removeProperty("--background-color");
+    const computedStyle = window.getComputedStyle(this.contentPart);
+    const bglch = cssColorToOKLCH(computedStyle.backgroundColor);
+
+    // The puzzle will generate a palette from a default background color, but:
+    // - It doesn't work well for dark background colors. Puzzles often generate
+    //   colors by multiplying the background by a factor < 1.0. This works for
+    //   light backgrounds, but generates near-blacks for dark ones. Instead,
+    //   invert a dark background to generate a light palette, and reverse
+    //   that later.
+    // - Puzzles compute colors in RGB space, which can be ugly for non-gray
+    //   backgrounds. Instead, give the puzzle a gray background of equivalent
+    //   lightness (working in OKLCH space) and then colorize it later.
+    const [bgl, bgc, bgh] = bglch;
+    const defaultBackgroundColour = isDarkMode
+      ? oklchToColour([1, 0, 0]) // generate from pure white in dark mode
+      : oklchToColour([bgl, 0, 0]);
+    const paletteRGB = await this.puzzle.getColourPalette(defaultBackgroundColour);
+    let palette = paletteRGB.map(colourToOKLCH);
+
+    // Apply dark mode adjustments and overrides from puzzleAugmentations
+    if (isDarkMode) {
+      palette = palette.map(([l, c, h], i) => {
+        const override = darkMode?.paletteOverrides?.[i];
+        if (Array.isArray(override)) {
+          [l, c, h] = override;
+        } else if (override !== false) {
+          [l, c, h] = darkModeColor([l, c, h], bgl);
+          if (typeof override === "number") {
+            l *= override;
+            if (l < 0) {
+              l = bgl - l;
+            }
+            l = clamp(0, l, 1);
+          }
+        }
+        return [l, c, h];
+      });
+      if (darkMode?.paletteSwaps) {
+        for (const [a, b] of darkMode.paletteSwaps) {
+          [palette[a], palette[b]] = [palette[b], palette[a]];
+        }
       }
-      if (darkMode) {
-        // TODO: this tends to make things too dark; can we match bg contrast somehow?
-        l = 1.0 - l;
-      }
-      // display() returns the best CSS <color> string this browser can handle.
-      return display({ space: "oklch", coords: [l, c, h] });
-    });
+    }
+
+    // Shift palette grays to the original background hue
+    if (!isGrayChroma(bgc) && !Number.isNaN(bgh)) {
+      palette = palette.map((lch) => tintGrays(lch, bglch));
+    }
 
     // Pass the resulting palette to the drawing API.
-    await this.puzzle.setDrawingPalette(palette);
+    const cssPalette = palette.map(oklchToCSSColor);
+    await this.puzzle.setDrawingPalette(cssPalette);
 
     // Update our own CSS background color to match (for any padding area).
-    // Almost all puzzles use index 0 as the background.
-    // (Untangle is the exception, and it always uses the defaultBackground.)
-    const COL_BACKGROUND = this.puzzle.puzzleId === "untangle" ? 1 : 0;
-    this.contentPart.style.setProperty("--background-color", palette[COL_BACKGROUND]);
+    this.contentPart.style.setProperty(
+      "--background-color",
+      cssPalette[paletteBgIndex],
+    );
   }
 
   //
