@@ -303,14 +303,20 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
     if (!this.drawing) {
       throw new Error("setDrawingPalette called with no canvas attached");
     }
-    this.drawing.setPalette(colors);
+    if (this.drawing.setPalette(colors)) {
+      // Must forceRedraw for palette change (not just plain redraw).
+      this.frontend.forceRedraw();
+    }
   }
 
   setDrawingFontInfo(fontInfo: FontInfo): void {
     if (!this.drawing) {
       throw new Error("setDrawingFontInfo called with no canvas attached");
     }
-    this.drawing.setFontInfo(fontInfo);
+    if (this.drawing.setFontInfo(fontInfo)) {
+      // Must forceRedraw for font change (not just plain redraw).
+      this.frontend.forceRedraw();
+    }
   }
 
   async getImage(options?: ImageEncodeOptions): Promise<Blob> {

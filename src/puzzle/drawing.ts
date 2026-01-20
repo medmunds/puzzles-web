@@ -64,17 +64,23 @@ export class Drawing implements DrawingImpl<Blitter> {
    * Install the color palette, which must be CSS color strings
    * in the same order as the return from Frontend.getColourPalette.
    * (Does not redraw anything already on the canvas.)
+   * Returns true if an already set palette was replaced.
    */
-  setPalette(colors: string[]): void {
+  setPalette(colors: string[]): boolean {
+    const hadPalette = this.palette.length > 0;
     this.palette = colors;
+    return hadPalette;
   }
 
   /**
    * Update font for later text drawing.
    * (Does not redraw text already on the canvas.)
+   * Returns true if a non-default font was set.
    */
-  public setFontInfo(fontInfo: FontInfo): void {
+  public setFontInfo(fontInfo: FontInfo): boolean {
+    const hadCustomFont = this.fontInfo !== defaultFontInfo;
     this.fontInfo = { ...fontInfo };
+    return hadCustomFont;
   }
 
   /**
