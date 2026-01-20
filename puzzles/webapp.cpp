@@ -191,13 +191,8 @@ public:
  * (Default constructors are required for embind)
  */
 
-struct Colour {
-    // (This deliberately matches the layout of the midend_colours return value.)
-    float r, g, b;
-
-    Colour() : r(0), g(0), b(0) {}
-    Colour(float _r, float _g, float _b) : r(_r), g(_g), b(_b) {}
-};
+// [r, g, b] array: matches the layout of the midend_colours return value.
+typedef std::array<float, 3> Colour;
 
 EMSCRIPTEN_DECLARE_VAL_TYPE(ColourList);
 
@@ -300,10 +295,10 @@ struct Size {
 EMSCRIPTEN_DECLARE_VAL_TYPE(StringList);
 
 EMSCRIPTEN_BINDINGS(utilities) {
-    value_object<Colour>("Colour")
-        .field("r", &Colour::r)
-        .field("g", &Colour::g)
-        .field("b", &Colour::b);
+    value_array<Colour>("Colour")
+        .element(emscripten::index<0>())
+        .element(emscripten::index<1>())
+        .element(emscripten::index<2>());
     register_type<ColourList>("Colour[]");
 
     // Would like to use lib.dom.d.ts CanvasTextAlign and CanvasTextBaseline,
@@ -1550,9 +1545,7 @@ public:
 
     void frontend_default_colour(float *output) const {
         assert(defaultBackgroundIsValid); // else not in getColourPalette()
-        *output++ = defaultBackground.r;
-        *output++ = defaultBackground.g;
-        *output = defaultBackground.b;
+        std::ranges::copy(defaultBackground, output);
     }
 
     //

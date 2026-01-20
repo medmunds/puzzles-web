@@ -7,7 +7,6 @@ import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { styleMap } from "lit/directives/style-map.js";
-import { coordsToColour } from "../utils/colour.ts";
 import { almostEqual } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
 import { puzzleContext } from "./contexts.ts";
@@ -380,12 +379,12 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       { space: "oklch", coords: [darkMode ? 1.0 - bgl : bgl, 0, 0] },
       "srgb",
     );
-    const defaultBackgroundColour = coordsToColour(bggray.coords);
+    const defaultBackgroundColour = bggray.coords;
     const puzzlePalette = await this.puzzle.getColourPalette(defaultBackgroundColour);
 
     // ... then remap any grays (chroma 0) in the puzzle palette to corresponding
     // shades of our background color (still working in OKLCH space).
-    const palette = puzzlePalette.map(({ r, g, b }) => {
+    const palette = puzzlePalette.map(([r, g, b]) => {
       let [l, c, h] = convert({ space: "srgb", coords: [r, g, b] }, "oklch").coords;
       if (almostEqual(c, 0)) {
         c = bgc; // TODO: maybe don't tint pure white? l < 1.0 ? bgc : c;

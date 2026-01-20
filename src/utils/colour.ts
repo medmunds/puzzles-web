@@ -1,15 +1,8 @@
 import type { Colour } from "../puzzle/types.ts";
 import { almostEqual } from "./math.ts";
 
-export const equalColour = (
-  { r: r1, g: g1, b: b1 }: Colour,
-  { r: r2, g: g2, b: b2 }: Colour,
-) => almostEqual(r1, r2) && almostEqual(g1, g2) && almostEqual(b1, b2);
+// A "Colour" (from the C puzzle code) is an [r, g, b] triplet
+// with each component in the range [0, 1] (in srgb space).
 
-export const coordsToColour = ([r, g, b]: [number, number, number]): Colour => ({
-  r,
-  g,
-  b,
-});
-
-export const colourToCoords = ({ r, g, b }: Colour) => [r, g, b];
+export const equalColour = (c1: Colour, c2: Colour) =>
+  c1.every((component, i) => almostEqual(component, c2[i]));
