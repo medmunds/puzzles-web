@@ -120,13 +120,18 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
 
   private renderConfigItem(id: string, config: ConfigItem) {
     const value = this.changes[id] ?? this.values[id];
+    // Abbreviating "%" or "%age" at the start of a label bugs me.
+    // (E.g., Bridges. But I'm OK with "Expansion factor (%age)".)
+    // Also improve "Size (s*s)": "(s&thinsp;&times;&thinsp;)" (e.g., Unequal).
+    const label = config.name.replace(/^%/, "Percent").replace("s*s", "s × s");
+
     switch (config.type) {
       case "string":
         return html`
           <wa-input
             name=${id}
             inputmode=${isNumeric(value) ? "decimal" : "text"}
-            label=${config.name}
+            label=${label}
             value=${value}
             @focus=${this.autoSelectInput}
             @change=${this.updateTextValue}
@@ -139,7 +144,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
             name=${id}
             ?checked=${value}
             @change=${this.updateCheckboxValue}
-          >${config.name}</wa-checkbox>
+          >${label}</wa-checkbox>
         `;
 
       case "choices": {
@@ -153,7 +158,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
           <wa-select
             name=${id}
             class=${showButtonGroup ? "hidden" : nothing}
-            label=${config.name}
+            label=${label}
             value=${value}
             @change=${this.updateSelectValue}
           >
@@ -180,7 +185,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
             <wa-radio-group
               name=${id}
               class=${showButtonGroup ? nothing : "hidden"}
-              label=${config.name}
+              label=${label}
               .value=${value}
               orientation="horizontal"
               @change=${this.updateSelectValue}
