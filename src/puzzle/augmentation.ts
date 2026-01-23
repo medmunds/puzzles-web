@@ -51,11 +51,15 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     ),
   },
   ascent: {
-    describeConfig: configFormatter("{width}x{height}{grid-type} {difficulty}", {
-      difficulty: ["Easy", "Normal", "Tricky", "Hard"],
-      "grid-type": [" (no diagonals)", "", " Hexagon", " Honeycomb", " Edges"],
-      // Not shown: symmetrical-clues, always-show-start-and-end-points
-    }),
+    describeConfig: configFormatter(
+      "{width}x{height}{grid-type} {difficulty}{always-show-start-and-end-points}{symmetrical-clues}",
+      {
+        difficulty: ["Easy", "Normal", "Tricky", "Hard"],
+        "grid-type": [" (no diagonals)", "", " Hexagon", " Honeycomb", " Edges"],
+        "always-show-start-and-end-points": [", hidden ends", ""], // boolean, on by default
+        "symmetrical-clues": ["", ", symmetric"], // boolean, off by default
+      },
+    ),
   },
   blackbox: {
     describeConfig: configFormatter("{width}x{height}, {no-of-balls}", {
@@ -67,8 +71,13 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   boats: {
     describeConfig: configFormatter(
-      "{width}x{height}, size {fleet-size} {difficulty:Easy|Normal|Tricky|Hard}{remove-numbers:|, hidden clues}",
-      // Not shown: fleet-configuration
+      "{width}x{height}, size {fleet-size} {difficulty}{remove-numbers}{fleet-configuration}",
+      {
+        difficulty: ["Easy", "Normal", "Tricky", "Hard"],
+        "remove-numbers": ["", ", hidden clues"], // boolean, default off
+        // fleet is a comma-separated list of numbers (boats.c removes spaces), default ""
+        "fleet-configuration": (value) => (value ? `, fleet ${value}` : ""),
+      },
     ),
     darkMode: {
       paletteOverrides: { 4: 0.6 }, // darken the water
@@ -82,7 +91,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   bridges: {
     describeConfig: configFormatter(
-      "{width}x{height} {difficulty}{allow-loops}{max-bridges-per-direction}",
+      "{width}x{height} {difficulty}{allow-loops}{max-bridges-per-direction}{percentage-of-island-squares}{expansion-factor}",
       {
         // Don't include default values in description
         "allow-loops": (value) => (value ? "" : ", no loops"),
@@ -93,12 +102,20 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
             : value === 1
               ? "" // default max 2 bridges
               : `, max ${Number(value) + 1} bridges`,
-        // Not shown: percentage-of-island-squares, expansion-factor-percentage
+        "percentage-of-island-squares": (value) =>
+          // Choices "5%", "10%", "15%", "20%", "25%", "30%", default "30%"
+          value === 5 ? "" : `, ${5 + 5 * Number(value)}% islands`,
+        "expansion-factor": (value) =>
+          // Choices "0%", "10%", "20%", ..., "100%", default "10%"
+          value === 1 ? "" : `, ${10 * Number(value)}% expansion`,
       },
     ),
   },
   clusters: {
     describeConfig: configFormatter("{width}x{height}"),
+  },
+  crossing: {
+    describeConfig: configFormatter("{width}x{height}{symmetric-walls:|, symmetric}"),
   },
   cube: {
     describeConfig: configFormatter(
@@ -145,6 +162,11 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       paletteOverrides: { 6: 0.8 }, // edges
     },
   },
+  group: {
+    describeConfig: configFormatter(
+      "{grid-size}x{grid-size} {difficulty:Trivial|Normal|Hard|Extreme|Unreasonable}{show-identity:, identity hidden|}",
+    ),
+  },
   guess: {
     describeConfig: configFormatter(
       "{pegs-per-guess}x{guesses}, {colours} colours{allow-blanks:| + blank}{allow-duplicates:, no duplicates|}",
@@ -167,13 +189,28 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   lightup: {
     describeConfig: configFormatter(
-      "{width}x{height} {difficulty:easy|tricky|hard}{percentage-of-black-squares}",
+      "{width}x{height} {difficulty:easy|tricky|hard}{percentage-of-black-squares}{symmetry}",
       {
         // Default black squares is "20". Note value is 5-100, not 0.05-1.0.
         "percentage-of-black-squares": (value) =>
           String(value) === "20" ? "" : `, ${value}% black squares`,
+        symmetry: (value, _, config) => {
+          // Choices. Presets vary: 7x7 is 4-way rotational, 10x10 and 14x14 are 2-way rotational.
+          // 4-way is only valid with square grid.
+          const width = Number(config.width);
+          const height = Number(config.height);
+          const defaultChoice = width === height && width * height < 50 ? 4 : 2;
+          const choice = Number(value);
+          const symmetry = [
+            "no symmetry",
+            "2-way mirror",
+            "2-way rotational",
+            "4-way mirror",
+            "4-way rotational",
+          ][choice];
+          return choice === defaultChoice ? "" : `, ${symmetry}`;
+        },
       },
-      // Not shown: symmetry
     ),
     darkMode: {
       paletteOverrides: { 2: [0.5, 0, 0], 3: [0.95, 0, 0] }, // black, white
@@ -219,6 +256,35 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       "{width}x{height}, {regions} regions, {difficulty:Easy|Normal|Hard|Unreasonable}",
     ),
   },
+  mathrax: {
+    describeConfig: (config) => {
+      const { size } = config;
+      const difficulty = ["Easy", "Normal", "Tricky", "Recursive"][
+        Number(config.difficulty)
+      ];
+      const enabledClues: string[] = [];
+      const disabledClues: string[] = [];
+      for (const clueType of [
+        "addition",
+        "subtraction",
+        "multiplication",
+        "division",
+        "equality",
+        "even-odd",
+      ]) {
+        (config[`${clueType}-clues`] ? enabledClues : disabledClues).push(clueType);
+      }
+
+      // Default is all types enabled; otherwise describe the shorter of the lists
+      const cluesDescription =
+        disabledClues.length === 0
+          ? ""
+          : enabledClues.length <= disabledClues.length
+            ? `, only ${enabledClues.join("/")}`
+            : `, no ${disabledClues.join("/")}`;
+      return `${size}x${size} ${difficulty}${cluesDescription}`;
+    },
+  },
   mines: {
     describeConfig: configFormatter(
       "{width}x{height}, {mines} mines{ensure-solubility:, risky|}",
@@ -233,10 +299,16 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   mosaic: {
     // Note: settings config lists "Height" before "Width"
-    describeConfig: configFormatter(
-      "Size: {width}x{height}",
-      // Not shown: aggressive-generation-longer
-    ),
+    describeConfig: configFormatter("Size: {width}x{height}{aggressive-generation}", {
+      "aggressive-generation": (value, _, { width, height }) => {
+        // Boolean: on for 3x3, 5x5, 10x10, 15x15, 25x25 presets; off for 50x50.
+        // "not recommended for boards larger than, say, 30x30"
+        const defaultOption = Number(width) * Number(height) < 30 * 30;
+        return value === defaultOption
+          ? ""
+          : `, ${value ? "slower" : "faster"} generation`;
+      },
+    }),
     darkMode: {
       paletteOverrides: { 1: 0.6 }, // unmarked tiles
     },
@@ -271,8 +343,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
           difficulty += ", wrapping";
         }
       }
-      return `${width}x${height}${difficulty}`;
-      // Not shown: number-of-shuffling-moves
+      const shuffles = Number(config["number-of-shuffling-moves"]);
+      return `${width}x${height}${difficulty}${shuffles ? `, ${shuffles} shuffles` : ""}`;
     },
   },
   palisade: {
@@ -336,12 +408,16 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   samegame: {
     describeConfig: configFormatter(
-      "{width}x{height}, {no-of-colours} colours{ensure-solubility:, ambiguous|}",
-      // Not shown: scoring-system
+      "{width}x{height}, {no-of-colours} colours{ensure-solubility:, ambiguous|}{scoring-system:, alt. scoring|}",
     ),
     darkMode: {
       paletteSwaps: [[12, 13]], // 3D
     },
+  },
+  seismic: {
+    describeConfig: configFormatter(
+      "{game-mode:Seismic|Tectonic}: {width}x{height} {difficulty:Easy|Hard}",
+    ),
   },
   signpost: {
     describeConfig: configFormatter(
@@ -352,10 +428,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Tricky}"),
   },
   sixteen: {
-    describeConfig: configFormatter(
-      "{width}x{height}",
-      // Not shown: number-of-shuffling-moves
-    ),
+    describeConfig: configFormatter("{width}x{height}{number-of-shuffling-moves}", {
+      "number-of-shuffling-moves": (value) => (value ? `, ${value} shuffles` : ""),
+    }),
     darkMode: {
       paletteSwaps: [[2, 3]], // 3D
     },
@@ -364,6 +439,10 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Hard}"),
   },
   slide: {
+    describeConfig: configFormatter("{width}x{height}, {solution-length-limit}", {
+      "solution-length-limit": (value) =>
+        Number(value) <= 0 ? "no move limit" : `max ${value} moves`,
+    }),
     darkMode: {
       paletteSwaps: [
         [1, 2], // 3D
@@ -374,6 +453,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     },
   },
   sokoban: {
+    describeConfig: configFormatter("{width}x{height}"),
     darkMode: {
       paletteSwaps: [[9, 10]], // 3D
     },
@@ -393,6 +473,17 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         "Extreme",
         "Unreasonable",
       ][Number(config.difficulty)];
+      const symmetry = [
+        "no symmetry", // default for Killer
+        "2-way rotation", // default for all but Killer
+        "4-way rotation",
+        "2-way mirror",
+        "2-way diagonal mirror",
+        "4-way mirror",
+        "4-way diagonal mirror",
+        "8-way mirror",
+      ][Number(config.symmetry)];
+      const hasDefaultSymmetry = config.symmetry === (isKiller ? 0 : 1);
 
       // Replicate preset titles
       const dimensions = isJigsaw ? `${width * height} Jigsaw` : `${width}x${height}`;
@@ -401,8 +492,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
           ? "Killer" // "Killer" replaces "Trivial"
           : `Killer ${difficulty}`
         : difficulty;
-      return `${dimensions} ${fullDifficulty}${isX ? " X" : ""}`;
-      // Not shown: symmetry
+      const symmetryDescription = hasDefaultSymmetry ? "" : `, ${symmetry}`;
+
+      return `${dimensions} ${fullDifficulty}${isX ? " X" : ""}${symmetryDescription}`;
     },
     darkMode: {
       paletteOverrides: { 2: 0.8 }, // darken grid
@@ -413,13 +505,19 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   sticks: {
     describeConfig: configFormatter(
-      "{width}x{height}{percentage-of-black-squares}",
+      "{width}x{height}{percentage-of-black-squares}{symmetry}",
       {
         // Default black squares is "20". Note value is 5-100, not 0.05-1.0.
         "percentage-of-black-squares": (value) =>
           String(value) === "20" ? "" : `, ${value}% black squares`,
+        symmetry: [
+          ", no symmetry",
+          ", 2-way mirror",
+          "", // default: 2-way rotational
+          ", 4-way mirror",
+          ", 4-way rotational",
+        ],
       },
-      // Not shown: symmetry
     ),
   },
   subsets: {
@@ -438,8 +536,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   tracks: {
     describeConfig: configFormatter(
-      "{width}x{height} {difficulty:Easy|Tricky|Hard}",
-      // Not shown: disallow-consecutive-1-clues
+      "{width}x{height} {difficulty:Easy|Tricky|Hard}{disallow-consecutive-1-clues:, allow adjacent 1’s|}",
     ),
   },
   twiddle: {
@@ -463,8 +560,10 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         qualifiers.push("normal");
       }
       const description = qualifiers.length ? ` ${qualifiers.join(", ")}` : "";
-      return `${config.width}x${config.height}${description}${blockSizeDescription}`;
-      // Not shown: number-of-shuffling-moves
+      const shuffles = Number(config["number-of-shuffling-moves"])
+        ? `, ${Number(config["number-of-shuffling-moves"])} shuffles`
+        : "";
+      return `${config.width}x${config.height}${description}${blockSizeDescription}${shuffles}`;
     },
     darkMode: {
       paletteSwaps: [
@@ -526,7 +625,7 @@ function configFormatter(
 ) {
   return (config: ConfigValues): string =>
     template.replace(
-      /\{(?<field>[a-z-]+)(?::(?<options>[^}]*))?}/g,
+      /\{(?<field>[a-z0-9-]+)(?::(?<options>[^}]*))?}/g,
       (orig, field: string, optionsList?: string): string => {
         const value = config[field];
         if (value === undefined) {
