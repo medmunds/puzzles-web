@@ -25,7 +25,7 @@ const ignoreErrors: (string | RegExp)[] = [
   // Unknown DuckDuckGo complaint:
   /^Error: invalid origin$/,
   // Chrome iOS "Translate" bug (in anonymous script):
-  /^RangeError: Maximum call stack size exceeded.*at undefined/,
+  /^RangeError: Maximum call stack size exceeded.*at \?.*undefined:/,
   // All browsers (but usually Firefox). Sentry ignores this by default:
   "ResizeObserver loop completed with undelivered notifications",
   // Browser extensions and extension-only APIs:

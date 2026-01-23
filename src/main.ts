@@ -51,7 +51,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
       /RuntimeError:\s*Aborted\s*\(NetworkError.*Build with -sASSERTIONS/i,
       "Network error: Response body loading was aborted",
       // Chrome iOS "Translate" bug (in anonymous script):
-      /^RangeError: Maximum call stack size exceeded.*at undefined/,
+      /^RangeError: Maximum call stack size exceeded.*at \?.*undefined:/,
     ],
     beforeBreadcrumb(breadcrumb, hint) {
       try {
