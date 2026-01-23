@@ -2,6 +2,7 @@ import * as child from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import * as path from "node:path";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import license from "rollup-plugin-license";
 import { visualizer } from "rollup-plugin-visualizer";
 import { build, defineConfig, loadEnv, type UserConfig } from "vite";
@@ -14,7 +15,6 @@ import {
   renderMarkdown,
   type Transform,
 } from "./vite-extra-pages";
-import { sentryVitePlugin } from "./vite-sentry-plugin"; // from "@sentry/vite-plugin";
 import { wasmSourcemaps } from "./vite-wasm-sourcemaps";
 
 type Env = Record<string, string>;
