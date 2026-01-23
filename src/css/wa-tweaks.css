@@ -1,5 +1,14 @@
 /* Various adjustments to Web Awesome defaults */
 
+/* UA stylesheet `dialog { color: canvastext; }` takes precedence
+ * over inherited colors, affecting components that use native dialogs.
+ * https://github.com/shoelace-style/webawesome/issues/1978
+ */
+wa-dialog::part(dialog),
+wa-drawer::part(dialog) {
+  color: var(--wa-color-text-normal);
+}
+
 /* Change default wa-button appearance for compatibility with form controls.
  * (Outlined and filled similar to wa-input.) */
 wa-button[appearance="accent"][variant="neutral"] {

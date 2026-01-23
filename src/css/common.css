@@ -15,13 +15,17 @@
   line-height: var(--wa-line-height-normal);
   font-weight: var(--wa-font-weight-normal);
 
-  color-scheme: light dark;
+  color-scheme: light;
   color: var(--wa-color-text-normal);
   background-color: var(--wa-color-brand-fill-quiet);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+:root.wa-dark {
+  color-scheme: dark;
 }
 
 @media (any-pointer: coarse) and (min-width: 480px) and (min-height: 480px) {
