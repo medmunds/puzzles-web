@@ -94,19 +94,17 @@ if (import.meta.env.VITE_SENTRY_DSN) {
       return breadcrumb;
     },
     beforeSend(event, hint) {
-      // An error in the worker or wasm will be incorrectly identified as third-party.
+      // An error in wasm loaded from the worker will be incorrectly identified
+      // as third-party: https://github.com/getsentry/sentry-javascript/issues/18779.
       // Undo that if any stack frame's filename is (roughly):
-      //   /assets/worker-[hash].js
       //   /assets/[puzzleid]-[hash].wasm
       //   /src/assets/puzzles/[puzzleid].wasm  (dev)
-      //   /src/puzzle/worker.ts                (dev)
-      const reWorkerOrWasm =
-        /(\/assets\/(.+\.wasm|worker))|(\/src\/(assets\/puzzles\/.+\.wasm|puzzle\/worker))/;
+      const reWasm = /\/(assets|src\/assets\/puzzles)\/[^/]+\.wasm/;
       if (
         event.tags?.third_party_code &&
         event.exception?.values?.some((exception) =>
           exception.stacktrace?.frames?.some(
-            (frame) => frame.filename && reWorkerOrWasm.test(frame.filename),
+            (frame) => frame.filename && reWasm.test(frame.filename),
           ),
         )
       ) {
