@@ -102,12 +102,23 @@ class PWAManager {
 
   private wb?: Workbox;
 
+  private captureSentryContext() {
+    if (import.meta.env.VITE_SENTRY_DSN) {
+      Sentry.setTags({
+        "pwa.allowOfflineUse": this.allowOfflineUse,
+        "pwa.autoUpdate": this.autoUpdate,
+        "pwa.isRunningAsApp": isRunningAsApp,
+      });
+    }
+  }
+
   /**
    * Install the offline service worker if requested.
    * The app should call this from the window.load event.
    */
   async initialize() {
     await settings.loaded;
+    this.captureSentryContext();
     if (this.allowOfflineUse) {
       await this.registerSW();
     } else {
@@ -121,6 +132,7 @@ class PWAManager {
    */
   async reinitialize() {
     await settings.loaded;
+    this.captureSentryContext();
     if (this.allowOfflineUse && !this.wb) {
       await this.registerSW();
     } else if (!this.allowOfflineUse && this.wb) {
