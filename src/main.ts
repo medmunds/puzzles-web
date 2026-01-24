@@ -2,13 +2,13 @@ import { initSentry } from "./utils/sentry.ts";
 
 initSentry();
 
-import { installErrorHandlers } from "./utils/errors.ts";
-
-installErrorHandlers();
-
 import { patchLitForExternalDomManipulation } from "./utils/lit.ts";
 
 patchLitForExternalDomManipulation();
+
+import { installErrorHandlers } from "./utils/errors.ts";
+
+installErrorHandlers();
 
 // Install our icon library
 import "./icons";
