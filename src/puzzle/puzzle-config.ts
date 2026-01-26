@@ -5,7 +5,6 @@ import { SignalWatcher, signal } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, queryAll, state } from "lit/decorators.js";
-import { ref } from "lit/directives/ref.js";
 import { when } from "lit/directives/when.js";
 import { cssWATweaks } from "../utils/css.ts";
 import { equalSet } from "../utils/equal.ts";
@@ -110,7 +109,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
 
   protected override render() {
     return html`
-      <form part="form" @submit=${this.submit} ${ref(this.formRefChanged)}>
+      <form part="form" @submit=${this.submit} ${this.resizeController.target(true)}>
         ${when(this.error, () => html`<div part="error">${this.error}</div>`)}
 
         ${Object.entries(this.config?.items ?? {}).map(([id, config]) => this.renderConfigItem(id, config))}
@@ -323,35 +322,23 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
     }
   };
 
-  protected observedForm?: Element;
   protected resizeController = new ResizeController(this, {
-    target: null, // Initialized to form after render
+    target: null, // Initialized to form during render
     callback: this.updateShowAsButtonGroup,
   });
 
-  private formRefChanged = (element?: Element) => {
-    if (this.observedForm) {
-      this.resizeController.unobserve(this.observedForm);
-    }
-    this.observedForm = element;
-    if (this.observedForm) {
-      this.resizeController.observe(this.observedForm);
-    }
-  };
-
   protected getFormContentWidth(entries?: ResizeObserverEntry[]): number {
-    if (!this.observedForm) {
+    const form = this.shadowRoot?.querySelector('[part="form"]');
+    if (!form) {
       return 0;
     }
 
-    const observedFormEntry = entries?.find(
-      (entry) => entry.target === this.observedForm,
-    );
-    if (observedFormEntry) {
-      return observedFormEntry.contentRect.width;
+    const formEntry = entries?.find((entry) => entry.target === form);
+    if (formEntry) {
+      return formEntry.contentRect.width;
     }
 
-    const style = getComputedStyle(this.observedForm);
+    const style = getComputedStyle(form);
     const inlinePadding =
       Number.parseFloat(style.paddingInlineStart) +
       Number.parseFloat(style.paddingInlineEnd);
@@ -361,7 +348,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
       );
       return 0; // uses wa-select, which should work at any width
     }
-    return this.observedForm.clientWidth - inlinePadding;
+    return form.clientWidth - inlinePadding;
   }
 
   static styles = [
