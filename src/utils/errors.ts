@@ -33,8 +33,15 @@ export function installErrorHandlers() {
   window.addEventListener("unhandledrejection", (event) => {
     try {
       const error = event.reason instanceof Error ? event.reason : undefined;
-      const description = String(error?.stack ?? event.reason);
-      const errorMessage = `Unhandled Promise Rejection: ${description}`;
+      const errorMessage = [
+        `${String(event.reason).trim()} [unhandled rejection]`,
+        // Chrome includes the error message in the stack, others don't:
+        (error?.stack || "")
+          .replace(String(error), "")
+          .trim(),
+      ]
+        .filter(Boolean)
+        .join("\n");
       void reportError(errorMessage, error);
     } catch (error) {
       console.error("Error in onunhandledrejection handler", error);
