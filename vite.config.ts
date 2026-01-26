@@ -543,11 +543,7 @@ export default defineConfig(async ({ command, mode }) => {
                 urlPathname: "_headers",
                 data: {
                   puzzleIds,
-                  securityHeaders: securityHeaders({
-                    env,
-                    extraScriptSrc,
-                    reportOnly: true,
-                  }),
+                  securityHeaders: securityHeaders({ env, extraScriptSrc }),
                 },
               },
             ],
