@@ -28,6 +28,9 @@ const ignoreErrors: (string | RegExp)[] = [
   /^RangeError: Maximum call stack size exceeded.*at \?.*undefined:/,
   // All browsers (but usually Firefox). Sentry ignores this by default:
   "ResizeObserver loop completed with undelivered notifications",
+  // We don't use eval() or new Function(), so any EvalError is almost
+  // certainly caused by an extension (but may be injected into our code)
+  "EvalError", // exact message text varies by browser
   // Browser extensions and extension-only APIs:
   // (See Sentry's longer list:
   // https://github.com/getsentry/relay/blob/322fa6f678add6abed4772fb6046cbf7daf4814a/relay-filter/src/browser_extensions.rs#L9-L81)

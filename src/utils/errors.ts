@@ -47,6 +47,14 @@ export function installErrorHandlers() {
       console.error("Error in onunhandledrejection handler", error);
     }
   });
+
+  window.addEventListener("securitypolicyviolation", () => {
+    // This warning may appear before or after the CSP error in the console
+    console.warn(
+      "🚨🚨🚨 This security violation is probably caused by a PLUGIN" +
+        " or BROWSER EXTENSION trying to insecurely modify the page. 🚨🚨🚨",
+    );
+  });
 }
 
 //
