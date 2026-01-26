@@ -31,10 +31,19 @@ export async function initializeColorScheme() {
     systemColorScheme.set(event.matches ? "dark" : "light");
   prefersDarkMode.addEventListener("change", updateSystemColorScheme);
 
-  // Maintain wa-dark class based on currentColorScheme
   const disposeEffect = effect(() => {
+    // Maintain wa-dark class based on currentColorScheme
     const isDark = currentColorScheme.get() === "dark";
     document.documentElement.classList.toggle("wa-dark", isDark);
+
+    // <meta name="theme-color"> is injected in all html pages by VitePWA.
+    // It's meant to match the root background-color (see common.css).
+    const themeColor = window.getComputedStyle(
+      document.documentElement,
+    ).backgroundColor;
+    document
+      .querySelector("meta[name=theme-color]")
+      ?.setAttribute("content", themeColor);
   });
 
   return () => {
