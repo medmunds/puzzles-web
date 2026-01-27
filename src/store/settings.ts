@@ -1,7 +1,7 @@
-import { type Signal, signal } from "@lit-labs/signals";
-import * as Sentry from "@sentry/browser";
+import { computed } from "@lit-labs/signals";
+import { SignalMap } from "signal-utils/map";
+import { effect } from "signal-utils/subtle/microtask-effect";
 import type { ConfigValues, PuzzleId } from "../puzzle/types.ts";
-import { equalSet } from "../utils/equal.ts";
 import {
   type CommonSettings,
   db,
@@ -27,14 +27,14 @@ const defaultSettings = {
   allowOfflineUse: null,
   autoUpdate: null,
   colorScheme: "light", // change to "system" when dark mode no longer experimental
-  favoritePuzzles: new Set<PuzzleId>([
+  favoritePuzzles: [
     "keen",
     "mines",
     "net",
     "samegame",
     "solo",
     "untangle",
-  ]),
+  ] as PuzzleId[],
   showIntro: true,
   showUnfinishedPuzzles: false,
   showMouseButtonToggle: false,
@@ -52,46 +52,25 @@ const defaultSettings = {
 const COMMON_SETTINGS_ID = "puzzle-common";
 
 class Settings {
-  // Reactive signals for individual settings
-  private _allowOfflineUse = signal<boolean | null>(defaultSettings.allowOfflineUse);
-  private _autoUpdate = signal<boolean | null>(defaultSettings.autoUpdate);
-  private _colorScheme = signal<"light" | "dark" | "system">(
-    defaultSettings.colorScheme,
-  );
-  private _favoritePuzzles = signal<ReadonlySet<PuzzleId>>(
-    defaultSettings.favoritePuzzles,
-  );
-  private _showIntro = signal<boolean>(defaultSettings.showIntro);
-  private _showUnfinishedPuzzles = signal<boolean>(
-    defaultSettings.showUnfinishedPuzzles,
-  );
-
-  private _showMouseButtonToggle = signal<boolean>(
-    defaultSettings.showMouseButtonToggle,
-  );
-  private _rightButtonLongPress = signal<boolean>(defaultSettings.rightButtonLongPress);
-  private _rightButtonTwoFingerTap = signal<boolean>(
-    defaultSettings.rightButtonTwoFingerTap,
-  );
-  private _rightButtonAudioVolume = signal<number>(
-    defaultSettings.rightButtonAudioVolume,
-  );
-  private _rightButtonHoldTime = signal<number>(defaultSettings.rightButtonHoldTime);
-  private _rightButtonDragThreshold = signal<number>(
-    defaultSettings.rightButtonDragThreshold,
-  );
-  private _showEndNotification = signal<boolean>(defaultSettings.showEndNotification);
-  private _showPuzzleKeyboard = signal<boolean>(defaultSettings.showPuzzleKeyboard);
-  private _statusbarPlacement = signal<CommonSettings["statusbarPlacement"]>(
-    defaultSettings.statusbarPlacement,
-  );
-  private _maxScale = signal<number>(defaultSettings.maxScale);
+  // Reactive CommonSettings record with values in DB format
+  private _commonSettings = new SignalMap<keyof CommonSettings, unknown>();
+  private _isLoadingCommonSettings = false;
+  private _commonSettingsEffectDisposer?: () => void;
 
   private readonly _loaded: Promise<void>;
 
   constructor() {
+    this._commonSettingsEffectDisposer = effect(this.autoSaveCommonSettings);
     window.addEventListener("pageshow", this.handlePageShow);
     this._loaded = this.loadSettings();
+  }
+
+  // In regular app use, the settings singleton lives forever,
+  // so this destructor never runs. But it may be useful in tests.
+  destroy() {
+    window.removeEventListener("pageshow", this.handlePageShow);
+    this._commonSettingsEffectDisposer?.();
+    this._commonSettingsEffectDisposer = undefined;
   }
 
   /**
@@ -109,63 +88,80 @@ class Settings {
   };
 
   private async loadSettings(): Promise<void> {
-    function update<T>(signal: Signal.State<T>, newValue: T | undefined) {
-      if (newValue !== undefined && signal.get() !== newValue) {
-        signal.set(newValue);
+    this._isLoadingCommonSettings = true;
+    try {
+      // TODO: Use a Dexie.liveQuery so multiple tabs stay in sync
+      //   (would also make pageshow.persisted logic redundant)
+      const record = await this.getCommonSettings();
+      this._commonSettings.clear();
+      for (const [key, value] of Object.entries(record)) {
+        this._commonSettings.set(key as keyof CommonSettings, value);
       }
-    }
-
-    const commonSettings = await this.getCommonSettings();
-    if (commonSettings) {
-      update(this._allowOfflineUse, commonSettings.allowOfflineUse);
-      update(this._autoUpdate, commonSettings.autoUpdate);
-      update(this._colorScheme, commonSettings.colorScheme);
-      if (commonSettings.favoritePuzzles !== undefined) {
-        const favoritePuzzles = new Set(commonSettings.favoritePuzzles);
-        if (!equalSet(favoritePuzzles, this._favoritePuzzles.get())) {
-          this._favoritePuzzles.set(favoritePuzzles);
-        }
-      }
-      update(this._showIntro, commonSettings.showIntro);
-      update(this._showUnfinishedPuzzles, commonSettings.showUnfinishedPuzzles);
-      update(this._showMouseButtonToggle, commonSettings.showMouseButtonToggle);
-      update(this._rightButtonLongPress, commonSettings.rightButtonLongPress);
-      update(this._rightButtonTwoFingerTap, commonSettings.rightButtonTwoFingerTap);
-      update(this._rightButtonAudioVolume, commonSettings.rightButtonAudioVolume);
-      update(this._rightButtonHoldTime, commonSettings.rightButtonHoldTime);
-      update(this._rightButtonDragThreshold, commonSettings.rightButtonDragThreshold);
-      update(this._showEndNotification, commonSettings.showEndNotification);
-      update(this._showPuzzleKeyboard, commonSettings.showPuzzleKeyboard);
-      update(this._statusbarPlacement, commonSettings.statusbarPlacement);
-      update(this._maxScale, commonSettings.maxScale ?? Number.POSITIVE_INFINITY);
+    } finally {
+      await Promise.resolve(); // flush microtask queue
+      this._isLoadingCommonSettings = false;
     }
   }
+
+  private autoSaveCommonSettings = () => {
+    // Runs as an effect on _commonSettings changes.
+    // Persist settings to DB, except while loading or during initial setup.
+    // (_commonSettings is empty until after first load.)
+    const entries = this._commonSettings.entries();
+    if (!this._isLoadingCommonSettings && this._commonSettings.size > 0) {
+      const record = Object.fromEntries(entries) as CommonSettings;
+      void this.setCommonSettings(record);
+    }
+  };
+
+  private getCommonSetting<K extends keyof CommonSettings>(
+    key: K,
+  ): CommonSettings[K] | undefined {
+    return this._commonSettings.get(key) as CommonSettings[K];
+  }
+
+  private setCommonSetting<K extends keyof CommonSettings>(
+    key: K,
+    value: Required<CommonSettings>[K],
+  ) {
+    this._commonSettings.set(key, value);
+  }
+
+  // private resetCommonSetting<K extends keyof CommonSettings>(key: K) {
+  //   // Use undefined as tombstone until next merge with existing DB record
+  //   this._commonSettings.set(key, undefined);
+  // }
+
+  //
+  // PWAManager-only reactive settings
+  //
 
   // For PWAManager use only (use pwaManager.allowOfflineUse instead)
   get allowOfflineUse(): boolean | null {
-    return this._allowOfflineUse.get();
+    return this.getCommonSetting("allowOfflineUse") ?? null;
   }
   set allowOfflineUse(value: boolean) {
-    this._allowOfflineUse.set(value);
-    this.saveCommonSettingOrLogError("allowOfflineUse", value);
+    this.setCommonSetting("allowOfflineUse", value);
   }
 
   // For PWAManager use only (use pwaManager.autoUpdate instead)
   get autoUpdate(): boolean | null {
-    return this._autoUpdate.get();
+    return this.getCommonSetting("autoUpdate") ?? null;
   }
   set autoUpdate(value: boolean) {
-    this._autoUpdate.set(value);
-    this.saveCommonSettingOrLogError("autoUpdate", value);
+    this.setCommonSetting("autoUpdate", value);
   }
+
+  //
+  // Public reactive settings
+  //
 
   // Accessors for reactive signals
   get colorScheme(): "light" | "dark" | "system" {
-    return this._colorScheme.get();
+    return this.getCommonSetting("colorScheme") ?? defaultSettings.colorScheme;
   }
   set colorScheme(value: "light" | "dark" | "system") {
-    this._colorScheme.set(value);
-    this.saveCommonSettingOrLogError("colorScheme", value);
+    this.setCommonSetting("colorScheme", value);
     // Also track in localStorage: see color-scheme-init.ts
     try {
       localStorage.setItem("colorScheme", value);
@@ -175,168 +171,175 @@ class Settings {
     }
   }
 
+  private _favoritePuzzles = computed<ReadonlySet<PuzzleId>>(
+    () =>
+      new Set(
+        this.getCommonSetting("favoritePuzzles") ?? defaultSettings.favoritePuzzles,
+      ),
+  );
+
   get favoritePuzzles(): ReadonlySet<PuzzleId> {
     return this._favoritePuzzles.get();
-  }
-  set favoritePuzzles(value: ReadonlySet<PuzzleId>) {
-    this._favoritePuzzles.set(value);
-    this.saveCommonSettingOrLogError("favoritePuzzles", [...value]);
   }
 
   isFavoritePuzzle(puzzleId: PuzzleId): boolean {
     return this.favoritePuzzles.has(puzzleId);
   }
+
   async setFavoritePuzzle(puzzleId: PuzzleId, isFavorite: boolean): Promise<void> {
     const wasFavorite = this.isFavoritePuzzle(puzzleId);
-    if (isFavorite !== wasFavorite) {
-      const favorites = new Set(this.favoritePuzzles);
-      if (isFavorite) {
-        favorites.add(puzzleId);
-      } else {
-        favorites.delete(puzzleId);
-      }
-      this.favoritePuzzles = favorites;
+    if (wasFavorite !== isFavorite) {
+      const oldFavorites =
+        this.getCommonSetting("favoritePuzzles") ?? defaultSettings.favoritePuzzles;
+      const newFavorites = isFavorite
+        ? [...oldFavorites, puzzleId].sort()
+        : oldFavorites.filter((id) => id !== puzzleId);
+      this.setCommonSetting("favoritePuzzles", newFavorites);
     }
   }
 
   get showIntro(): boolean {
-    return this._showIntro.get();
+    return this.getCommonSetting("showIntro") ?? defaultSettings.showIntro;
   }
   set showIntro(value: boolean) {
-    this._showIntro.set(value);
-    this.saveCommonSettingOrLogError("showIntro", value);
+    this.setCommonSetting("showIntro", value);
   }
 
   get showUnfinishedPuzzles(): boolean {
-    return this._showUnfinishedPuzzles.get();
+    return (
+      this.getCommonSetting("showUnfinishedPuzzles") ??
+      defaultSettings.showUnfinishedPuzzles
+    );
   }
   set showUnfinishedPuzzles(value: boolean) {
-    this._showUnfinishedPuzzles.set(value);
-    this.saveCommonSettingOrLogError("showUnfinishedPuzzles", value);
+    this.setCommonSetting("showUnfinishedPuzzles", value);
   }
 
   get showMouseButtonToggle(): boolean {
-    return this._showMouseButtonToggle.get();
+    return (
+      this.getCommonSetting("showMouseButtonToggle") ??
+      defaultSettings.showMouseButtonToggle
+    );
   }
   set showMouseButtonToggle(value: boolean) {
-    this._showMouseButtonToggle.set(value);
-    this.saveCommonSettingOrLogError("showMouseButtonToggle", value);
+    this.setCommonSetting("showMouseButtonToggle", value);
   }
 
   get rightButtonLongPress(): boolean {
-    return this._rightButtonLongPress.get();
+    return (
+      this.getCommonSetting("rightButtonLongPress") ??
+      defaultSettings.rightButtonLongPress
+    );
   }
   set rightButtonLongPress(value: boolean) {
-    this._rightButtonLongPress.set(value);
-    this.saveCommonSettingOrLogError("rightButtonLongPress", value);
+    this.setCommonSetting("rightButtonLongPress", value);
   }
 
   get rightButtonTwoFingerTap(): boolean {
-    return this._rightButtonTwoFingerTap.get();
+    return (
+      this.getCommonSetting("rightButtonTwoFingerTap") ??
+      defaultSettings.rightButtonTwoFingerTap
+    );
   }
   set rightButtonTwoFingerTap(value: boolean) {
-    this._rightButtonTwoFingerTap.set(value);
-    this.saveCommonSettingOrLogError("rightButtonTwoFingerTap", value);
+    this.setCommonSetting("rightButtonTwoFingerTap", value);
   }
 
   get rightButtonAudioVolume(): number {
-    return this._rightButtonAudioVolume.get();
+    return (
+      this.getCommonSetting("rightButtonAudioVolume") ??
+      defaultSettings.rightButtonAudioVolume
+    );
   }
   set rightButtonAudioVolume(value: number) {
-    this._rightButtonAudioVolume.set(value);
-    this.saveCommonSettingOrLogError("rightButtonAudioVolume", value);
+    this.setCommonSetting("rightButtonAudioVolume", value);
   }
 
   get rightButtonHoldTime(): number {
-    return this._rightButtonHoldTime.get();
+    return (
+      this.getCommonSetting("rightButtonHoldTime") ??
+      defaultSettings.rightButtonHoldTime
+    );
   }
   set rightButtonHoldTime(value: number) {
-    this._rightButtonHoldTime.set(value);
-    this.saveCommonSettingOrLogError("rightButtonHoldTime", value);
+    this.setCommonSetting("rightButtonHoldTime", value);
   }
 
   get rightButtonDragThreshold(): number {
-    return this._rightButtonDragThreshold.get();
+    return (
+      this.getCommonSetting("rightButtonDragThreshold") ??
+      defaultSettings.rightButtonDragThreshold
+    );
   }
   set rightButtonDragThreshold(value: number) {
-    this._rightButtonDragThreshold.set(value);
-    this.saveCommonSettingOrLogError("rightButtonDragThreshold", value);
+    this.setCommonSetting("rightButtonDragThreshold", value);
   }
 
   get showEndNotification(): boolean {
-    return this._showEndNotification.get();
+    return (
+      this.getCommonSetting("showEndNotification") ??
+      defaultSettings.showEndNotification
+    );
   }
   set showEndNotification(value: boolean) {
-    this._showEndNotification.set(value);
-    this.saveCommonSettingOrLogError("showEndNotification", value);
+    this.setCommonSetting("showEndNotification", value);
   }
 
   get showPuzzleKeyboard(): boolean {
-    return this._showPuzzleKeyboard.get();
+    return (
+      this.getCommonSetting("showPuzzleKeyboard") ?? defaultSettings.showPuzzleKeyboard
+    );
   }
   set showPuzzleKeyboard(value: boolean) {
-    this._showPuzzleKeyboard.set(value);
-    this.saveCommonSettingOrLogError("showPuzzleKeyboard", value);
+    this.setCommonSetting("showPuzzleKeyboard", value);
   }
 
-  get statusbarPlacement(): CommonSettings["statusbarPlacement"] {
-    return this._statusbarPlacement.get();
+  get statusbarPlacement(): "start" | "end" | "hidden" {
+    return (
+      this.getCommonSetting("statusbarPlacement") ?? defaultSettings.statusbarPlacement
+    );
   }
-  set statusbarPlacement(value: CommonSettings["statusbarPlacement"]) {
-    this._statusbarPlacement.set(value);
-    this.saveCommonSettingOrLogError("statusbarPlacement", value);
+  set statusbarPlacement(value: "start" | "end" | "hidden") {
+    this.setCommonSetting("statusbarPlacement", value);
   }
 
   get maxScale(): number {
-    const value = this._maxScale.get();
+    let value = this.getCommonSetting("maxScale");
+    if (value === undefined) {
+      value = defaultSettings.maxScale; // but leave null alone
+    }
     return value === null ? Number.POSITIVE_INFINITY : value;
   }
   set maxScale(value: number) {
-    this._maxScale.set(value);
     // Store Infinity as null (for json serialization)
-    this.saveCommonSettingOrLogError(
+    this.setCommonSetting(
       "maxScale",
       value === Number.POSITIVE_INFINITY ? null : value,
     );
   }
 
-  // Settings methods
+  //
+  // Settings DB access
+  //
+
   private async getCommonSettings(): Promise<CommonSettings> {
     const record = await db.settings.get(COMMON_SETTINGS_ID);
     return record?.type === "puzzle-common" ? record.data : { puzzlePreferences: {} };
   }
 
-  private async saveCommonSetting<K extends keyof CommonSettings>(
-    name: K,
-    value: CommonSettings[K],
-  ) {
+  private async setCommonSettings(record: CommonSettings) {
+    // Theoretically, we could just write the entire record, but merge
+    // with any existing record in case another tab has edited it.
+    // Remove any keys that end up with undefined values after merging.
     const current = await this.getCommonSettings();
-    if (current[name] !== value) {
-      const updated: CommonSettings = {
-        ...current,
-        [name]: value,
-      };
-      if (value === undefined) {
-        delete updated[name];
-      }
-      await db.settings.put({
-        id: COMMON_SETTINGS_ID,
-        type: "puzzle-common",
-        data: updated,
-      });
-    }
-  }
-
-  // Ugh. Non-async version of above, for use in property setters.
-  private saveCommonSettingOrLogError<K extends keyof CommonSettings>(
-    name: K,
-    value: CommonSettings[K],
-  ) {
-    this.saveCommonSetting(name, value).catch((error: Error) => {
-      console.error(error);
-      if (import.meta.env.VITE_SENTRY_DSN) {
-        Sentry.captureException(error);
-      }
+    const merged = Object.entries({ ...current, ...record }).filter(
+      ([, value]) => value !== undefined,
+    );
+    const updated = Object.fromEntries(merged) as CommonSettings;
+    await db.settings.put({
+      id: COMMON_SETTINGS_ID,
+      type: "puzzle-common",
+      data: updated,
     });
   }
 
@@ -356,11 +359,11 @@ class Settings {
     const defaults = {
       "pencil-keep-highlight": true, // keen, solo, towers, undead
     };
-    const commonRecord = await this.getCommonSettings();
+    const commonPuzzlePreferences = this.getCommonSetting("puzzlePreferences");
     const puzzleRecord = await this.getPuzzleSettings(puzzleId);
     return {
       ...defaults,
-      ...commonRecord?.puzzlePreferences,
+      ...commonPuzzlePreferences,
       ...puzzleRecord?.puzzlePreferences,
     };
   }
@@ -372,20 +375,7 @@ class Settings {
   async setPuzzlePreferences(puzzleId: PuzzleId, prefs: ConfigValues): Promise<void> {
     const { commonPreferences, puzzlePreferences } = this.splitPuzzlePreferences(prefs);
     if (commonPreferences !== undefined) {
-      const current = await this.getCommonSettings();
-      const updated: CommonSettings = {
-        ...current,
-        puzzlePreferences: {
-          ...current?.puzzlePreferences,
-          ...commonPreferences,
-        },
-      };
-
-      await db.settings.put({
-        id: COMMON_SETTINGS_ID,
-        type: "puzzle-common",
-        data: updated,
-      });
+      this.setCommonSetting("puzzlePreferences", commonPreferences);
     }
 
     if (puzzlePreferences !== undefined) {
