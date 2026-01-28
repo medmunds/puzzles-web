@@ -23,34 +23,87 @@ export const isSerializedSettings = (obj: unknown): obj is SerializedSettings =>
   "data" in obj &&
   Array.isArray(obj.data);
 
-const defaultSettings = {
-  allowOfflineUse: null,
-  autoUpdate: null,
-  colorScheme: "light", // change to "system" when dark mode no longer experimental
-  favoritePuzzles: [
-    "keen",
-    "mines",
-    "net",
-    "samegame",
-    "solo",
-    "untangle",
-  ] as PuzzleId[],
-  showIntro: true,
-  showUnfinishedPuzzles: false,
-  showMouseButtonToggle: false,
-  rightButtonLongPress: true,
-  rightButtonTwoFingerTap: true,
-  rightButtonAudioVolume: 40,
-  rightButtonHoldTime: 350,
-  rightButtonDragThreshold: 8,
-  showEndNotification: true,
-  showPuzzleKeyboard: true,
-  statusbarPlacement: "start",
-  maxScale: Number.POSITIVE_INFINITY,
-} as const;
+const defaultFavoritePuzzles: PuzzleId[] = [
+  "keen",
+  "mines",
+  "net",
+  "samegame",
+  "solo",
+  "untangle",
+] as const;
 
 const COMMON_SETTINGS_ID = "puzzle-common";
 
+//
+// @commonSetting decorator
+//
+
+const getCommonSetting = Symbol("getCommonSetting");
+const setCommonSetting = Symbol("setCommonSetting");
+
+type RequiredCommonSettings = Required<CommonSettings>;
+
+interface CommonSettingOptions<K extends keyof CommonSettings, D, V> {
+  default: D;
+  fromDB?: (value: RequiredCommonSettings[K]) => V;
+  toDB?: (value: V) => RequiredCommonSettings[K];
+
+  // (Prefer reactive effects to setCallback when possible)
+  setCallback?: (value: V) => void;
+}
+
+/**
+ * @commonSetting decorator. Defines getter and setter for a reactive property
+ * persisted to CommonSettings. Use in the Settings class. E.g.:
+ *
+ *   @commonSetting({ default: 10 })
+ *   declare myNumericSetting: number;
+ *
+ * If the default value is a different type than can be set, use (e.g.):
+ *
+ *   @commonSetting<boolean>({ default: null })
+ *   declare myBooleanSetting: boolean | null;
+ *
+ * If the database (CommonSettings) type is different from the property type,
+ * define fromDB and toDB functions.
+ *
+ * @template V The type used for setting the property. Defaults to the DB type.
+ * @template D The type of the default value. Inferred from options.default.
+ * @template K The key in CommonSettings. Inferred from property name.
+ */
+function commonSetting<
+  V = void, // void resolves to DB type
+  D = unknown,
+  K extends keyof CommonSettings = keyof CommonSettings,
+>(options: CommonSettingOptions<K, D, V extends void ? RequiredCommonSettings[K] : V>) {
+  return (target: unknown, propertyKey: K) => {
+    type ActualV = V extends void ? RequiredCommonSettings[K] : V;
+
+    Object.defineProperty(target, propertyKey, {
+      get(this: Settings): D | ActualV {
+        // Convert undefined to default (but not null to default)
+        const value = this[getCommonSetting](propertyKey);
+        if (value === undefined) {
+          return options.default;
+        }
+        return options.fromDB ? options.fromDB(value) : (value as ActualV);
+      },
+      set(this: Settings, value: ActualV) {
+        const dbValue = options.toDB
+          ? options.toDB(value)
+          : (value as RequiredCommonSettings[K]);
+        this[setCommonSetting](propertyKey, dbValue);
+        options.setCallback?.(value);
+      },
+      enumerable: true,
+      configurable: true,
+    });
+  };
+}
+
+/**
+ * Settings store singleton
+ */
 class Settings {
   // Reactive CommonSettings record with values in DB format
   private _commonSettings = new SignalMap<keyof CommonSettings, unknown>();
@@ -114,18 +167,34 @@ class Settings {
     }
   };
 
-  private getCommonSetting<K extends keyof CommonSettings>(
+  /**
+   * Type safe getter for individual _commonSettings values.
+   * Unset keys return undefined.
+   * @private (uses symbol for sharing with commonSetting decorator)
+   */
+  [getCommonSetting] = <
+    K extends keyof CommonSettings,
+    V extends RequiredCommonSettings[K],
+  >(
     key: K,
-  ): CommonSettings[K] | undefined {
-    return this._commonSettings.get(key) as CommonSettings[K];
-  }
+  ): V | undefined => {
+    return this._commonSettings.get(key) as V | undefined;
+  };
 
-  private setCommonSetting<K extends keyof CommonSettings>(
+  /**
+   * Type safe setter for individual _commonSettings values.
+   * Value cannot be undefined.
+   * @private (uses symbol for sharing with commonSetting decorator)
+   */
+  [setCommonSetting] = <
+    K extends keyof CommonSettings,
+    V extends RequiredCommonSettings[K],
+  >(
     key: K,
-    value: Required<CommonSettings>[K],
-  ) {
+    value: V,
+  ) => {
     this._commonSettings.set(key, value);
-  }
+  };
 
   // private resetCommonSetting<K extends keyof CommonSettings>(key: K) {
   //   // Use undefined as tombstone until next merge with existing DB record
@@ -137,45 +206,36 @@ class Settings {
   //
 
   // For PWAManager use only (use pwaManager.allowOfflineUse instead)
-  get allowOfflineUse(): boolean | null {
-    return this.getCommonSetting("allowOfflineUse") ?? null;
-  }
-  set allowOfflineUse(value: boolean) {
-    this.setCommonSetting("allowOfflineUse", value);
-  }
+  @commonSetting<boolean>({ default: null })
+  declare allowOfflineUse: boolean | null;
 
   // For PWAManager use only (use pwaManager.autoUpdate instead)
-  get autoUpdate(): boolean | null {
-    return this.getCommonSetting("autoUpdate") ?? null;
-  }
-  set autoUpdate(value: boolean) {
-    this.setCommonSetting("autoUpdate", value);
-  }
+  @commonSetting<boolean>({ default: null })
+  declare autoUpdate: boolean | null;
 
   //
   // Public reactive settings
   //
 
-  // Accessors for reactive signals
-  get colorScheme(): "light" | "dark" | "system" {
-    return this.getCommonSetting("colorScheme") ?? defaultSettings.colorScheme;
-  }
-  set colorScheme(value: "light" | "dark" | "system") {
-    this.setCommonSetting("colorScheme", value);
-    // Also track in localStorage: see color-scheme-init.ts
-    try {
-      localStorage.setItem("colorScheme", value);
-    } catch {
-      // privacy manager -- they'll get a flash of light mode
-      // until script and settings load.
-    }
-  }
+  @commonSetting({
+    // TODO: When dark mode no longer experimental:
+    //   - change default to "system"
+    //   - replace the setCallback with an effect in color-scheme.ts
+    default: "light",
+    setCallback: (value) => {
+      try {
+        // Make the value available early for color-scheme-init.ts.
+        localStorage.setItem("colorScheme", value);
+      } catch {
+        // A privacy manager is blocking localStorage. User may see
+        // a flash of default colorScheme until script and settings load.
+      }
+    },
+  })
+  declare colorScheme: "light" | "dark" | "system";
 
   private _favoritePuzzles = computed<ReadonlySet<PuzzleId>>(
-    () =>
-      new Set(
-        this.getCommonSetting("favoritePuzzles") ?? defaultSettings.favoritePuzzles,
-      ),
+    () => new Set(this[getCommonSetting]("favoritePuzzles") ?? defaultFavoritePuzzles),
   );
 
   get favoritePuzzles(): ReadonlySet<PuzzleId> {
@@ -186,137 +246,58 @@ class Settings {
     return this.favoritePuzzles.has(puzzleId);
   }
 
-  async setFavoritePuzzle(puzzleId: PuzzleId, isFavorite: boolean): Promise<void> {
+  setFavoritePuzzle(puzzleId: PuzzleId, isFavorite: boolean) {
     const wasFavorite = this.isFavoritePuzzle(puzzleId);
     if (wasFavorite !== isFavorite) {
       const oldFavorites =
-        this.getCommonSetting("favoritePuzzles") ?? defaultSettings.favoritePuzzles;
+        this[getCommonSetting]("favoritePuzzles") ?? defaultFavoritePuzzles;
       const newFavorites = isFavorite
         ? [...oldFavorites, puzzleId].sort()
         : oldFavorites.filter((id) => id !== puzzleId);
-      this.setCommonSetting("favoritePuzzles", newFavorites);
+      this[setCommonSetting]("favoritePuzzles", newFavorites);
     }
   }
 
-  get showIntro(): boolean {
-    return this.getCommonSetting("showIntro") ?? defaultSettings.showIntro;
-  }
-  set showIntro(value: boolean) {
-    this.setCommonSetting("showIntro", value);
-  }
+  @commonSetting({ default: true })
+  declare showIntro: boolean;
 
-  get showUnfinishedPuzzles(): boolean {
-    return (
-      this.getCommonSetting("showUnfinishedPuzzles") ??
-      defaultSettings.showUnfinishedPuzzles
-    );
-  }
-  set showUnfinishedPuzzles(value: boolean) {
-    this.setCommonSetting("showUnfinishedPuzzles", value);
-  }
+  @commonSetting({ default: false })
+  declare showUnfinishedPuzzles: boolean;
 
-  get showMouseButtonToggle(): boolean {
-    return (
-      this.getCommonSetting("showMouseButtonToggle") ??
-      defaultSettings.showMouseButtonToggle
-    );
-  }
-  set showMouseButtonToggle(value: boolean) {
-    this.setCommonSetting("showMouseButtonToggle", value);
-  }
+  @commonSetting({ default: false })
+  declare showMouseButtonToggle: boolean;
 
-  get rightButtonLongPress(): boolean {
-    return (
-      this.getCommonSetting("rightButtonLongPress") ??
-      defaultSettings.rightButtonLongPress
-    );
-  }
-  set rightButtonLongPress(value: boolean) {
-    this.setCommonSetting("rightButtonLongPress", value);
-  }
+  @commonSetting({ default: true })
+  declare rightButtonLongPress: boolean;
 
-  get rightButtonTwoFingerTap(): boolean {
-    return (
-      this.getCommonSetting("rightButtonTwoFingerTap") ??
-      defaultSettings.rightButtonTwoFingerTap
-    );
-  }
-  set rightButtonTwoFingerTap(value: boolean) {
-    this.setCommonSetting("rightButtonTwoFingerTap", value);
-  }
+  @commonSetting({ default: true })
+  declare rightButtonTwoFingerTap: boolean;
 
-  get rightButtonAudioVolume(): number {
-    return (
-      this.getCommonSetting("rightButtonAudioVolume") ??
-      defaultSettings.rightButtonAudioVolume
-    );
-  }
-  set rightButtonAudioVolume(value: number) {
-    this.setCommonSetting("rightButtonAudioVolume", value);
-  }
+  @commonSetting({ default: 40 })
+  declare rightButtonAudioVolume: number;
 
-  get rightButtonHoldTime(): number {
-    return (
-      this.getCommonSetting("rightButtonHoldTime") ??
-      defaultSettings.rightButtonHoldTime
-    );
-  }
-  set rightButtonHoldTime(value: number) {
-    this.setCommonSetting("rightButtonHoldTime", value);
-  }
+  @commonSetting({ default: 350 })
+  declare rightButtonHoldTime: number;
 
-  get rightButtonDragThreshold(): number {
-    return (
-      this.getCommonSetting("rightButtonDragThreshold") ??
-      defaultSettings.rightButtonDragThreshold
-    );
-  }
-  set rightButtonDragThreshold(value: number) {
-    this.setCommonSetting("rightButtonDragThreshold", value);
-  }
+  @commonSetting({ default: 8 })
+  declare rightButtonDragThreshold: number;
 
-  get showEndNotification(): boolean {
-    return (
-      this.getCommonSetting("showEndNotification") ??
-      defaultSettings.showEndNotification
-    );
-  }
-  set showEndNotification(value: boolean) {
-    this.setCommonSetting("showEndNotification", value);
-  }
+  @commonSetting({ default: true })
+  declare showEndNotification: boolean;
 
-  get showPuzzleKeyboard(): boolean {
-    return (
-      this.getCommonSetting("showPuzzleKeyboard") ?? defaultSettings.showPuzzleKeyboard
-    );
-  }
-  set showPuzzleKeyboard(value: boolean) {
-    this.setCommonSetting("showPuzzleKeyboard", value);
-  }
+  @commonSetting({ default: true })
+  declare showPuzzleKeyboard: boolean;
 
-  get statusbarPlacement(): "start" | "end" | "hidden" {
-    return (
-      this.getCommonSetting("statusbarPlacement") ?? defaultSettings.statusbarPlacement
-    );
-  }
-  set statusbarPlacement(value: "start" | "end" | "hidden") {
-    this.setCommonSetting("statusbarPlacement", value);
-  }
+  @commonSetting({ default: "start" })
+  declare statusbarPlacement: "start" | "end" | "hidden";
 
-  get maxScale(): number {
-    let value = this.getCommonSetting("maxScale");
-    if (value === undefined) {
-      value = defaultSettings.maxScale; // but leave null alone
-    }
-    return value === null ? Number.POSITIVE_INFINITY : value;
-  }
-  set maxScale(value: number) {
-    // Store Infinity as null (for json serialization)
-    this.setCommonSetting(
-      "maxScale",
-      value === Number.POSITIVE_INFINITY ? null : value,
-    );
-  }
+  @commonSetting({
+    default: Number.POSITIVE_INFINITY,
+    // Store infinity as null (for json serialization)
+    fromDB: (value) => value ?? Number.POSITIVE_INFINITY,
+    toDB: (value) => (value === Number.POSITIVE_INFINITY ? null : value),
+  })
+  declare maxScale: number;
 
   //
   // Settings DB access
@@ -359,7 +340,7 @@ class Settings {
     const defaults = {
       "pencil-keep-highlight": true, // keen, solo, towers, undead
     };
-    const commonPuzzlePreferences = this.getCommonSetting("puzzlePreferences");
+    const commonPuzzlePreferences = this[getCommonSetting]("puzzlePreferences");
     const puzzleRecord = await this.getPuzzleSettings(puzzleId);
     return {
       ...defaults,
@@ -375,7 +356,7 @@ class Settings {
   async setPuzzlePreferences(puzzleId: PuzzleId, prefs: ConfigValues): Promise<void> {
     const { commonPreferences, puzzlePreferences } = this.splitPuzzlePreferences(prefs);
     if (commonPreferences !== undefined) {
-      this.setCommonSetting("puzzlePreferences", commonPreferences);
+      this[setCommonSetting]("puzzlePreferences", commonPreferences);
     }
 
     if (puzzlePreferences !== undefined) {

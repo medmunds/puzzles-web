@@ -210,9 +210,9 @@ export class HomeScreen extends SignalWatcher(Screen) {
     settings.showIntro = !settings.showIntro;
   }
 
-  private async handleFavoriteChange(event: FavoriteChangeEvent) {
+  private handleFavoriteChange(event: FavoriteChangeEvent) {
     const { puzzleId, isFavorite } = event.detail;
-    await settings.setFavoritePuzzle(puzzleId, isFavorite);
+    settings.setFavoritePuzzle(puzzleId, isFavorite);
   }
 
   //
