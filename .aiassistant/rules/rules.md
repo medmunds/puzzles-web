@@ -19,7 +19,7 @@ This is a progressive web application (PWA) port of Simon Tatham's Portable Puzz
 
 - **Formatter**: Biome (2-space indents, 88 char line width)
 - **Linting**: Biome with recommended rules + strict promise handling
-- **TypeScript**: Strict mode enabled with no unused locals/parameters
+- **TypeScript**: 5.9, strict mode enabled with no unused locals/parameters and no `any`
 - Use `npm run check` to format and lint code
 - Use `npm run build` to verify TypeScript compilation
 
@@ -74,6 +74,7 @@ podman run --rm \
 
 - Modify files in `/puzzles` or `/puzzles/unreleased` without understanding upstream impact (these are git subtrees)
 - Break Baseline 2023 browser compatibility
+- Use `any` in TypeScript code (instead use `unknown` and/or specific type guards)
 - Use top-level await, dynamic `import()`, or `import.meta` in `src/preflight.ts` (must support older browsers to perform checks)
 - Add dependencies without considering bundle size and offline support
 - Commit generated files in `/src/assets/icons` or `/src/assets/puzzles`
