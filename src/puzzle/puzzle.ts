@@ -5,6 +5,7 @@ import {
   installWorkerErrorReceivers,
   uninstallWorkerErrorReceivers,
 } from "../utils/errors.ts";
+import { installIOSWorkerHeartbeat } from "../utils/ios-worker-heartbeat.ts";
 import { nextAnimationFrame } from "../utils/timing.ts";
 import { puzzleAugmentations } from "./augmentation.ts";
 import { puzzleDataMap } from "./catalog.ts";
@@ -71,6 +72,8 @@ export class Puzzle {
     return puzzle;
   }
 
+  private readonly iosHeartbeatDisposer: () => void;
+
   // Private constructor; use Puzzle.create(puzzleId) to instantiate a Puzzle.
   private constructor(
     public readonly puzzleId: string,
@@ -95,6 +98,9 @@ export class Puzzle {
     this.needsRightButton = needsRightButton;
     this.isTimed = isTimed;
     this.wantsStatusbar = wantsStatusbar;
+
+    // Prevent worker suspension when page is visible
+    this.iosHeartbeatDisposer = installIOSWorkerHeartbeat(this.worker);
   }
 
   private async initialize(): Promise<void> {
@@ -108,6 +114,7 @@ export class Puzzle {
     await this.detachCanvas();
     await this.workerPuzzle.delete();
     this.workerPuzzle[releaseProxy]();
+    this.iosHeartbeatDisposer();
     uninstallWorkerErrorReceivers(this.worker);
     this.worker.terminate();
   }

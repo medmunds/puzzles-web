@@ -33,7 +33,15 @@ export const isAppleDevice =
   // Safari reports "Macintosh" rather than "iPhone" etc.
   // when "Request desktop website" is enabled.
   // Only Chromium supports navigator.userAgentData.platform.
-  /(Mac|iPhone|iPad|iPod)/i.test(globalThis.navigator?.userAgent ?? "");
+  /(Mac|iPhone|iPad|iPod)/i.test(navigator.userAgent);
+
+/**
+ * Platform detection for iOS only.
+ * **Prefer using feature detection wherever possible.**
+ */
+export const isIOS =
+  /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  (/Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 
 /**
  * Browser detection using userAgent sniffing, for handling Safari bugs.
