@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/browser";
 import Dexie, { type EntityTable, type Table } from "dexie";
 import type {
   ConfigValues,
@@ -95,54 +94,6 @@ class Database extends Dexie {
         "[saveType+puzzleId+timestamp]", // supports query by saveType, most recent
       ].join(", "),
     });
-  }
-
-  override open() {
-    // Work around Safari https://bugs.webkit.org/show_bug.cgi?id=277615 (regression
-    // of 273827), which can occur when a page wakes up after being in the background.
-    // Dexie attempts to reopen the DB three times, then throws DatabaseClosedError.
-    // The underlying WebKit error is "Connection to Indexed Database server lost.
-    // Refresh the page to try again." (https://github.com/dexie/Dexie.js/issues/2008)
-    const recoveryKey = "db-page-reload-attempted";
-    let hasTriedRecovery = false;
-    let canUseSessionStorage = false;
-    try {
-      hasTriedRecovery = sessionStorage.getItem(recoveryKey) !== null;
-      canUseSessionStorage = true;
-    } catch {}
-
-    if (import.meta.env.VITE_SENTRY_DSN && hasTriedRecovery) {
-      Sentry.addBreadcrumb({
-        category: "db",
-        message: "Reloaded page due to Safari IndexedDB bug",
-      });
-    }
-
-    return super.open().then(
-      (result) => {
-        if (hasTriedRecovery) {
-          sessionStorage.removeItem(recoveryKey);
-        }
-        return result;
-      },
-      (error: unknown) => {
-        if (
-          error instanceof Dexie.DexieError &&
-          error.name === "DatabaseClosedError" &&
-          error.message.includes("Refresh the page to try again") &&
-          !hasTriedRecovery &&
-          canUseSessionStorage
-        ) {
-          // If we haven't already tried to refresh the page, refresh it.
-          sessionStorage.setItem(recoveryKey, "true");
-          window.location.reload();
-          // Return a promise that never resolves
-          // to stop execution while the page reloads
-          return new Dexie.Promise<Dexie>(() => {});
-        }
-        return Dexie.Promise.reject(error);
-      },
-    );
   }
 }
 

@@ -7,7 +7,9 @@ import { patchLitForExternalDomManipulation } from "./utils/lit.ts";
 patchLitForExternalDomManipulation();
 
 import { installErrorHandlers } from "./utils/errors.ts";
+import { installSafariIDBWorkaround } from "./utils/safari-idb-workaround.ts";
 
+installSafariIDBWorkaround();
 installErrorHandlers();
 
 // Install our icon library
