@@ -1,3 +1,20 @@
+// TODO: use separate tsconfig.json for worker code (without DOM)
+/// <reference lib="webworker" />
+
+declare global {
+  interface NavigatorUAData {
+    platform: string;
+    brands: { brand: string; version: string }[];
+    mobile: boolean;
+  }
+  interface Navigator {
+    userAgentData?: NavigatorUAData;
+  }
+  interface WorkerNavigator {
+    userAgentData?: NavigatorUAData;
+  }
+}
+
 import type {
   Drawing as DrawingHandle,
   DrawingImpl,
@@ -41,14 +58,14 @@ export class Drawing implements DrawingImpl<Blitter> {
     this.canvas = canvas;
     this.fontInfo = fontInfo ?? defaultFontInfo;
 
-    // Get context
+    // willReadFrequently causes lost context when used with
+    // OffscreenCanvas transferred to worker in Android Chrome:
+    // https://issues.chromium.org/issues/417354558#comment3.
+    // Experimental userAgentData *is* available in Chrome.
+    const isChromeAndroid = self.navigator.userAgentData?.platform === "Android";
     const context = this.canvas.getContext("2d", {
       alpha: false,
-      // willReadFrequently causes lost context when used with
-      // OffscreenCanvas transferred to worker in Android Chrome:
-      // https://issues.chromium.org/issues/417354558#comment3.
-      // (Otherwise it would be helpful for blitter use.)
-      //   willReadFrequently: true,
+      willReadFrequently: !isChromeAndroid,
     });
     if (!context) {
       throw new Error("Failed to get canvas 2d context");
