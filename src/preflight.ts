@@ -55,6 +55,7 @@ const preflightChecks: {
     ), // throws if not supported -- ~2020
   "WebAssembly.instantiateStreaming": () =>
     typeof WebAssembly.instantiateStreaming === "function", // ~2021 (Safari; 2018 others)
+  ElementInternals: () => typeof ElementInternals === "function", // ~2023 (Safari, 2019 others)
 
   // CSS -- mostly Baseline 2023
   "CSS nested selectors": () => CSS.supports("selector(& .foo)"),
