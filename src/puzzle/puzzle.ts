@@ -1,6 +1,7 @@
 import { computed, type Signal, signal } from "@lit-labs/signals";
 import * as Sentry from "@sentry/browser";
 import { proxy, releaseProxy, transfer, wrap } from "comlink";
+import { reaction } from "signal-utils/subtle/reaction";
 import {
   installWorkerErrorReceivers,
   uninstallWorkerErrorReceivers,
@@ -72,7 +73,7 @@ export class Puzzle {
     return puzzle;
   }
 
-  private readonly iosHeartbeatDisposer: () => void;
+  private readonly disposers: (() => void)[] = [];
 
   // Private constructor; use Puzzle.create(puzzleId) to instantiate a Puzzle.
   private constructor(
@@ -100,7 +101,8 @@ export class Puzzle {
     this.wantsStatusbar = wantsStatusbar;
 
     // Prevent worker suspension when page is visible
-    this.iosHeartbeatDisposer = installIOSWorkerHeartbeat(this.worker);
+    this.disposers.push(installIOSWorkerHeartbeat(this.worker));
+    this.initializeAnalytics();
   }
 
   private async initialize(): Promise<void> {
@@ -114,7 +116,9 @@ export class Puzzle {
     await this.detachCanvas();
     await this.workerPuzzle.delete();
     this.workerPuzzle[releaseProxy]();
-    this.iosHeartbeatDisposer();
+    while (this.disposers.length > 0) {
+      this.disposers.pop()?.();
+    }
     uninstallWorkerErrorReceivers(this.worker);
     this.worker.terminate();
   }
@@ -132,6 +136,36 @@ export class Puzzle {
         "Total Moves": this.totalMoves,
         Size: this._size,
       });
+    }
+  }
+
+  private initializeAnalytics() {
+    if (import.meta.env.VITE_SENTRY_DSN) {
+      // Count solved/lost events
+      this.disposers.push(
+        reaction(
+          () => this.status,
+          (status, _prevStatus) => {
+            const metric = {
+              solved: "gameSolved",
+              "solved-with-help": "gameSolved",
+              lost: "gameLost",
+              ongoing: null,
+            }[status];
+            if (metric) {
+              console.log(`Tracking ${metric}`);
+              Sentry.metrics.count(metric, 1, {
+                attributes: {
+                  "puzzle.id": this.puzzleId,
+                  "puzzle.type": this.currentParams,
+                  "puzzle.moveCount": this.currentMove,
+                  // "puzzle.usedHints": status === "solved-with-help",
+                },
+              });
+            }
+          },
+        ),
+      );
     }
   }
 
@@ -270,9 +304,31 @@ export class Puzzle {
 
   // Methods
   public async newGame(): Promise<void> {
+    if (import.meta.env.VITE_SENTRY_DSN) {
+      console.log("Tracking newGame");
+      Sentry.metrics.count("newGame", 1, {
+        attributes: {
+          "puzzle.id": this.puzzleId,
+          "puzzle.type": this.currentParams,
+        },
+      });
+    }
+
     this._generatingGame.set(true);
+    const startTime = performance.now();
     await this.workerPuzzle.newGame();
+    const duration = performance.now() - startTime;
     this._generatingGame.set(false);
+
+    if (import.meta.env.VITE_SENTRY_DSN) {
+      Sentry.metrics.distribution("gameGenerationTime", duration, {
+        unit: "millisecond",
+        attributes: {
+          "puzzle.id": this.puzzleId,
+          "puzzle.type": this.currentParams,
+        },
+      });
+    }
   }
 
   public async newGameFromId(id: string): Promise<string | undefined> {
