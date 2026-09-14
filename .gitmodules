@@ -1,0 +1,4 @@
+[submodule "puzzles"]
+	path = puzzles
+	url = ../sgt-puzzles
+	branch = puzzles-web

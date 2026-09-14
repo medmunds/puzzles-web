@@ -93,8 +93,11 @@ There are a few other directories whose names should mostly be self explanatory.
 
 ### Puzzles code
 
-The puzzles directory includes a subtree of the upstream repo plus some local
-changes and additions:
+The puzzles directory is a git submodule from [medmunds/sgt-puzzles]. (Be sure to clone
+the repo with `--recursive`, or fetch the submodules later with `git submodule update
+--init --recursive`.)
+
+It includes the upstream puzzles repo plus some changes and additions for this project:
 
 * [webapp.cpp](puzzles/webapp.cpp) is a puzzles [frontend] for the PWA. Or
   really, a frontend *adapter* that allows most of the actual frontend to be
@@ -118,6 +121,7 @@ changes and additions:
 
 [embind]: https://emscripten.org/docs/porting/connecting_cpp_and_javascript/embind.html
 [frontend]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/devel/intro.html#intro-frontend
+[medmunds/sgt-puzzles]: https://github.com/medmunds/sgt-puzzles
 
 ### Web app code
 
@@ -193,6 +197,11 @@ C compilation) and a second running Emscripten to compile the puzzles to WASM.
 
 These commands are all run from the repo root dir. I use Podman; you could
 substitute the equivalent Docker commands.
+
+Fetch submodules (if you haven't already):
+```shell
+git submodule update --init --recursive
+```
 
 Build the container images:
 ```shell
