@@ -9,7 +9,7 @@ import {
 import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { version as puzzlesVersion } from "./puzzle/catalog.ts";
+import { puzzleVersions, versionString } from "./puzzle/catalog.ts";
 import { cssNative, cssWATweaks } from "./utils/css.ts";
 
 // Register components
@@ -165,6 +165,9 @@ export class AboutDialog extends LitElement {
   }
 
   protected override render() {
+    const puzzlesVersion = versionString(puzzleVersions.puzzles);
+    const unreleasedVersion = versionString(puzzleVersions["puzzles-unreleased"]);
+
     return html`
       <wa-dialog light-dismiss>
         <div slot="label">About ${appName}</div>
@@ -178,11 +181,13 @@ export class AboutDialog extends LitElement {
             <cite translate="no">puzzles-unreleased</cite> additions,
             by&nbsp;<span translate="no">Mike&nbsp;Edmunds</span>
           </p>
-          <p>
-            Version <span class="version">${appVersion}</span><br>
-            Compatible with <span translate="no">Portable Puzzle Collection</span> 
-            version&nbsp;<span class="version">${puzzlesVersion}</span>
-          </p>
+          <p>Version <span class="version">${appVersion}</span>. Compatible with:</p>
+          <ul class="versions">
+            <li><span translate="no">Portable Puzzle Collection</span>
+              version <span class="version">${puzzlesVersion}</span></li>
+            <li><span translate="no">puzzles-unreleased</span> version
+              <span class="version">${unreleasedVersion}</span></li>
+          </ul>
           <p>
             This is open source software. Source code and more on GitHub:
             ${this.renderOffsiteLink(repoLink, repoLink.replace("https://", ""))}
@@ -337,6 +342,13 @@ export class AboutDialog extends LitElement {
       
       ul {
         padding-inline-start: 1.25em;
+      }
+      
+      p + ul.versions {
+        margin-block-start: 0;
+        li {
+          margin-block-start: 0;
+        }
       }
       
       strong {

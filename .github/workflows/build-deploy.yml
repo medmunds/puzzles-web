@@ -57,7 +57,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0  # need history for vcsid UPSTREAM_SHA
           persist-credentials: false
           submodules: recursive
 
@@ -75,20 +74,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Compute VCSID
-        id: vcsid
-        # Get the last merged (upstream) sha of the puzzles subtree
-        run: |
-          UPSTREAM_SHA=$( \
-            git log --all --grep="^git-subtree-split:" --pretty=format:"%H %b" \
-            | grep git-subtree-split \
-            | head -n 1 \
-            | sed -E 's/^.*git-subtree-split: ([0-9a-f]+).*/\1/' \
-          )
-          VCSID=$(git rev-parse --short "${UPSTREAM_SHA}" || echo "unknown")
-          echo "vcsid=${VCSID}" >> "${GITHUB_OUTPUT}"
-          echo "vcsid=${VCSID}"
-
       - name: Run emcc build
         run: |
           mkdir -p ./build/assets
@@ -98,7 +83,6 @@ jobs:
             -v '${{ github.workspace }}/build/assets:/app/assets' \
             -v '${{ github.workspace }}/build/public:/app/public' \
             -e BUILD_UNFINISHED='group;slide;sokoban' \
-            -e VCSID='${{ steps.vcsid.outputs.vcsid }}' \
             build-emcc:latest
 
       - name: Upload puzzles artifact
