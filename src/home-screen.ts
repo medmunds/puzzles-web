@@ -5,7 +5,7 @@ import { repeat } from "lit/directives/repeat.js";
 import type { FavoriteChangeEvent } from "./catalog-card.ts";
 import rawHomeScreenCSS from "./css/home-screen.css?inline";
 import { puzzleDataMap, puzzleIds } from "./puzzle/catalog.ts";
-import { puzzlePageUrl } from "./routing.ts";
+import { helpUrl, puzzlePageUrl } from "./routing.ts";
 import { Screen } from "./screen.ts";
 import { savedGames } from "./store/saved-games.ts";
 import { settings } from "./store/settings.ts";
@@ -61,6 +61,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
 
   private renderWideHeader() {
     // When we have space, render separate title, options menu, and help button
+    const newsUpdated = settings.hasUnreadNews;
     return html`
       <img class="logo" src="/favicon.svg" alt="" role="presentation">
       <div class="title">
@@ -72,8 +73,9 @@ export class HomeScreen extends SignalWatcher(Screen) {
       <div class="controls">
         <wa-dropdown>
           <wa-button slot="trigger" appearance="plain" variant="brand" with-caret>
-            <wa-icon slot="start" name="options"></wa-icon>
+            <wa-icon slot="start" name="options" class=${newsUpdated ? "updated" : nothing}></wa-icon>
             Options
+            ${newsUpdated ? html`<span class="wa-visually-hidden"> (updated)</span>` : nothing}
           </wa-button>
           ${this.renderOptionsMenuContent()}
         </wa-dropdown>
@@ -88,12 +90,16 @@ export class HomeScreen extends SignalWatcher(Screen) {
   private renderCompactHeader() {
     // When space is tight, turn the title into the options menu trigger
     // (but keep the separate help button)
+    const newsUpdated = settings.hasUnreadNews;
     return html`
       <img class="logo" src="/favicon.svg" alt="" role="presentation">
       <div class="title">
         <wa-dropdown>
           <wa-button slot="trigger" appearance="plain" variant="brand" with-caret>
-            <h1>Puzzles</h1>
+            <h1 class=${newsUpdated ? "updated" : nothing}>
+              Puzzles
+              ${newsUpdated ? html`<span class="wa-visually-hidden"> (updated)</span>` : nothing}
+            </h1>
           </wa-button>
           ${this.renderOptionsMenuContent()}
         </wa-dropdown>
@@ -116,6 +122,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
 
   private renderOptionsMenuContent() {
     // TODO: add view options here
+    const newsUpdated = settings.hasUnreadNews;
     return html`
       <wa-dropdown-item
           data-command="toggle-intro"
@@ -125,6 +132,11 @@ export class HomeScreen extends SignalWatcher(Screen) {
         Show intro message
       </wa-dropdown-item>
       <wa-divider></wa-divider>
+      <wa-dropdown-item data-command="news">
+        <wa-icon slot="icon" name="news" class=${newsUpdated ? "updated" : nothing}></wa-icon>
+        What’s new
+        ${newsUpdated ? html`<span class="wa-visually-hidden"> (updated)</span>` : nothing}
+      </wa-dropdown-item>
       <wa-dropdown-item data-command="settings">
         <wa-icon slot="icon" name="settings"></wa-icon>
         Preferences
@@ -202,8 +214,14 @@ export class HomeScreen extends SignalWatcher(Screen) {
   protected override registerCommandHandlers() {
     super.registerCommandHandlers();
     Object.assign(this.commandMap, {
+      news: this.showNews,
       "toggle-intro": this.toggleIntro,
     });
+  }
+
+  private async showNews() {
+    await this.showHelpViewer(helpUrl("news").href);
+    settings.hasUnreadNews = false;
   }
 
   private toggleIntro() {
@@ -266,6 +284,30 @@ export class HomeScreen extends SignalWatcher(Screen) {
         }
       }
 
+      /* Updated indicator dots, on icons or button labels */
+      .updated {
+        --size: 0.4rem;
+        --inset-inline: -0.4rem;
+        --inset-block: -0.4rem;
+        &:not(:is(wa-icon)) {
+          /* Move closer to text when on label rather than icon */
+          --inset-block: 0;
+        }
+
+        position: relative;
+        &::after {
+          display: block;
+          position: absolute;
+          inset-block-start: var(--inset-block);
+          inset-inline-end: var(--inset-inline);
+          content: "";
+          width: var(--size);
+          height: var(--size);
+          background-color: var(--wa-color-brand);
+          border: var(--wa-border-width-s) solid var(--wa-color-brand-on);
+          border-radius: var(--wa-border-radius-circle, 50%);
+        }
+      }
     `,
   ];
 }

@@ -11,6 +11,7 @@ interface ImportMetaEnv {
   readonly VITE_APP_VERSION?: string;
   readonly VITE_CANONICAL_BASE_URL: string;
   readonly VITE_GIT_SHA?: string;
+  readonly VITE_NEWS_LAST_UPDATED?: number;
   readonly VITE_SENTRY_DSN?: string;
   readonly VITE_SENTRY_FILTER_APPLICATION_ID?: string;
 }

@@ -12,6 +12,7 @@ export interface CommonSettings {
   allowOfflineUse?: boolean;
   autoUpdate?: boolean;
   colorScheme?: "light" | "dark" | "system";
+  newsLastViewed?: number;
 
   // Catalog-level settings
   favoritePuzzles?: PuzzleId[];

@@ -17,6 +17,8 @@ import {
 } from "./vite-extra-pages";
 import { wasmSourcemaps } from "./vite-wasm-sourcemaps";
 
+const NEWS_FILE = "help/news.md";
+
 type Env = Record<string, string>;
 type Headers = Record<string, string>;
 
@@ -30,6 +32,36 @@ function defaultAppVersion(env: Record<string, string>): string {
   const dateStr = new Date().toISOString().slice(0, 10).replaceAll("-", "");
   const gitSha = getGitSha(env);
   return `${dateStr}.${gitSha ? gitSha.slice(0, 7) : "unknown"}`;
+}
+
+function getLastUpdatedTimestamp(filepath: string): number {
+  // Returns the timestamp of the last update to filepath,
+  // from git if available and not dirty, else from the filesystem.
+  // filepath should be relative to repo root.
+  try {
+    const isDirty = child
+      .execSync(`git status --porcelain "${filepath}"`)
+      .toString()
+      .trim();
+    if (!isDirty) {
+      const gitTimestamp = child
+        .execSync(`git log -1 --format=%ct "${filepath}"`)
+        .toString()
+        .trim();
+      if (gitTimestamp) {
+        return Number.parseInt(gitTimestamp, 10) * 1000;
+      }
+    }
+  } catch {
+    // Ignore git errors
+  }
+  try {
+    const stat = fs.statSync(path.resolve(__dirname, filepath));
+    return Math.floor(stat.mtimeMs);
+  } catch {
+    // Ignore stat errors
+  }
+  return 0;
 }
 
 function securityHeaders(options: {
@@ -364,6 +396,9 @@ export default defineConfig(async ({ command, mode }) => {
       "import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID": JSON.stringify(
         sentryFilterApplicationId,
       ),
+      "import.meta.env.VITE_NEWS_LAST_UPDATED": env.VITE_NEWS_LAST_UPDATED
+        ? +new Date(env.VITE_NEWS_LAST_UPDATED)
+        : JSON.stringify(getLastUpdatedTimestamp(NEWS_FILE)),
     },
     preview: {
       headers: securityHeaders({ env, extraScriptSrc }),

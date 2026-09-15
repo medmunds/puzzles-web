@@ -4,6 +4,7 @@ import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import cssHelpRaw from "./css/help.css?inline";
 import { cssNative, cssWATweaks } from "./utils/css.ts";
+import { localizeDate } from "./utils/date.ts";
 
 // Components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -218,6 +219,16 @@ export class HelpViewer extends LitElement {
         continue; // skip malformed src
       }
       element.src = resolved.href;
+    }
+
+    // Localize .date content
+    for (const element of doc.querySelectorAll(".date")) {
+      try {
+        element.textContent = localizeDate(element.textContent.trim());
+        element.classList.remove("date");
+      } catch {
+        // Ignore parsing errors
+      }
     }
 
     // wa-include injects entire content into dom, which flattens head elements

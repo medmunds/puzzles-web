@@ -1,4 +1,4 @@
-import { computed } from "@lit-labs/signals";
+import { computed, signal } from "@lit-labs/signals";
 import { SignalMap } from "signal-utils/map";
 import { effect } from "signal-utils/subtle/microtask-effect";
 import type { ConfigValues, PuzzleId } from "../puzzle/types.ts";
@@ -111,6 +111,7 @@ class Settings {
   private _commonSettingsEffectDisposer?: () => void;
 
   private readonly _loaded: Promise<void>;
+  private _ready = signal<boolean>(false);
 
   constructor() {
     this._commonSettingsEffectDisposer = effect(this.autoSaveCommonSettings);
@@ -134,6 +135,13 @@ class Settings {
     return this._loaded;
   }
 
+  /**
+   * Reactive version of "loaded" (and goes false during reloads).
+   */
+  get ready(): boolean {
+    return this._ready.get();
+  }
+
   private handlePageShow = async (event: PageTransitionEvent) => {
     if (event.persisted) {
       await this.loadSettings();
@@ -142,6 +150,7 @@ class Settings {
 
   private async loadSettings(): Promise<void> {
     this._isLoadingCommonSettings = true;
+    this._ready.set(false);
     try {
       // TODO: Use a Dexie.liveQuery so multiple tabs stay in sync
       //   (would also make pageshow.persisted logic redundant)
@@ -153,6 +162,7 @@ class Settings {
     } finally {
       await Promise.resolve(); // flush microtask queue
       this._isLoadingCommonSettings = false;
+      this._ready.set(true);
     }
   }
 
@@ -234,6 +244,23 @@ class Settings {
   })
   declare colorScheme: "light" | "dark" | "system";
 
+  readonly newsLastUpdated: number = import.meta.env.VITE_NEWS_LAST_UPDATED ?? 0;
+
+  @commonSetting({ default: 0 })
+  declare newsLastViewed: number;
+
+  private _hasUnreadNews = computed(
+    () => this.ready && this.newsLastViewed < this.newsLastUpdated,
+  );
+
+  get hasUnreadNews(): boolean {
+    return this._hasUnreadNews.get();
+  }
+
+  set hasUnreadNews(value: boolean) {
+    this.newsLastViewed = value ? 0 : Date.now();
+  }
+
   private _favoritePuzzles = computed<ReadonlySet<PuzzleId>>(
     () => new Set(this[getCommonSetting]("favoritePuzzles") ?? defaultFavoritePuzzles),
   );
@@ -305,7 +332,12 @@ class Settings {
 
   private async getCommonSettings(): Promise<CommonSettings> {
     const record = await db.settings.get(COMMON_SETTINGS_ID);
-    return record?.type === "puzzle-common" ? record.data : { puzzlePreferences: {} };
+    return record?.type === "puzzle-common"
+      ? record.data
+      : {
+          newsLastViewed: this.newsLastUpdated, // no unread news for brand-new users
+          puzzlePreferences: {},
+        };
   }
 
   private async setCommonSettings(record: CommonSettings) {

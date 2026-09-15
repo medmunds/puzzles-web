@@ -9,6 +9,7 @@ Read more about:
 * [Features](features) of this web adaptation
 * [Installing](install) the web app for offline use
 * [Puzzles](puzzles) included in the collection
+* [What's new](news) in recent updates
 * [Differences](differences) from the original portable puzzle collection
 
 There is also a copy of the original collection's [instruction manual](manual/)

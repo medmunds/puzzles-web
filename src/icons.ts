@@ -30,6 +30,7 @@ import historyIcon from "lucide-static/icons/history.svg";
 import imagesIcon from "lucide-static/icons/images.svg";
 import infoIcon from "lucide-static/icons/info.svg";
 import laughIcon from "lucide-static/icons/laugh.svg";
+import newsIcon from "lucide-static/icons/megaphone.svg";
 import octagonAlertIcon from "lucide-static/icons/octagon-alert.svg";
 import partyPopperIcon from "lucide-static/icons/party-popper.svg";
 import playIcon from "lucide-static/icons/play.svg";
@@ -81,6 +82,7 @@ const defaultIcons: IconMap = {
   "history-current-move": playIcon,
   "install-offline": installDesktopIcon, // adds license info for icon used in docs
   "new-game": plusIcon,
+  "news": newsIcon,
   "options": squareMenuIcon,
   "puzzle-type": swatchBookIcon,
   "redo": redo2Icon,
