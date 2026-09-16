@@ -23,9 +23,16 @@ off the virtual keyboard in the
 Many puzzles need both the left and right mouse buttons. If you're using a touch
 screen, you have a few options when the manual says to "right-click":
 
-* **Tap multiple times.** In many puzzles, this will cycle through the left-click
-  state on first tap, the right-click state on second tap, and back to the 
-  "neutral" state (for puzzles that have that) on the third tap.
+* **Tap again:** In puzzles where left and right click choose different states,
+  you can usually tap again on an item to cycle through the states.
+
+  For example, Mosaic's instructions say left-click to mark a square black and
+  right-click for white. On a touch screen, tapping an empty square marks it
+  black, tapping a black square again changes it to white, and tapping a white
+  square cycles back to unmarked.
+
+  (This works for most puzzles that have multiple states, but not for puzzles
+  like Mines where tapping just once might lose the game.)
 
 * **Long press** (hold) is treated as a right-click. To right-drag, continue 
   to hold your finger down and move it in the desired direction.
@@ -51,7 +58,7 @@ screen, you have a few options when the manual says to "right-click":
   and secondary buttons or gestures for *any* input device, so it can be used 
   with a regular mouse or trackpad too.)
 
-Tapping multiple times is always available (for puzzles that support it). 
+Tapping again is always available (for puzzles that support it). 
 The other options can be configured in the 
 <command-link command="settings:mouse">preferences</command-link>,
 where you can also adjust the detection time and audio feedback.
