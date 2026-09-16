@@ -451,6 +451,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   rome: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Normal|Tricky}"),
+    extraCommands: [ALL_MARKS_COMMAND, HINT_MARKS_COMMAND],
   },
   salad: {
     describeConfig: (config) => {
