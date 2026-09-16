@@ -18,6 +18,11 @@ If you have a physical keyboard and want to save screen space, you can turn
 off the virtual keyboard in the
 <command-link command="settings:appearance">preferences</command-link>.
 
+Some puzzles support filling in all pencil marks with the `M` key or hints with
+the `H` key. These won't appear on the virtual keyboard. On a touch screen, use
+the *Add all marks* or *Hint* options in the ::game:: game menu for puzzles that
+offer those features.
+
 ## Right mouse button on touch devices {#right-mouse}
 
 Many puzzles need both the left and right mouse buttons. If you're using a touch

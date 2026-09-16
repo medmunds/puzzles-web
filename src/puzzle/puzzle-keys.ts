@@ -28,8 +28,6 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
   // Maps KeyLabel.label to wa-icon name
   static defaultLabelIcons: LabelIcons = {
     Clear: "key-clear",
-    Marks: "key-marks",
-    Hints: "key-hints",
   };
 
   @property({ type: Object })

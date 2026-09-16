@@ -3,6 +3,7 @@ import { css, html, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { showAlert } from "./alert-dialog.ts";
+import { puzzleAugmentations } from "./puzzle/augmentation.ts";
 import { type PuzzleData, puzzleDataMap } from "./puzzle/catalog.ts";
 import type { Puzzle } from "./puzzle/puzzle.ts";
 import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
@@ -251,6 +252,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           <wa-icon slot="icon" name="restart-game"></wa-icon>
           Restart game
         </wa-dropdown-item>
+        ${this.renderPuzzleExtraCommands()}
         ${
           this.puzzle?.canSolve
             ? html`
@@ -313,6 +315,18 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         }
       </wa-dropdown>
     `;
+  }
+
+  private renderPuzzleExtraCommands() {
+    const extraCommands = puzzleAugmentations[this.puzzleId]?.extraCommands ?? [];
+    return extraCommands.map(
+      ({ name, icon, button }) => html`
+        <wa-dropdown-item @click=${() => this.puzzle?.processKey(button)}>
+          <wa-icon slot="icon" name=${icon || ""}></wa-icon>
+          ${name}
+        </wa-dropdown-item>
+      `,
+    );
   }
 
   private renderMouseButtonToggle() {

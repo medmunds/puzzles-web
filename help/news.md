@@ -1,5 +1,6 @@
 # What’s new
 
-## 2026-09-15 {.date}
+## 2026-09-16 {.date}
 
-Added "what's new" notifications.
+New *Add all marks* and *Hint* options in the game menu work like the `M` and `H` keys,
+for puzzles that offer those features.

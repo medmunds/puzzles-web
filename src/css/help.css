@@ -148,6 +148,9 @@ table.puzzles-list td:not(:last-child) {
 .icon-firefox-web-apps {
   --icon: url(/src/assets/firefox-web-apps.svg);
 }
+.icon-game {
+  --icon: url(/node_modules/lucide-static/icons/box.svg);
+}
 .icon-game-in-progress {
   --icon: url(/node_modules/lucide-static/icons/play.svg);
 }

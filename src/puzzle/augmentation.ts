@@ -1,6 +1,43 @@
 import type { ConfigValues, PuzzleId } from "./types.ts";
 
 /**
+ * Additional key commands not exposed by Puzzle.requestKeys().
+ * We add them to the game menu for access on touch devices.
+ */
+export interface ExtraCommand {
+  name: string;
+  icon?: string;
+  button: number; // for Puzzle.processKey()
+}
+
+const keyToButton = (key: string): number => {
+  if (key.length !== 1) {
+    throw new Error(`Invalid key '${key}'`);
+  }
+  return key.charCodeAt(0);
+};
+
+const ALL_MARKS_COMMAND: ExtraCommand = {
+  name: "Add all marks",
+  icon: "marks-all",
+  button: keyToButton("M"),
+} as const;
+
+const HINT_COMMAND: ExtraCommand = {
+  // Reveal one hint
+  name: "Hint",
+  icon: "hint",
+  button: keyToButton("H"),
+} as const;
+
+const HINT_MARKS_COMMAND: ExtraCommand = {
+  // Add all marks except "obvious" ones (e.g., Unequal)
+  name: "Add hint marks",
+  icon: "marks-hints",
+  button: keyToButton("H"),
+} as const;
+
+/**
  * Additional puzzle-specific metadata and functionality
  * that isn't (currently) possible in the C code
  */
@@ -42,6 +79,8 @@ export interface PuzzleAugmentations {
      */
     paletteSwaps?: [number, number][];
   };
+
+  extraCommands?: ExtraCommand[];
 }
 
 export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
@@ -49,6 +88,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{width}x{height}, {letters} letters {remove-clues:Easy|Hard}{allow-diagonal-touching:, no diagonal|}",
     ),
+    extraCommands: [ALL_MARKS_COMMAND],
   },
   ascent: {
     describeConfig: configFormatter(
@@ -110,6 +150,10 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
           value === 1 ? "" : `, ${10 * Number(value)}% expansion`,
       },
     ),
+    extraCommands: [
+      // {name: "Show possible bridges", key: "G"},  // also in prefs, command not as useful
+      // HINT_COMMAND, // undocumented, solves entire puzzle
+    ],
   },
   clusters: {
     describeConfig: configFormatter("{width}x{height}"),
@@ -134,6 +178,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     darkMode: {
       paletteSwaps: [[2, 3]], // 3D
     },
+    extraCommands: [HINT_COMMAND],
   },
   filling: {
     describeConfig: configFormatter("{width}x{height}"),
@@ -161,11 +206,13 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     darkMode: {
       paletteOverrides: { 6: 0.8 }, // edges
     },
+    // extraCommands: [HINT_MARKS_COMMAND], // undocumented, fills in all obvious arrows
   },
   group: {
     describeConfig: configFormatter(
       "{grid-size}x{grid-size} {difficulty:Trivial|Normal|Hard|Extreme|Unreasonable}{show-identity:, identity hidden|}",
     ),
+    extraCommands: [ALL_MARKS_COMMAND],
   },
   guess: {
     describeConfig: configFormatter(
@@ -174,6 +221,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     darkMode: {
       paletteOverrides: { 16: false, 17: false }, // black and white pegs
     },
+    extraCommands: [HINT_COMMAND],
   },
   inertia: {
     describeConfig: configFormatter("{width}x{height}"),
@@ -186,6 +234,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{grid-size}x{grid-size} {difficulty:Easy|Normal|Hard|Extreme|Unreasonable}{multiplication-only:|, multiplication only}",
     ),
+    extraCommands: [ALL_MARKS_COMMAND],
   },
   lightup: {
     describeConfig: configFormatter(
@@ -255,6 +304,12 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{width}x{height}, {regions} regions, {difficulty:Easy|Normal|Hard|Unreasonable}",
     ),
+    extraCommands: [
+      {
+        name: "Toggle region numbers",
+        button: keyToButton("L"),
+      },
+    ],
   },
   mathrax: {
     describeConfig: (config) => {
@@ -284,6 +339,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
             : `, no ${disabledClues.join("/")}`;
       return `${size}x${size} ${difficulty}${cluesDescription}`;
     },
+    extraCommands: [ALL_MARKS_COMMAND],
   },
   mines: {
     describeConfig: configFormatter(
@@ -369,6 +425,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     darkMode: {
       paletteOverrides: { 0: 1.15, 3: false, 4: false }, // lighten bg, preserve black, white
     },
+    // extraCommands: [HINT], // undocumented, solves entire puzzle
   },
   pegs: {
     // Note: Cross and Octagon currently allow only specific sizes, all covered
@@ -381,6 +438,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter("{width}x{height}"),
     // Range reuses palette colors: black = text = grid.
     // Strict inverted dark mode is fine. (You place white squares rather than black.)
+    extraCommands: [HINT_COMMAND], // undocumented, reveals one square
   },
   rect: {
     describeConfig: configFormatter(
@@ -405,6 +463,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         : `A~${String.fromCharCode(65 + symbols - 1)}`;
       return `${isNumbers ? "Numbers" : "Letters"}: ${size}x${size} ${range}${difficulty}`;
     },
+    extraCommands: [ALL_MARKS_COMMAND],
   },
   samegame: {
     describeConfig: configFormatter(
@@ -418,6 +477,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{game-mode:Seismic|Tectonic}: {width}x{height} {difficulty:Easy|Hard}",
     ),
+    extraCommands: [ALL_MARKS_COMMAND],
   },
   signpost: {
     describeConfig: configFormatter(
@@ -499,6 +559,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     darkMode: {
       paletteOverrides: { 2: 0.8 }, // darken grid
     },
+    extraCommands: [ALL_MARKS_COMMAND],
   },
   spokes: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Tricky|Hard}"),
@@ -533,6 +594,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{grid-size}x{grid-size} {difficulty:Easy|Hard|Extreme|Unreasonable}",
     ),
+    extraCommands: [ALL_MARKS_COMMAND],
   },
   tracks: {
     describeConfig: configFormatter(
@@ -575,11 +637,13 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   undead: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Normal|Tricky}"),
+    extraCommands: [ALL_MARKS_COMMAND],
   },
   unequal: {
     describeConfig: configFormatter(
       "{mode:Unequal|Adjacent}: {size}x{size} {difficulty:Trivial|Easy|Tricky|Extreme|Recursive}",
     ),
+    extraCommands: [ALL_MARKS_COMMAND, HINT_MARKS_COMMAND],
   },
   unruly: {
     describeConfig: configFormatter(

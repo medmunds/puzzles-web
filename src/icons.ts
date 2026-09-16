@@ -33,6 +33,8 @@ import laughIcon from "lucide-static/icons/laugh.svg";
 import newsIcon from "lucide-static/icons/megaphone.svg";
 import octagonAlertIcon from "lucide-static/icons/octagon-alert.svg";
 import partyPopperIcon from "lucide-static/icons/party-popper.svg";
+import pencilLineIcon from "lucide-static/icons/pencil-line.svg";
+import pencilSparklesIcon from "lucide-static/icons/pencil-sparkles.svg";
 import playIcon from "lucide-static/icons/play.svg";
 import plusIcon from "lucide-static/icons/plus.svg";
 import redo2Icon from "lucide-static/icons/redo-2.svg";
@@ -43,7 +45,6 @@ import shieldCheckIcon from "lucide-static/icons/shield-check.svg";
 import sparklesIcon from "lucide-static/icons/sparkles.svg";
 import squareDashedMousePointer from "lucide-static/icons/square-dashed-mouse-pointer.svg";
 import squareMenuIcon from "lucide-static/icons/square-menu.svg";
-import squarePenIcon from "lucide-static/icons/square-pen.svg";
 import swatchBookIcon from "lucide-static/icons/swatch-book.svg";
 import thumbsUpIcon from "lucide-static/icons/thumbs-up.svg";
 import trash2Icon from "lucide-static/icons/trash-2.svg";
@@ -77,10 +78,13 @@ const defaultIcons: IconMap = {
   "gameid": hashIcon,
   "generic-puzzle": boxIcon,
   "help": circleQuestionMarkIcon,
+  "hint": wandIcon,
   "history": historyIcon,
   "history-checkpoint": circleCheckIcon,
   "history-current-move": playIcon,
   "install-offline": installDesktopIcon, // adds license info for icon used in docs
+  "marks-all": pencilLineIcon,
+  "marks-hints": pencilSparklesIcon,
   "new-game": plusIcon,
   "news": newsIcon,
   "options": squareMenuIcon,
@@ -107,8 +111,6 @@ const defaultIcons: IconMap = {
   "offsite-link": externalLinkIcon,
   // puzzle-keys
   "key-clear": deleteIcon,
-  "key-marks": squarePenIcon, // or maybe rectangle-ellipsis?
-  "key-hints": wandIcon,
   "mouse-left-button": mouseLeftButtonIcon,
   "mouse-right-button": mouseRightButtonIcon,
   // puzzle-end-notifications
