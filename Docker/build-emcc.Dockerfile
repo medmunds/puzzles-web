@@ -23,7 +23,7 @@
 # Debian-based official Emscripten image includes many build tools.
 # (Add -${ARCH} suffix when ARCH is set; leave ARCH unset for default amd64.)
 ARG ARCH
-FROM emscripten/emsdk:4.0.20${ARCH:+-${ARCH}}
+FROM emscripten/emsdk:6.0.9${ARCH:+-${ARCH}}
 
 
 # Additional dependencies:
