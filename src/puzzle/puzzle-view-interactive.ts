@@ -10,8 +10,15 @@ import {
 } from "../utils/events.ts";
 import { clamp } from "../utils/math.ts";
 import { detectSecondaryButton } from "../utils/touch.ts";
+import { puzzleAugmentations } from "./augmentation.ts";
 import { PuzzleView } from "./puzzle-view.ts";
 import { type Point, PuzzleButton } from "./types.ts";
+
+/**
+ * A location sent with _RELEASE events to cancel in-progress pointer tracking.
+ * (The exact values don't matter, so long as they are outside any puzzle's area.)
+ */
+const POINT_OUTSIDE_PUZZLE: Point = { x: -100, y: -100 };
 
 /**
  * The `<puzzle-view-interactive>` component subclasses `<puzzle-view>`
@@ -65,6 +72,16 @@ export class PuzzleViewInteractive extends PuzzleView {
   override async disconnectedCallback() {
     await super.disconnectedCallback();
     this.removeEventListener("keydown", this.handleKeyEvent);
+  }
+
+  protected override updated(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has("puzzle")) {
+      this.deliverPrimaryButtonWhileSecondaryDetectionPending = this.puzzle
+        ? (puzzleAugmentations[this.puzzle.puzzleId]
+            ?.deliverPrimaryButtonWhileSecondaryDetectionPending ?? false)
+        : false;
+    }
+    return super.updated(changedProperties);
   }
 
   // Safari will not render :focus-visible on a custom element itself, only on
@@ -251,6 +268,9 @@ export class PuzzleViewInteractive extends PuzzleView {
     readonly release: PuzzleButton;
   };
 
+  // See explanation in PuzzleAugmentations
+  private deliverPrimaryButtonWhileSecondaryDetectionPending = false;
+
   private async handlePointerDown(event: PointerEvent) {
     if (!this.puzzle || !this.canvas) {
       return;
@@ -291,16 +311,57 @@ export class PuzzleViewInteractive extends PuzzleView {
       button = swapButtons(button);
     }
 
+    // Special handling for puzzles that have temporary, cancelable UI state during
+    // a left button press (like Mines): Deliver the primary button immediately and
+    // start tracking. If it later turns out to be a secondary button gesture, cancel
+    // primary and deliver secondary.
+    const deliverPrimaryImmediately =
+      this.deliverPrimaryButtonWhileSecondaryDetectionPending &&
+      button === DOMMouseButton.Main;
+    if (deliverPrimaryImmediately) {
+      await this.deliverPointerDown(button, event, location, pointerId);
+    }
+
     // event may be mutated after this await
-    const { isSecondary, unhandledEvent } = await detectSecondaryButton(event, {
+    let { isSecondary, unhandledEvent } = await detectSecondaryButton(event, {
       longPress: this.longPress,
       twoFingerTap: this.twoFingerTap,
       holdTime: this.secondaryButtonHoldTime,
       dragThreshold: this.secondaryButtonDragThreshold,
     });
+
+    if (deliverPrimaryImmediately) {
+      const pointerTracking = this
+        .pointerTracking as PuzzleViewInteractive["pointerTracking"];
+      // (https://github.com/microsoft/TypeScript/issues/9998#issuecomment-439610488)
+
+      if (!isSecondary || pointerId !== pointerTracking?.pointerId) {
+        // Nothing more to do: either it's not secondary and we already started primary
+        // tracking above, or some other pointerId has become tracked in the interim.
+        return;
+      }
+
+      // Cancel primary button tracking before starting primary
+      await this.puzzle.processMouse(POINT_OUTSIDE_PUZZLE, pointerTracking.release);
+      unhandledEvent = undefined; // already handled in deliverPointerDown() above
+    }
+
     if (isSecondary) {
       button = swapButtons(button);
       this.secondaryButtonFeedback();
+    }
+    await this.deliverPointerDown(button, event, location, pointerId, unhandledEvent);
+  }
+
+  private async deliverPointerDown(
+    button: DOMMouseButton,
+    event: PointerEvent,
+    location: Point,
+    pointerId: number,
+    unhandledEvent?: PointerEvent,
+  ) {
+    if (!this.puzzle || !this.canvas) {
+      return;
     }
 
     let { press, drag, release } = PuzzleViewInteractive.domToPuzzleButtons[button];
@@ -371,10 +432,9 @@ export class PuzzleViewInteractive extends PuzzleView {
       }
       this.pointerTracking = undefined;
       if (this.puzzle) {
-        const location = { x: -100, y: -100 };
         await Promise.all([
-          this.puzzle.processMouse(location, drag),
-          this.puzzle.processMouse(location, release),
+          this.puzzle.processMouse(POINT_OUTSIDE_PUZZLE, drag),
+          this.puzzle.processMouse(POINT_OUTSIDE_PUZZLE, release),
         ]);
       }
     }

@@ -81,6 +81,24 @@ export interface PuzzleAugmentations {
   };
 
   extraCommands?: ExtraCommand[];
+
+  /**
+   * Whether to immediately deliver the LEFT_BUTTON primary button press before
+   * waiting to see if it turns into a secondary press through long-press or
+   * two-finger-tap detection. When true, if a gesture turns out to be a secondary
+   * press, the primary is canceled by sending LEFT_RELEASE outside the puzzle area
+   * before delivering RIGHT_BUTTON at the original location.
+   *
+   * This is needed in Mines so that pressing an uncovered tile highlights adjacent
+   * tiles (like left-click-and-hold), but long press on a covered tile toggles its
+   * flag (like right-click).
+   *
+   * This should not be enabled for puzzles LEFT_BUTTON (rather than LEFT_RELEASE)
+   * results in a move or other non-cancelable (non-transient) state change.
+   *
+   * Default: false.
+   */
+  deliverPrimaryButtonWhileSecondaryDetectionPending?: boolean;
 }
 
 export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
@@ -377,6 +395,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         [16, 17], // 3D edges
       ],
     },
+    deliverPrimaryButtonWhileSecondaryDetectionPending: true,
   },
   mosaic: {
     // Note: settings config lists "Height" before "Width"
