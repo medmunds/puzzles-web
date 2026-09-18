@@ -8,6 +8,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true  # overridden in deploy job
+
 jobs:
   build-icons:
     name: Build icons
@@ -165,6 +169,11 @@ jobs:
     name: Deploy to Cloudflare Pages
     needs: [build-app]
     runs-on: ubuntu-latest
+    concurrency:
+      # Don't let new builds stop deploy. (Interrupting `wrangler pages deploy` is safe,
+      # but once we get this far might as well finish the release.)
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: false
     environment: production
     permissions:
       deployments: write
