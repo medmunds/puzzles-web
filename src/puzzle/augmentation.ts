@@ -343,7 +343,32 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   mines: {
     describeConfig: configFormatter(
-      "{width}x{height}, {mines} mines{ensure-solubility:, risky|}",
+      "{width}x{height}, {mines} mines, {grid-type}{ensure-solubility:, risky|}",
+      {
+        "grid-type": [
+          "Squares",
+          "Squares wrapping",
+          "Honeycomb",
+          "Honeycomb wrapping",
+          "Octagonal",
+          "Triangular",
+          "Triangular wrapping",
+          "Snub-Square",
+          "Cairo",
+          "Kites",
+          "Great Hexagonal",
+          "Kagome",
+          "Floret",
+          "Dodecagonal",
+          "Great-Dodecagonal",
+          "Great-Great-Dodecagonal",
+          "Compass-Dodecagonal",
+          "Penrose Rhombs",
+          "Hats",
+          "Penrose Kite/Dart",
+          "Spectres",
+        ],
+      },
     ),
     darkMode: {
       paletteOverrides: { 0: [0.2, 0, 0], 10: false, 14: 0.8 }, // bg, black mine, white flag base

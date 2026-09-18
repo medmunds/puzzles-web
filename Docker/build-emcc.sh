@@ -41,18 +41,12 @@ fi
 
 # --- Build process ---
 echo "[INFO] Building wasm puzzles and docs..."
-BINARY_VERSION="1,${BUILDDATE:0:4},${BUILDDATE:4:2},${BUILDDATE:6:2}"
-VERSION="${VCSID}"
-VER="Version ${VERSION}"
 
 CMAKE_ARGS=(
   -B "${BUILD_DIR}"
   -S "${SRC_DIR}"
   -DCMAKE_BUILD_TYPE="${BUILDTYPE}"
-  -DWEB_APP=true
-  -DCMAKE_C_FLAGS="-DVER='\"${VER}\"' -DVERSIONINFO_BINARY_VERSION='${BINARY_VERSION}'"
   -DPUZZLES_ENABLE_UNFINISHED="${BUILD_UNFINISHED}"
-  -DVCSID="${VCSID}"
 )
 
 emcmake cmake "${CMAKE_ARGS[@]}"
