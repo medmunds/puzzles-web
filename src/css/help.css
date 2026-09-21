@@ -97,6 +97,9 @@ tr {
     var(--wa-color-neutral-border-quiet);
   transition: background-color var(--wa-transition-normal) var(--wa-transition-easing);
 }
+th {
+  font-weight: var(--wa-font-weight-semibold);
+}
 td,
 th {
   padding-block: 0.5em;
@@ -109,9 +112,6 @@ th + th {
   padding-inline-start: 1em;
 }
 
-th {
-  font-weight: var(--wa-font-weight-semibold);
-}
 tr:first-child th {
   position: sticky;
   inset-block-start: 0;
