@@ -2,14 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Plugin } from "vite";
 
-declare global {
-  // RegExp.escape available in node v24
-  // https://github.com/microsoft/TypeScript/issues/61321
-  interface RegExpConstructor {
-    escape(str: string): string;
-  }
-}
-
 /**
  * Workaround a vite (rollup) bug that fails to include .wasm.map files
  * in dist/assets when the .wasm files are fetched with dynamic import.

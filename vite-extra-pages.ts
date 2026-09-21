@@ -11,10 +11,7 @@ import path from "node:path";
 import { attrs as mditPluginAttrs } from "@mdit/plugin-attrs";
 import { icon as mditPluginIcon } from "@mdit/plugin-icon";
 import Handlebars from "handlebars";
-import MarkdownIt, {
-  type Options as MarkdownItOptions,
-  type PresetName as MarkdownItPresetName,
-} from "markdown-it";
+import MarkdownIt, { type MarkdownItOptions } from "markdown-it";
 import mditPluginAnchor from "markdown-it-anchor";
 import { globSync } from "tinyglobby";
 import {
@@ -780,15 +777,8 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
  * Adds 'html' and 'body' (both set to rendered markdown)
  * and 'title' (first H1 in markdown) to the output data.
  */
-export const renderMarkdown = (
-  config?: MarkdownItPresetName | MarkdownItOptions,
-): Transform => {
-  const md = // ugh, TS overload confusion
-    config === undefined
-      ? new MarkdownIt()
-      : typeof config === "string"
-        ? new MarkdownIt(config)
-        : new MarkdownIt(config);
+export const renderMarkdown = (config?: MarkdownItOptions): Transform => {
+  const md = config === undefined ? new MarkdownIt() : new MarkdownIt(config);
 
   md.use(mditPluginIcon, {
     render: (raw) => {
