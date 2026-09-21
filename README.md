@@ -73,8 +73,8 @@ their own version of this app or help contribute code.
 
 There are two main parts to the code:
 
-* The [`/puzzles`](puzzles) directory is a git subtree of the upstream
-  [portable puzzle collection repo][upstream], with some local changes.
+* The [`/puzzles`](puzzles) directory is a git submodule of the upstream
+  portable puzzle collection repo including some local changes.
   Code is written in C and C++ and compiled to WASM using [Emscripten]
   (via an [emsdk] container).
 
@@ -88,7 +88,6 @@ There are a few other directories whose names should mostly be self explanatory.
 [emsdk]: https://github.com/emscripten-core/emsdk
 [Lit]: https://lit.dev/
 [vite]: https://vite.dev/
-[upstream]: https://git.tartarus.org/?p=simon/puzzles.git
 [Web Awesome]: https://webawesome.com/docs/
 
 ### Puzzles code
@@ -256,9 +255,8 @@ npm run preview
 This web app code (including local modifications and additions to the original
 puzzles code) is made available under the MIT License. See [LICENSE](./LICENSE).
 
-The [puzzles/LICENCE](puzzles/LICENCE) file covers the upstream puzzles code
-pulled into that subtree. And the license text in the upstream manual covers
-that manual (puzzles/puzzles.but). Both use the MIT License.
+The `puzzles/` submodule and recursive submodules carry their own license
+(LICENCE) files.
 
 The built app incorporates portions of several open source packages. Required
 notices can be found in the app's _About_ dialog. (Please open an issue if any
