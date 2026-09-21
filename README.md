@@ -232,22 +232,22 @@ podman run --rm \
 
 Install the tooling and dependencies:
 ```shell
-npm install
+pnpm install
 ```
 
 Run the dev server:
 ```
-npm run dev
+pnpm run dev
 ```
 
 Build for production:
 ```
-npm run build
+pnpm run build
 ```
 
 Preview the production build:
 ```
-npm run preview
+pnpm run preview
 ```
 
 ## License

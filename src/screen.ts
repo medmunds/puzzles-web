@@ -1,6 +1,5 @@
 import type { WaSelectEvent } from "@awesome.me/webawesome";
-import type { PropertyValues } from "@lit/reactive-element";
-import { html, LitElement, nothing } from "lit";
+import { html, LitElement, nothing, type PropertyValues } from "lit";
 import { query } from "lit/decorators/query.js";
 import { property, state } from "lit/decorators.js";
 import { helpUrl, homePageUrl, isHelpUrl, navigateToHomePage } from "./routing.ts";

@@ -32,14 +32,16 @@ FROM emscripten/emsdk:6.0.9${ARCH:+-${ARCH}}
 RUN apt-get update && apt-get install -y \
     jq \
     halibut \
+    python3-yaml \
     && rm -rf /var/lib/apt/lists/*
 
 # Install tsc for generating .d.ts files from emcc.
-# Match the version from package-lock.json.
-COPY package-lock.json /app/
-RUN TS_VERSION=$(jq -r '.packages."node_modules/typescript".version' /app/package-lock.json) \
+# Match the version from pnpm-lock.yaml.
+COPY pnpm-lock.yaml /app/
+COPY ./Docker/get-typescript-version.py /app/
+RUN TS_VERSION=$(python3 /app/get-typescript-version.py) \
     && npm install --no-update-notifier -g "typescript@${TS_VERSION}" \
-    && rm -f /app/package-lock.json \
+    && rm -f /app/pnpm-lock.yaml /app/get-typescript-version.py \
     && tsc --version
 
 WORKDIR /app

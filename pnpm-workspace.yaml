@@ -1,0 +1,5 @@
+allowBuilds:
+  '@sentry/cli': true  # @sentry/vite-plugin
+  esbuild: true  # vite
+  sharp: true  # wrangler, @vite-pwa/assets-generator
+  workerd: true  # wrangler

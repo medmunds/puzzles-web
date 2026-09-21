@@ -109,11 +109,11 @@ jobs:
           persist-credentials: false
           submodules: recursive
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up node and install dependencies
+        uses: pnpm/setup@v3
         with:
-          node-version: '24'
-          cache: 'npm'
+          cache: true
+          require-lockfile: true
 
       - name: Apply site overlay
         # Pull in site-specific files that aren't part of the public repo
@@ -127,9 +127,6 @@ jobs:
             --exclude="*/README.md" \
             --strip-components=1
           rm overlay.tar.gz
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Download icons artifact
         uses: actions/download-artifact@v8
@@ -151,7 +148,7 @@ jobs:
           VITE_CSP_REPORT_URI: ${{ vars.CSP_REPORT_URI }}
           VITE_GIT_SHA: ${{ github.sha }}
           VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
-        run: npm run build
+        run: pnpm run build
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@v7

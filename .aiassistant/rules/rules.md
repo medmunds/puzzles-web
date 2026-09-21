@@ -20,8 +20,8 @@ This is a progressive web application (PWA) port of Simon Tatham's Portable Puzz
 - **Formatter**: Biome (2-space indents, 88 char line width)
 - **Linting**: Biome with recommended rules + strict promise handling
 - **TypeScript**: 5.9, strict mode enabled with no unused locals/parameters and no `any`
-- Use `npm run check` to format and lint code
-- Use `npm run build` to verify TypeScript compilation
+- Use `pnpm run check` to format and lint code
+- Use `pnpm run build` to verify TypeScript compilation
 
 ### Code Conventions
 
@@ -77,10 +77,10 @@ podman run --rm \
 
 ### Web App
 
-- `npm run dev` - Development server
-- `npm run build` - Production build (runs tsc + vite build)
-- `npm run preview` - Preview production build
-- `npm run check` - Format and lint
+- `pnpm run dev` - Development server
+- `pnpm run build` - Production build (runs tsc + vite build)
+- `pnpm run preview` - Preview production build
+- `pnpm run check` - Format and lint
 
 ## Important Constraints
 

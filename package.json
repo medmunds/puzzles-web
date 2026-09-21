@@ -3,6 +3,18 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^12.5.0",
+      "onFail": "download"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "^24.0.0",
+      "onFail": "download"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -43,6 +55,7 @@
     "markdown-it-anchor": "^9.2.0",
     "rollup-plugin-license": "^3.7.1",
     "rollup-plugin-visualizer": "^7.0.1",
+    "tinyglobby": "^0.2.17",
     "typescript": "~5.9.0",
     "vite": "^7.3.2",
     "vite-plugin-pwa": "^1.2.0",
