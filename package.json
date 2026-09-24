@@ -28,16 +28,16 @@
   "dependencies": {
     "@awesome.me/webawesome": "^3.5.0",
     "@lit-labs/observers": "^2.1.0",
-    "@lit-labs/signals": "^0.2.0",
+    "@lit-labs/signals": "^0.3.0",
     "@lit/context": "^1.1.6",
     "@material-design-icons/svg": "^0.14.15",
-    "@sentry/browser": "^10.49.0",
-    "@sentry/wasm": "^10.49.0",
+    "@sentry/browser": "^11.0.0",
+    "@sentry/wasm": "^11.0.0",
     "colorjs.io": "^0.5.2",
     "comlink": "^4.4.2",
-    "dexie": "^4.4.2",
-    "lit": "^3.3.2",
-    "lucide-static": "^1.46.0",
+    "dexie": "^4.4.6",
+    "lit": "^3.3.3",
+    "lucide-static": "^1.47.0",
     "signal-utils": "^0.21.1"
   },
   "devDependencies": {

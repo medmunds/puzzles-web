@@ -33,9 +33,17 @@ export function initSentry() {
 
     Sentry.init({
       dsn: import.meta.env.VITE_SENTRY_DSN,
-      sendDefaultPii: false,
       release: import.meta.env.VITE_GIT_SHA,
       transport: Sentry.makeBrowserOfflineTransport(Sentry.makeFetchTransport),
+      dataCollection: {
+        cookies: false,
+        httpBodies: [],
+        httpHeaders: {
+          request: { deny: ["forwarded", "-ip", "remote-", "via", "-user"] },
+          response: { deny: ["forwarded", "-ip", "remote-", "via", "-user"] },
+        },
+        userInfo: false,
+      },
       integrations,
       ignoreErrors,
       beforeBreadcrumb(breadcrumb, hint) {
