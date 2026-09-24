@@ -386,6 +386,21 @@ export default defineConfig(async ({ command, mode }) => {
         "top-level-await": false,
       },
     },
+    optimizeDeps: {
+      // Prevent dev server "optimized dependencies changed. reloading"
+      // on dynamic imports like dialogs. `exclude` should only have packages
+      // published as ESM where we cherry-pick imports. (If any non-ESM or
+      // non-cherry-picked imports cause "new dependencies optimized" reloads,
+      // instead `include` them to pre-bundle at dev server startup time.)
+      // A "multiple versions of Lit" warning could be missing Lit packages here.
+      exclude: [
+        "@awesome.me/webawesome",
+        "lit",
+        "@lit/context",
+        "@lit-labs/observers",
+        "@lit-labs/signals",
+      ],
+    },
     define: {
       "import.meta.env.VITE_CANONICAL_BASE_URL": JSON.stringify(
         env.VITE_CANONICAL_BASE_URL ?? "",
