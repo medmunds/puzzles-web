@@ -1,5 +1,12 @@
 # What’s new
 
+## 2026-09-25 {.date}
+
+[Mines](../mines) has a new preference that allows marking squares with a "?". When
+turned on, right-clicking a covered square will cycle between a flag, a question mark,
+and unmarking the square.
+
+
 ## 2026-09-17 {.date}
 
 [Mines](../mines) has several new grid types: honeycomb, triangular, wrap-around grids,
