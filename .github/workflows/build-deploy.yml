@@ -35,8 +35,8 @@ jobs:
           file: Docker/build-icons.Dockerfile
           load: true
           tags: build-icons:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=build-icons
+          cache-to: type=gha,mode=max,scope=build-icons
 
       - name: Run icons build
         run: |
@@ -75,8 +75,8 @@ jobs:
           load: true
           platforms: linux/amd64  # ubuntu-latest is always amd64
           tags: build-emcc:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=build-emcc
+          cache-to: type=gha,mode=max,scope=build-emcc
 
       - name: Run emcc build
         run: |

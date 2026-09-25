@@ -1,0 +1,5 @@
+# Ignore everything *except* what's needed for Docker image builds.
+# (So other changes don't invalidate cached images in build-deploy.yml.)
+**
+!/Docker/**
+!/pnpm-lock.yaml
