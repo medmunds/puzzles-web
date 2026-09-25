@@ -51,7 +51,7 @@ import trash2Icon from "lucide-static/icons/trash-2.svg";
 import triangleAlertIcon from "lucide-static/icons/triangle-alert.svg";
 import undo2Icon from "lucide-static/icons/undo-2.svg";
 import uploadIcon from "lucide-static/icons/upload.svg";
-import wandIcon from "lucide-static/icons/wand.svg";
+import wandSparklesIcon from "lucide-static/icons/wand-sparkles.svg";
 import xIcon from "lucide-static/icons/x.svg";
 import mouseLeftButtonIcon from "./assets/mouse-left-button.svg";
 import mouseRightButtonIcon from "./assets/mouse-right-button.svg";
@@ -78,7 +78,7 @@ const defaultIcons: IconMap = {
   "gameid": hashIcon,
   "generic-puzzle": boxIcon,
   "help": circleQuestionMarkIcon,
-  "hint": wandIcon,
+  "hint": wandSparklesIcon,
   "history": historyIcon,
   "history-checkpoint": circleCheckIcon,
   "history-current-move": playIcon,
