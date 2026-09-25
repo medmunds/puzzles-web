@@ -42,6 +42,7 @@ import rocketIcon from "lucide-static/icons/rocket.svg";
 import settingsIcon from "lucide-static/icons/settings.svg";
 import share2Icon from "lucide-static/icons/share-2.svg";
 import shieldCheckIcon from "lucide-static/icons/shield-check.svg";
+import shuffleIcon from "lucide-static/icons/shuffle.svg";
 import sparklesIcon from "lucide-static/icons/sparkles.svg";
 import squareDashedMousePointer from "lucide-static/icons/square-dashed-mouse-pointer.svg";
 import squareMenuIcon from "lucide-static/icons/square-menu.svg";
@@ -96,6 +97,7 @@ const defaultIcons: IconMap = {
   "load-game": uploadIcon,
   "share": share2Icon,
   "show-solution": sparklesIcon,
+  "shuffle": shuffleIcon,
   "undo": undo2Icon,
   "unfinished": flaskConicalIcon,
   // generic notifications

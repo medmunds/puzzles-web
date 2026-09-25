@@ -322,12 +322,6 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{width}x{height}, {regions} regions, {difficulty:Easy|Normal|Hard|Unreasonable}",
     ),
-    extraCommands: [
-      {
-        name: "Toggle region numbers",
-        button: keyToButton("L"),
-      },
-    ],
   },
   mathrax: {
     describeConfig: (config) => {
@@ -422,6 +416,13 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
           Number(value) > 0 ? `, ${percentage(value)} barriers` : "",
       },
     ),
+    extraCommands: [
+      {
+        name: "Jumble tile rotations",
+        icon: "shuffle",
+        button: keyToButton("j"),
+      },
+    ],
   },
   netslide: {
     describeConfig: ({ width, height, ...config }) => {
