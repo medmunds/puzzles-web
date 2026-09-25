@@ -14,6 +14,15 @@ import "@awesome.me/webawesome/dist/components/include/include.js";
 import "./command-link"; // may appear in included help docs
 
 /**
+ * Return a copy of url with any hash removed.
+ */
+const stripUrlHash = (url: URL): URL => {
+  const newUrl = new URL(url);
+  newUrl.hash = "";
+  return newUrl;
+};
+
+/**
  * Essentially a miniature browser in an wa-drawer, constrained to subpaths
  * of its initial src (other links open a new tab/window). Renders content
  * using wa-include with a local style sheet.
@@ -76,7 +85,7 @@ export class HelpViewer extends LitElement {
     // Must use <div slot=label> rather than <wa-drawer label=...> to avoid
     // Safari bug where slotted content disappears when some other dialog is closed.
     return html`
-      <wa-drawer id="help">
+      <wa-drawer id="help" light-dismiss>
         <div slot="label" id="drawer-label">${title}</div>
         ${this.renderHistoryButtons()}
         ${
@@ -95,10 +104,10 @@ export class HelpViewer extends LitElement {
         }
         ${
           this.error !== undefined
-            ? html`<div class="error">Error ${this.error} loading ${this.src}</div>`
+            ? html`<div class="error">Error ${this.error} loading ${currentSrc}</div>`
             : html`
               <wa-include
-                  src=${currentSrc}
+                  src=${stripUrlHash(currentSrc)}
                   mode="same-origin"
                   @wa-include-error=${this.handleDocumentError}
                   @wa-load=${this.handleDocumentLoad}

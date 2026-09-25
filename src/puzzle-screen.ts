@@ -755,8 +755,8 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           min-width: 1rem;
         }
 
-        wa-button::part(base),
-        puzzle-type-menu::part(trigger-base) {
+        wa-button::part(button),
+        puzzle-type-menu::part(trigger-button) {
           color: var(--wa-color-text-normal);
         }
       }

@@ -360,6 +360,8 @@ export class ShareDialog extends SignalWatcher(LitElement) {
       }
   
       .link {
+        margin-top: var(--wa-space-s);
+        
         display: flex;
         gap: var(--wa-space-xs);
         align-items: baseline;
@@ -371,6 +373,10 @@ export class ShareDialog extends SignalWatcher(LitElement) {
           overflow: hidden;
           white-space: nowrap;
           text-overflow: ellipsis;
+        }
+        
+        wa-copy-button {
+          flex: none;
         }
       }
   

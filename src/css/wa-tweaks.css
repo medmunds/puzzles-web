@@ -5,7 +5,7 @@
 wa-button[appearance="accent"][variant="neutral"] {
   --wa-color-fill-loud: var(--wa-form-control-background-color);
   --wa-color-on-loud: var(--wa-form-control-label-color);
-  &::part(base) {
+  &::part(button) {
     border-color: var(--wa-form-control-border-color);
   }
 }
@@ -35,8 +35,10 @@ wa-dropdown[placement^="right"] wa-button[slot="trigger"] {
 }
 
 /* Adapt wa-icon for Lucide icons (square, not 1.25x1.0 like Font Awesome) */
-wa-icon:not([auto-width]),
+wa-icon:not([canvas]),
+wa-icon[canvas="fixed"],
 wa-button::part(caret),
 wa-details::part(icon) {
   width: 1em;
+  min-width: 1em;
 }

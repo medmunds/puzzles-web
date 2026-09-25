@@ -101,7 +101,7 @@ export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
         <wa-button 
             slot="trigger"
             part="trigger"
-            exportparts="base:trigger-base"
+            exportparts="button:trigger-button"
             appearance=${this.appearance ?? nothing}
             variant=${this.variant ?? nothing}
             with-caret

@@ -70,7 +70,7 @@ export class CatalogCard extends LitElement {
   private renderIcon() {
     if (this.iconMissing || !this.icon1x || !this.icon2x) {
       const iconName = this.unfinished ? "unfinished" : "generic-puzzle";
-      return html`<wa-icon part="icon" auto-width name=${iconName}></wa-icon>`;
+      return html`<wa-icon part="icon" canvas="auto" name=${iconName}></wa-icon>`;
     }
 
     return html`
@@ -230,10 +230,6 @@ export class CatalogCard extends LitElement {
           color: var(--wa-color-warning-fill-loud);
         }
 
-        &:is(wa-icon)::part(svg) {
-          width: unset;
-        }
-
         opacity: 1;
         &.loading {
           opacity: 0;
@@ -264,7 +260,7 @@ export class CatalogCard extends LitElement {
         margin: calc(-1 * var(--wa-space-xs));
         
         /* Remove some button padding and allow natural size */
-        &::part(base) {
+        &::part(button) {
           padding: var(--wa-space-xs);
           height: auto;
           width: auto;

@@ -184,7 +184,7 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
 
     const deleteButton = canDelete
       ? html`
-        <wa-button slot="details" appearance="plain" size="small"
+        <wa-button slot="details" appearance="plain" size="s"
           @click=${this.handleRemoveCheckpoint}
         >
           <wa-icon name="checkpoint-remove" label="Delete checkpoint"></wa-icon>
@@ -307,8 +307,8 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
           gap: 0;
           flex-wrap: nowrap;
         }
-        wa-button[slot="trigger"]::part(base) {
-          margin-inline: calc(-1 * var(--wa-border-width-s));
+        wa-button[slot="trigger"] {
+          margin-inline: calc(-2 * var(--wa-border-width-s));
           position: relative;
           z-index: 1;
         }

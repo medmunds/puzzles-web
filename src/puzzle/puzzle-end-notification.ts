@@ -349,7 +349,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
       }
       [part~="dismiss"] {
         margin: calc(-1 * var(--wa-space-xs));
-        &::part(base) {
+        &::part(button) {
           padding: var(--wa-space-xs);
           height: auto;
           width: auto;

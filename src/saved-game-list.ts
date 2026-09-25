@@ -180,7 +180,7 @@ export class SavedGameList extends SignalWatcher(LitElement) {
       <th scope="col" role="columnheader" aria-sort=${sort} data-field=${field}>
         <wa-button 
             appearance="plain"
-            size="small"
+            size="s"
             ?with-caret=${sort !== "none"}
             @click=${this.handleHeaderClick}
         >
@@ -460,7 +460,7 @@ export class SavedGameList extends SignalWatcher(LitElement) {
         --focus-ring-size: calc(var(--wa-focus-ring-width) + var(--wa-focus-ring-offset));
         margin: var(--focus-ring-size);
         width: calc(100% - 2 * var(--focus-ring-size));
-        &::part(base) {
+        &::part(button) {
           /* Match tbody td inline padding (less margin) to align text */
           padding: 
               var(--wa-space-2xs) 

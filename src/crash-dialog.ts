@@ -315,7 +315,7 @@ export class CrashDialog extends LitElement {
       wa-details {
         display: contents;
       }
-      wa-details::part(base) {
+      wa-details::part(details) {
         flex: 0 1 auto;
         min-height: 1em;
         overflow: hidden;

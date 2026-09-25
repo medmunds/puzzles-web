@@ -113,7 +113,7 @@ header {
     }
   }
 
-  wa-button[appearance="plain"]::part(base) {
+  wa-button[appearance="plain"]::part(button) {
     color: var(--wa-color-text-normal);
   }
 }
