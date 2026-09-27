@@ -3,10 +3,6 @@
 This web adaptation of Simon Tatham’s Portable Puzzle Collection includes
 some features and UI changes that are not included in the original.
 
-::experimental|Experimental:: Items with this symbol are considered experimental.
-Although functional, they're likely to change significantly in future updates.
-(There's also a slight possibility they might be removed entirely.)
-
 ## Changes affecting all puzzles
 
 * ::experimental|Experimental:: This version allows you to save and return 
@@ -20,5 +16,18 @@ Although functional, they're likely to change significantly in future updates.
 
 ## Changes to specific puzzles
 
-(All changes to individual puzzles have been accepted back into the original 
-collection.)
+* **Boats:** Left-clicking a number clue will grey it out (similar to Magnets,
+  Towers and Undead). ::compatibility-warning|Compatibility warning::
+
+* **Rome:** The "M" and "H" keys fill in pencil marks (similar to Solo, Unequal, and
+  other puzzles that support pencil marks). ::compatibility-warning|Compatibility warning::
+
+-----
+
+::experimental|Experimental:: Features marked with this symbol are considered
+experimental. Although functional, they're likely to change significantly in future
+updates. (There's also a slight possibility they might be removed entirely.)
+
+::compatibility-warning|Compatibility warning:: This feature generates non-standard
+saved game files. If you use it, an exported game will not be loadable by other portable
+puzzle collection apps.

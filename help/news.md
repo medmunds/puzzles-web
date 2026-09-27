@@ -1,5 +1,11 @@
 # What’s new
 
+## 2026-09-27 {.date}
+
+[Boats](../boats) now supports tapping or left-clicking on a number clue to grey it out.
+You can use this for any purpose you'd like, such as marking rows or columns that are
+"done."
+
 ## 2026-09-25 {.date}
 
 [Mines](../mines) has a new preference that allows marking squares with a "?". When

@@ -133,6 +133,9 @@ table.puzzles-list td:not(:last-child) {
 .icon-checkpoint-remove {
   --icon: url(/node_modules/lucide-static/icons/trash-2.svg);
 }
+.icon-compatibility-warning {
+  --icon: url(/node_modules/lucide-static/icons/file-exclamation-point.svg);
+}
 .icon-edge-app-available {
   --icon: url(/src/assets/edge-app-available.svg);
 }
