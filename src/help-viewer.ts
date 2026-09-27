@@ -359,6 +359,10 @@ export class HelpViewer extends LitElement {
       }
       
       wa-include {
+        /* More hyphenation is helpful in the narrow help-viewer.
+         * (Only here, not in typically-wider standalone help body.) */
+        hyphens: auto;
+
         wa-icon.offsite {
           margin-inline-start: 0.1em;
           vertical-align: -2px; /* visual baseline alignment*/
