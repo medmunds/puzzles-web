@@ -18,7 +18,7 @@ const keyToButton = (key: string): number => {
 };
 
 const ALL_MARKS_COMMAND: ExtraCommand = {
-  name: "Add all marks",
+  name: "Fill in marks",
   icon: "marks-all",
   button: keyToButton("M"),
 } as const;
@@ -32,7 +32,7 @@ const HINT_COMMAND: ExtraCommand = {
 
 const HINT_MARKS_COMMAND: ExtraCommand = {
   // Add all marks except "obvious" ones (e.g., Unequal)
-  name: "Add hint marks",
+  name: "Fill in hints",
   icon: "marks-hints",
   button: keyToButton("H"),
 } as const;
