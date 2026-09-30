@@ -19,6 +19,12 @@ some features and UI changes that are not included in the original.
 * **Boats:** Left-clicking a number clue will grey it out (similar to Magnets,
   Towers and Undead). ::compatibility-warning|Compatibility warning::
 
+* **Boats:** Includes a preliminary fix for a problem where easy games often couldn't
+  be solved with the "Solve" command. A side effect of the fix is that Boats games at
+  higher difficulty levels cannot be shared with other puzzle collection apps by random
+  seed. (You'll see a different game until the fix is applied in the other apps).
+  Share by game ID instead, which remains portable.
+
 * **Rome:** The "M" and "H" keys fill in pencil marks (similar to Solo, Unequal, and
   other puzzles that support pencil marks). ::compatibility-warning|Compatibility warning::
 
