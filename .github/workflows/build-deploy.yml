@@ -108,6 +108,7 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
+          fetch-depth: 0  # Needed for news.md commit timestamp
 
       - name: Set up node and install dependencies
         uses: pnpm/setup@v3
