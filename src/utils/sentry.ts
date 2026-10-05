@@ -33,7 +33,7 @@ export function initSentry() {
 
     Sentry.init({
       dsn: import.meta.env.VITE_SENTRY_DSN,
-      release: import.meta.env.VITE_GIT_SHA,
+      release: import.meta.env.VITE_APP_VERSION,
       transport: Sentry.makeBrowserOfflineTransport(Sentry.makeFetchTransport),
       dataCollection: {
         cookies: false,

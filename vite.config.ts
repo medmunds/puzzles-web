@@ -326,7 +326,8 @@ function cspHashSrc(inlineCode: string) {
 }
 
 export default defineConfig(async ({ command, mode }) => {
-  const env = loadEnv(mode, process.cwd());
+  const env = loadEnv(mode, process.cwd(), "");
+  const appVersion = env.VITE_APP_VERSION ?? defaultAppVersion(env);
   const preflightSrc =
     command === "build" ? await buildProductionPreflightModule() : "/src/preflight.ts";
 
@@ -352,10 +353,18 @@ export default defineConfig(async ({ command, mode }) => {
     sentryVitePlugin({
       applicationKey: sentryFilterApplicationId,
 
-      // We're not currently uploading sourcemaps or notifying releases from here,
-      // and we use a different mechanism to include the release id in the code.
-      sourcemaps: { disable: true },
-      release: { create: false, inject: false, deploy: false, finalize: false },
+      org: env.SENTRY_ORG,
+      project: env.SENTRY_PROJECT,
+      authToken: env.SENTRY_AUTH_TOKEN,
+
+      sourcemaps: {
+        // disable: "disable-upload", // Inject debug ids only, for later cli upload
+        // TODO: We need 'assets' to specify wasm and dwarf files somehow.
+      },
+      release: {
+        // This may cause duplicate releases with manual build-deploy triggers?
+        name: appVersion,
+      },
     });
 
   return {
@@ -405,9 +414,7 @@ export default defineConfig(async ({ command, mode }) => {
       "import.meta.env.VITE_CANONICAL_BASE_URL": JSON.stringify(
         env.VITE_CANONICAL_BASE_URL ?? "",
       ),
-      "import.meta.env.VITE_APP_VERSION": JSON.stringify(
-        env.VITE_APP_VERSION ?? defaultAppVersion(env),
-      ),
+      "import.meta.env.VITE_APP_VERSION": JSON.stringify(appVersion),
       "import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID": JSON.stringify(
         sentryFilterApplicationId,
       ),
