@@ -349,23 +349,26 @@ export default defineConfig(async ({ command, mode }) => {
     colorSchemeInitScript,
     noModuleHeadScript,
   };
-  const createSentryVitePlugin = () =>
-    sentryVitePlugin({
-      applicationKey: sentryFilterApplicationId,
+  const sentryPlugin = sentryVitePlugin({
+    applicationKey: sentryFilterApplicationId,
 
-      org: env.SENTRY_ORG,
-      project: env.SENTRY_PROJECT,
-      authToken: env.SENTRY_AUTH_TOKEN,
+    org: env.SENTRY_ORG,
+    project: env.SENTRY_PROJECT,
+    authToken: env.SENTRY_AUTH_TOKEN,
 
-      sourcemaps: {
-        // disable: "disable-upload", // Inject debug ids only, for later cli upload
-        // TODO: We need 'assets' to specify wasm and dwarf files somehow.
+    sourcemaps: {
+      assets: ["./dist/**/*.@(js|wasm|map|dwarf)"],
+    },
+    release: {
+      name: appVersion,
+      // Upload .wasm and .wasm.map that aren't detected by debug-id linkage above.
+      // (This shouldn't be needed once -gseparate-dwarf is enabled for release builds.)
+      uploadLegacySourcemaps: {
+        paths: ["./dist"],
+        ext: ["wasm", "wasm.map"],
       },
-      release: {
-        // This may cause duplicate releases with manual build-deploy triggers?
-        name: appVersion,
-      },
-    });
+    },
+  });
 
   return {
     appType: "mpa",
@@ -635,7 +638,7 @@ export default defineConfig(async ({ command, mode }) => {
           ],
         },
       }),
-      createSentryVitePlugin(), // Must be last plugin
+      ...sentryPlugin, // Must be last plugin
       Sitemap({
         // readable: true, // formatted XML
         hostname: canonicalBaseUrl ? canonicalBaseUrl.replace(/\/$/, "") : undefined,
@@ -656,7 +659,7 @@ export default defineConfig(async ({ command, mode }) => {
       }),
     ],
     worker: {
-      plugins: () => [createSentryVitePlugin()],
+      plugins: () => [...sentryPlugin],
     },
   } satisfies UserConfig;
 });
