@@ -414,6 +414,9 @@ export default defineConfig(async ({ command, mode }) => {
       ],
     },
     define: {
+      // Parts of Sentry get bundled with unused debug code without this define
+      // (https://github.com/getsentry/sentry-javascript/issues/26127)
+      __SENTRY_DEBUG__: false,
       "import.meta.env.VITE_CANONICAL_BASE_URL": JSON.stringify(
         env.VITE_CANONICAL_BASE_URL ?? "",
       ),
