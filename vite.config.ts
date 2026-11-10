@@ -98,6 +98,13 @@ function securityHeaders(options: {
       ...extraScriptSrc,
       "'report-sample'",
     ].join(" "),
+    "script-src-attr": "'none' 'report-sample'",
+    "script-src-elem": [
+      "'self'",
+      "https://static.cloudflareinsights.com",
+      ...extraScriptSrc,
+      "'report-sample'",
+    ].join(" "),
     // Web Awesome uses inline styles in progress-ring and slider:
     // https://github.com/shoelace-style/webawesome/issues/1937
     "style-src": "'self' 'unsafe-inline' 'report-sample'",
